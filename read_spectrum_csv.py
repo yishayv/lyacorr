@@ -1,23 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import spectrum
+import qso_line_mask
 import continuum_fit
 
 #TODO: replace with a more accurate number
 lya_center = 1215.67
-
-#CIV emission line
-CIV_line_1 = 1548.202 #f_lu=0.190
-#with a weaker line at:
-CIV_line_2 = 1550.772 #f_lu=0.0962
-#TODO: figure out if we should do some kind of weighted average
-CIV_line = CIV_line_1
-#from: http://astro.uchicago.edu/~subbarao/newWeb/line.html
-#note that their civ line is offset somewhat
-SiIV_OIV_line = 1399.8
-CIII_line = 1908.27
-CII_line = 2326.0
-MgII_line = 2800.32
 
 def redshift(wavelength,z):
     return (1+z)*wavelength
@@ -49,7 +38,6 @@ i=18
 #problematic objects: 0, 712, 715
 
 spectra = np.load('../../data/QSOs_spectra_for_yishay_2.npy')
-spectrum = spectra[i]
 
 spec_index = np.genfromtxt('../../data/MyResult_20141225.csv',
                            delimiter=',',
@@ -80,12 +68,11 @@ plt.loglog(ar_wavelength,ar_flux,'.',ms=2)
 plt.axvspan(3817,redshift_to_lya_center(qso_z),
             alpha=0.3,facecolor='yellow',edgecolor='red')
 
-plotvmark(redshift(CIV_line,qso_z))
-plotvmark(redshift(SiIV_OIV_line,qso_z))
-plotvmark(redshift(CIII_line,qso_z))
-plotvmark(redshift(CII_line,qso_z))
-plotvmark(redshift(MgII_line,qso_z))
-
+for l in qso_line_mask.SpecLines:
+    plotvmark(redshift(l.wavelength,qso_z))
+    plt.axvspan(redshift(l.wavelength/l.width_factor,qso_z),
+                redshift(l.wavelength*l.width_factor,qso_z),
+                alpha=0.1,facecolor='cyan',edgecolor='none')
 
 plt.xlim(3e3,1e4);
 
