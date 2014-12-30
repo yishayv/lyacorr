@@ -16,13 +16,6 @@ def redshift_to_lya_center(z):
 def lya_center_to_redshift(wavelength):
     return (wavelength/lya_center)-1
 
-def rydberg_ratio(m,n):
-    return abs(1./(m*m)-1./(n*n))
-def ly_series_ratio(n):
-    return rydberg_ratio(1,n)
-def ly_series_wavelength(n):
-    return lya_center/ly_series_ratio(n)
-
 def plotvmark(wavelength):
     plt.axvspan(wavelength,wavelength, alpha=0.3, edgecolor='red')
 
@@ -33,8 +26,8 @@ def plotvmark(wavelength):
 
 #load a individual spectrum from CSV
 count = 740
-i=18
-#interesting objects: 137, 402, 716
+i=536
+#interesting objects: 137, 402, 716, 536(z=3.46, bright!!)
 #problematic objects: 0, 712, 715
 
 spectra = np.load('../../data/QSOs_spectra_for_yishay_2.npy')
@@ -72,7 +65,7 @@ for l in qso_line_mask.SpecLines:
     plotvmark(redshift(l.wavelength,qso_z))
     plt.axvspan(redshift(l.wavelength/l.width_factor,qso_z),
                 redshift(l.wavelength*l.width_factor,qso_z),
-                alpha=0.1,facecolor='cyan',edgecolor='none')
+                alpha=0.2,facecolor='cyan',edgecolor='none')
 
 plt.xlim(3e3,1e4);
 

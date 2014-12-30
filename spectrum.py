@@ -8,6 +8,4 @@ class Spectrum:
         assert len(ar_flux)==len(ar_wavelength)
         self.ar_flux=ar_flux
         self.ar_wavelength=ar_wavelength
-    def mask(condition):
-        return Spectrum(ar_flux.where(condition),
-                        ar_wavelength.where(condition))
+
