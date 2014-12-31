@@ -26,9 +26,9 @@ def plotvmark(wavelength):
 
 #load a individual spectrum from CSV
 count = 740
-i=536
+i=400
 #interesting objects: 137, 402, 716, 536(z=3.46, bright!!)
-#problematic objects: 0, 712, 715
+#problematic objects: 0, 712, 715, 538, 552(bad fit)
 
 spectra = np.load('../../data/QSOs_spectra_for_yishay_2.npy')
 
@@ -51,10 +51,11 @@ ar_flux_err=np.ones(len(ar_flux));
 
 spec = spectrum.Spectrum(ar_flux,ar_flux_err,ar_wavelength)
 qso_line_mask.mask_qso_lines(spec,qso_z)
+
 #mask the Ly-alpha part of the spectrum
-#note:if performance becomes a problem, it may be a good idea to remove
-#     the masked points completely from the powerlaw fit.
-#ar_flux_err[ar_wavelength<redshift_to_lya_center(qso_z)*1.06]=np.inf
+qso_line_mask.mask_ly_absorption(spec,qso_z)
+
+#fit the powerlaw to unmasked part of the spectrum
 amp,index = continuum_fit.fit_powerlaw(
     spec.ma_wavelength.compressed(),
     spec.ma_flux.compressed(),
@@ -64,6 +65,8 @@ amp,index = continuum_fit.fit_powerlaw(
 powerlaw = lambda x, amp, index: amp * (x**index)
 
 plt.loglog(ar_wavelength,ar_flux,'.',ms=2)
+plt.loglog(spec.ma_wavelength.compressed(),
+           spec.ma_flux.compressed(),'.',ms=2,color='darkblue')
 plt.axvspan(3817,redshift_to_lya_center(qso_z),
             alpha=0.3,facecolor='yellow',edgecolor='red')
 
@@ -79,10 +82,10 @@ plt.xlim(3e3,1e4);
 powerlaw_array=np.vectorize(powerlaw,excluded=['amp','index'])
 
 ar_flux/powerlaw_array(ar_wavelength,amp,index)
+#plt.loglog(ar_wavelength,
+#           ar_flux/powerlaw_array(ar_wavelength,amp,index),'.',ms=2)
 plt.loglog(ar_wavelength,
-           ar_flux/powerlaw_array(ar_wavelength,amp,index),'.',ms=2)
-plt.loglog(ar_wavelength,
-           powerlaw_array(ar_wavelength,amp=amp,index=index))
+           powerlaw_array(ar_wavelength,amp=amp,index=index),color='r')
 
 
 plt.show()

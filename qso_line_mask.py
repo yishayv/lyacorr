@@ -12,9 +12,14 @@ def ly_series_ratio(n):
 def ly_series_wavelength(n):
     return lya_center*ly_series_ratio(2)/ly_series_ratio(n)
 
+SpectralRange = collections.namedtuple(
+    'SpectralRange', ['name', 'low', 'high'])
 
 SpectralLine = collections.namedtuple(
     'SpectralLine', ['name', 'wavelength', 'width_factor'])
+
+SpecRanges = [
+    SpectralRange('Ly-alpha-absorption', 0, ly_series_wavelength(2))]
 
 SpecLines = [
 #TODO: replace with a more accurate number
@@ -34,29 +39,48 @@ SpecLines = [
     SpectralLine('MgII', 2800.32, 1.03)]
 
 
+
+def is_masked_by_range(wavelength,range_low,range_high,z):
+    return (wavelength<(1+z)*range_high and
+            wavelength>(1+z)*range_low)
+
+#vectorize the previous function
+vec_is_masked_by_range=np.vectorize(
+    is_masked_by_range, excluded=['range_low','range_high','z'])
+
 def is_masked_by_line(wavelength,line_wavelength,line_width_factor,z):
-    #print (wavelength<(1+z)*line_wavelength*line_width_factor and
-    #        wavelength>(1+z)*line_wavelength/line_width_factor),
-    return (wavelength<(1+z)*line_wavelength*line_width_factor and
-            wavelength>(1+z)*line_wavelength/line_width_factor)
+    return is_masked_by_range(wavelength, line_wavelength/line_width_factor,
+                              line_wavelength*line_width_factor,z)
 
 #vectorize the previous function
 vec_is_masked_by_line=np.vectorize(
     is_masked_by_line, excluded=['line_wavelength','line_width_factor','z'])
 
-def create_mask(ar_wavelength,z):
-    m = np.zeros(len(ar_wavelength))
+
+def add_line_mask(ar_wavelength,z):
+    m = ar_wavelength.mask
     for spec_line in SpecLines:
         current_mask = vec_is_masked_by_line(
             ar_wavelength,spec_line.wavelength, spec_line.width_factor, z)
-        print len(current_mask[current_mask>0])
         m = np.logical_or(m, current_mask)
     return m
-    
+
+def add_range_mask(ar_wavelength,z):
+    m = ar_wavelength.mask
+    for spec_range in SpecRanges:
+        current_mask = vec_is_masked_by_range(
+            ar_wavelength,spec_range.low, spec_range.high, z)
+        m = np.logical_or(m, current_mask)
+    return m
+
 def mask_qso_lines(spec,z):
-    m = create_mask(spec.ma_wavelength,z)
-    print len(m[m==True])
+    m = add_line_mask(spec.ma_wavelength,z)
     spec.ma_wavelength.mask = m
     spec.ma_flux.mask = m
     spec.ma_flux_err.mask = m
     
+def mask_ly_absorption(spec,z):
+    m = add_range_mask(spec.ma_wavelength,z)
+    spec.ma_wavelength.mask = m
+    spec.ma_flux.mask = m
+    spec.ma_flux_err.mask = m
