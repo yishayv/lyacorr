@@ -48,11 +48,17 @@ assert len(ar_wavelength)==len(ar_flux)
 
 #for now we have no real error data, so just use '1's:
 ar_flux_err=np.ones(len(ar_flux));
+
+spec = spectrum.Spectrum(ar_flux,ar_flux_err,ar_wavelength)
+qso_line_mask.mask_qso_lines(spec,qso_z)
 #mask the Ly-alpha part of the spectrum
 #note:if performance becomes a problem, it may be a good idea to remove
 #     the masked points completely from the powerlaw fit.
-ar_flux_err[ar_wavelength<redshift_to_lya_center(qso_z)*1.06]=np.inf
-amp,index = continuum_fit.fit_powerlaw(ar_wavelength,ar_flux,ar_flux_err)
+#ar_flux_err[ar_wavelength<redshift_to_lya_center(qso_z)*1.06]=np.inf
+amp,index = continuum_fit.fit_powerlaw(
+    spec.ma_wavelength.compressed(),
+    spec.ma_flux.compressed(),
+    spec.ma_flux_err.compressed())
 
 # Define function for calculating a power law
 powerlaw = lambda x, amp, index: amp * (x**index)
@@ -73,8 +79,10 @@ plt.xlim(3e3,1e4);
 powerlaw_array=np.vectorize(powerlaw,excluded=['amp','index'])
 
 ar_flux/powerlaw_array(ar_wavelength,amp,index)
-plt.loglog(ar_wavelength,ar_flux/powerlaw_array(ar_wavelength,amp,index),'.',ms=2)
-plt.loglog(ar_wavelength,powerlaw_array(ar_wavelength,amp=amp,index=index))
+plt.loglog(ar_wavelength,
+           ar_flux/powerlaw_array(ar_wavelength,amp,index),'.',ms=2)
+plt.loglog(ar_wavelength,
+           powerlaw_array(ar_wavelength,amp=amp,index=index))
 
 
 plt.show()
