@@ -21,7 +21,7 @@ def lya_center_to_redshift(wavelength):
     return (wavelength / lya_center) - 1
 
 
-def plotvmark(wavelength):
+def plot_v_mark(wavelength):
     plt.axvspan(wavelength, wavelength, alpha=0.3, edgecolor='red')
 
 
@@ -52,7 +52,7 @@ ar_flux = spectra[i]
 assert len(ar_wavelength) == len(ar_flux)
 
 # for now we have no real error data, so just use '1's:
-ar_flux_err = np.ones(len(ar_flux));
+ar_flux_err = np.ones(len(ar_flux))
 
 spec = spectrum.Spectrum(ar_flux, ar_flux_err, ar_wavelength)
 qso_line_mask.mask_qso_lines(spec, qso_z)
@@ -60,14 +60,14 @@ qso_line_mask.mask_qso_lines(spec, qso_z)
 # mask the Ly-alpha part of the spectrum
 qso_line_mask.mask_ly_absorption(spec, qso_z)
 
-# fit the powerlaw to unmasked part of the spectrum
+# fit the power-law to unmasked part of the spectrum
 amp, index = continuum_fit.fit_powerlaw(
     spec.ma_wavelength.compressed(),
     spec.ma_flux.compressed(),
     spec.ma_flux_err.compressed())
 
 # Define function for calculating a power law
-powerlaw = lambda x, amp, index: amp * (x ** index)
+power_law = lambda x, amp, index: amp * (x ** index)
 
 plt.loglog(ar_wavelength, ar_flux, '.', ms=2)
 plt.loglog(spec.ma_wavelength.compressed(),
@@ -76,21 +76,22 @@ plt.axvspan(3817, redshift_to_lya_center(qso_z),
             alpha=0.3, facecolor='yellow', edgecolor='red')
 
 for l in qso_line_mask.SpecLines:
-    plotvmark(redshift(l.wavelength, qso_z))
+    plot_v_mark(redshift(l.wavelength, qso_z))
     plt.axvspan(redshift(l.wavelength / l.width_factor, qso_z),
                 redshift(l.wavelength * l.width_factor, qso_z),
                 alpha=0.2, facecolor='cyan', edgecolor='none')
 
-plt.xlim(3e3, 1e4);
+plt.xlim(3e3, 1e4)
 
-# create a predicted flux array, based on fitted powerlaw
-powerlaw_array = np.vectorize(powerlaw, excluded=['amp', 'index'])
+# create a predicted flux array, based on fitted power_law
+# noinspection PyTypeChecker
+power_law_array = np.vectorize(power_law, excluded=['amp', 'index'])
 
-ar_flux / powerlaw_array(ar_wavelength, amp, index)
+ar_flux / power_law_array(ar_wavelength, amp, index)
 # plt.loglog(ar_wavelength,
-#            ar_flux/powerlaw_array(ar_wavelength,amp,index),'.',ms=2)
+#            ar_flux/power_law_array(ar_wavelength,amp,index),'.',ms=2)
 plt.loglog(ar_wavelength,
-           powerlaw_array(ar_wavelength, amp=amp, index=index), color='r')
+           power_law_array(ar_wavelength, amp=amp, index=index), color='r')
 
 plt.show()
 
