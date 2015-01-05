@@ -1,9 +1,11 @@
 import numpy as np
+import scipy.ndimage as ndimage
 import matplotlib.pyplot as plt
 
 import spectrum
 import qso_line_mask
 import continuum_fit
+import continuum_fit_pca
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -31,7 +33,7 @@ def plot_v_mark(wavelength):
 
 # load a individual spectrum from CSV
 count = 740
-i = 400
+i = 536
 # interesting objects: 137, 402, 716, 536(z=3.46, bright!!)
 # problematic objects: 0, 712, 715, 538, 552(bad fit)
 
@@ -41,6 +43,10 @@ spec_index = np.genfromtxt('../../data/MyResult_20141225.csv',
                            delimiter=',',
                            skip_header=1)
 
+fit_pca = continuum_fit_pca.ContinuumFitPCA('../../data/Suzuki/datafile4.txt',
+                                            '../../data/Suzuki/datafile3.txt',
+                                            '../../data/Suzuki/projection_matrix.csv')
+
 qso_z = spec_index[i][3]
 print qso_z
 
@@ -49,10 +55,22 @@ ar_wavelength = np.arange(3817, 9206, 0.5)
 # use selected spectrum
 ar_flux = spectra[i]
 # we assume the wavelength range in the input file is correct
-assert len(ar_wavelength) == len(ar_flux)
+assert ar_wavelength.size == ar_flux.size
+
+# BEGIN PCA TEST
+
+# TODO: normalize flux prior to continuum fit
+ar_wavelength_rest = ar_wavelength / (1 + qso_z)
+red_spectrum = ar_flux[(1216 <= ar_wavelength_rest) & (ar_wavelength_rest <= 1600)]
+red_spectrum_rebinned = ndimage.zoom(red_spectrum, ((1600.-1216)*2 + 1) / red_spectrum.size)
+red_spectrum_coefficients = fit_pca.project_red_spectrum(red_spectrum_rebinned)
+full_spectrum_coefficients = fit_pca.red_to_full(red_spectrum_coefficients)
+full_spectrum = fit_pca.full_spectrum(full_spectrum_coefficients)
+ar_wavelength_rest_binned = np.arange(1020, 1600.1, 0.5)
+plt.loglog(ar_wavelength_rest_binned*(1+qso_z),full_spectrum)
 
 # for now we have no real error data, so just use '1's:
-ar_flux_err = np.ones(len(ar_flux))
+ar_flux_err = np.ones(ar_flux.size)
 
 spec = spectrum.Spectrum(ar_flux, ar_flux_err, ar_wavelength)
 qso_line_mask.mask_qso_lines(spec, qso_z)
@@ -69,9 +87,9 @@ amp, index = continuum_fit.fit_powerlaw(
 # Define function for calculating a power law
 power_law = lambda x, amp, index: amp * (x ** index)
 
-plt.loglog(ar_wavelength, ar_flux, '.', ms=2)
+plt.loglog(ar_wavelength, ar_flux, ms=2)
 plt.loglog(spec.ma_wavelength.compressed(),
-           spec.ma_flux.compressed(), '.', ms=2, color='darkblue')
+           spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
 plt.axvspan(3817, redshift_to_lya_center(qso_z),
             alpha=0.3, facecolor='yellow', edgecolor='red')
 
@@ -81,7 +99,7 @@ for l in qso_line_mask.SpecLines:
                 redshift(l.wavelength * l.width_factor, qso_z),
                 alpha=0.2, facecolor='cyan', edgecolor='none')
 
-plt.xlim(3e3, 1e4)
+#plt.xlim(3e3, 1e4)
 
 # create a predicted flux array, based on fitted power_law
 # noinspection PyTypeChecker
@@ -89,7 +107,7 @@ power_law_array = np.vectorize(power_law, excluded=['amp', 'index'])
 
 ar_flux / power_law_array(ar_wavelength, amp, index)
 # plt.loglog(ar_wavelength,
-#            ar_flux/power_law_array(ar_wavelength,amp,index),'.',ms=2)
+# ar_flux/power_law_array(ar_wavelength,amp,index),'.',ms=2)
 plt.loglog(ar_wavelength,
            power_law_array(ar_wavelength, amp=amp, index=index), color='r')
 
