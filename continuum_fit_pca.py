@@ -9,9 +9,11 @@ class ContinuumFitPCA:
         self.projection_matrix = np.genfromtxt(projection_matrix_file, delimiter=',')
         self.red_pc = self.red_pc_table[:, 3:13]
         self.full_pc = self.full_pc_table[:, 3:13]
+        self.red_mean = self.red_pc_table[:, 1]
+        self.full_mean = self.full_pc_table[:, 1]
     def red_to_full(self, red_pc_coefficients):
-        return np.dot(self.projection_matrix, red_pc_coefficients)
+        return np.dot(self.projection_matrix.T, red_pc_coefficients)
     def project_red_spectrum(self, red_spectrum):
-        return np.dot(red_spectrum, self.red_pc)
+        return np.dot(red_spectrum - self.red_mean, self.red_pc)
     def full_spectrum(self, full_pc_coefficients):
-        return np.dot(self.full_pc, full_pc_coefficients)
+        return np.dot(self.full_pc, full_pc_coefficients) + self.full_mean
