@@ -33,7 +33,7 @@ def plot_v_mark(wavelength):
 
 # load a individual spectrum from CSV
 count = 740
-i = 372
+i = 370
 # interesting objects: 137, 402, 716, 536(z=3.46, bright!!)
 # problematic objects: 0, 712, 715, 538, 552(bad fit)
 
@@ -57,21 +57,11 @@ ar_flux = spectra[i]
 # we assume the wavelength range in the input file is correct
 assert ar_wavelength.size == ar_flux.size
 
-# BEGIN PCA TEST
-
+# begin PCA fit:
 ar_wavelength_rest = ar_wavelength / (1 + qso_z)
-red_spectrum = ar_flux[(1216 <= ar_wavelength_rest) & (ar_wavelength_rest <= 1600)]
-red_spectrum_rebinned = ndimage.zoom(red_spectrum, ((1600.-1216)*2 + 1) / red_spectrum.size)
+full_spectrum, ar_wavelength_rest_binned = fit_pca.fit(ar_wavelength_rest, ar_flux, normalized=False)
 
-#Suzuki 2004 normalizes flux according to 21 pixels around 1216
-ly_a_peak_binned = (1216-1020)/0.5
-red_spectrum_normalization_factor = red_spectrum_rebinned[ly_a_peak_binned-10:ly_a_peak_binned+11].mean()
-red_spectrum_rebinned_normalized = red_spectrum_rebinned / red_spectrum_normalization_factor
-red_spectrum_coefficients = fit_pca.project_red_spectrum(red_spectrum_rebinned_normalized)
-full_spectrum_coefficients = fit_pca.red_to_full(red_spectrum_coefficients)
-full_spectrum = fit_pca.full_spectrum(full_spectrum_coefficients)
-ar_wavelength_rest_binned = np.arange(1020, 1600.1, 0.5)
-
+# begin power-law fit:
 # for now we have no real error data, so just use '1's:
 ar_flux_err = np.ones(ar_flux.size)
 
@@ -94,7 +84,7 @@ plt.loglog(ar_wavelength, ar_flux, ms=2, linewidth=.3)
 #plt.loglog(spec.ma_wavelength.compressed(),
 #           spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
 plt.loglog(ar_wavelength_rest_binned*(1+qso_z),
-           full_spectrum*red_spectrum_normalization_factor, color='orange')
+           full_spectrum, color='orange')
 plt.axvspan(3817, redshift_to_lya_center(qso_z),
             alpha=0.3, facecolor='yellow', edgecolor='red')
 
