@@ -3,6 +3,7 @@ __author__ = 'yishay'
 import numpy as np
 import scipy.ndimage as ndimage
 
+
 class ContinuumFitPCA:
     BLUE_START = 1020
     RED_END = 1600
