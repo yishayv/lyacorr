@@ -29,9 +29,10 @@ class ContinuumFitPCA:
     def full_spectrum(self, full_pc_coefficients):
         return np.dot(self.full_pc, full_pc_coefficients) + self.full_mean
 
-    def fit(self, ar_wavelength_rest, ar_flux, normalized):
+    def fit_rebin(self, ar_wavelength_rest, ar_flux, normalized):
         red_spectrum = ar_flux[(self.LY_A_PEAK_BINNED <= ar_wavelength_rest) & (ar_wavelength_rest <= self.RED_END)]
-        red_spectrum_rebinned = ndimage.zoom(red_spectrum, self.NUM_BINS / float(red_spectrum.size))
+        zoom_factor = self.NUM_BINS / float(red_spectrum.size)
+        red_spectrum_rebinned = ndimage.zoom(red_spectrum, zoom_factor)
 
         # Suzuki 2004 normalizes flux according to 21 pixels around 1216
         normalization_factor = \
@@ -43,4 +44,11 @@ class ContinuumFitPCA:
         ar_wavelength_rest_binned = np.arange(self.BLUE_START, self.RED_END + .1, 0.5)
         if ~normalized:
             full_spectrum = full_spectrum * normalization_factor
-        return full_spectrum, ar_wavelength_rest_binned
+        return full_spectrum, ar_wavelength_rest_binned, normalization_factor, zoom_factor
+
+    def fit(self, ar_wavelength_rest, ar_flux, normalized):
+        binned_spectrum, ar_wavelength_rest_binned, normalization_factor, zoom_factor = \
+            self.fit_rebin(ar_wavelength_rest, ar_flux, normalized)
+
+        spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum)
+        return spectrum, normalization_factor

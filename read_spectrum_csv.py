@@ -35,7 +35,7 @@ def profile_main():
 
     # load a individual spectrum from CSV
     count = 740
-    i = 370
+    i = 405
     # interesting objects: 137, 402, 716, 536(z=3.46, bright!!)
     # problematic objects: 0, 712, 715, 538, 552(bad fit)
 
@@ -61,7 +61,8 @@ def profile_main():
 
     # begin PCA fit:
     ar_wavelength_rest = ar_wavelength / (1 + qso_z)
-    full_spectrum, ar_wavelength_rest_binned = fit_pca.fit(ar_wavelength_rest, ar_flux, normalized=False)
+    fit_spectrum, fit_normalization_factor = \
+        fit_pca.fit(ar_wavelength_rest, ar_flux, normalized=False)
 
     # begin power-law fit:
     # for now we have no real error data, so just use '1's:
@@ -82,11 +83,12 @@ def profile_main():
     # Define function for calculating a power law
     power_law = lambda x, amp, index: amp * (x ** index)
 
-    plt.loglog(ar_wavelength, ar_flux, ms=2, linewidth=.3)
-    #plt.loglog(spec.ma_wavelength.compressed(),
+    plt.subplot(2, 1, 1)
+    plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3)
+    # plt.loglog(spec.ma_wavelength.compressed(),
     #           spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
-    plt.loglog(ar_wavelength_rest_binned*(1+qso_z),
-               full_spectrum, color='orange')
+    plt.plot(ar_wavelength,
+               fit_spectrum, color='orange')
     plt.axvspan(3817, redshift_to_lya_center(qso_z),
                 alpha=0.3, facecolor='yellow', edgecolor='red')
 
@@ -97,17 +99,32 @@ def profile_main():
                     alpha=0.2, facecolor='cyan', edgecolor='none')
 
     plt.xlim(3e3, 1e4)
+    plt.xlabel(r"$\lambda [\AA]$")
+    plt.ylabel(r"$f(\lambda)$ $[10^{-17}erg/s/cm^{2}/\AA]$")
 
     # create a predicted flux array, based on fitted power_law
     # noinspection PyTypeChecker
     power_law_array = np.vectorize(power_law, excluded=['amp', 'index'])
 
-    ar_flux / power_law_array(ar_wavelength, amp, index)
-    plt.loglog(ar_wavelength,
-    ar_flux/power_law_array(ar_wavelength,amp,index),'.',ms=2)
-    plt.loglog(ar_wavelength,
+    # ar_flux / power_law_array(ar_wavelength, amp, index)
+    # plt.loglog(ar_wavelength,
+    # ar_flux/power_law_array(ar_wavelength,amp,index),'.',ms=2)
+    plt.plot(ar_wavelength,
                power_law_array(ar_wavelength, amp=amp, index=index), color='r')
 
+    plt.subplot(2, 1, 2)
+
+    forest_indexes = np.logical_and(ar_wavelength < lya_center * (1 + qso_z),
+                                    ar_wavelength > fit_pca.BLUE_START * (1 + qso_z))
+    forest_wavelength = ar_wavelength[forest_indexes]
+    forest_z = forest_wavelength / lya_center - 1
+    forest_flux = ar_flux[forest_indexes]
+    forest_continuum = fit_spectrum[forest_indexes]
+    plt.plot(forest_z, forest_flux / forest_continuum, linewidth=.5)
+    plt.xlabel(r"$z$")
+    # F(lambda)/Cq(lambda) is the same as F(z)/Cq(z)
+    plt.ylabel(r"$f_q(z)/C_q(z)$")
+    plt.tight_layout()
     plt.show()
 
 
