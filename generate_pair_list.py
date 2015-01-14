@@ -11,7 +11,7 @@ import cProfile
 def profile_main():
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
 
-    m, n = (20116, 3)
+    m, n = (280116, 3)
     ar_list = np.arange(1, m * n + 1).reshape(m, n).T.reshape(m, n) * 30. / m
     ar_list[3, 0] = 5
     # print ar_list
