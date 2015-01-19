@@ -46,9 +46,10 @@ class ContinuumFitPCA:
             full_spectrum = full_spectrum * normalization_factor
         return full_spectrum, ar_wavelength_rest_binned, normalization_factor, zoom_factor
 
-    def fit(self, ar_wavelength_rest, ar_flux, normalized):
+    def fit(self, ar_wavelength_rest, ar_flux, normalized, boundary_value=None):
         binned_spectrum, ar_wavelength_rest_binned, normalization_factor, zoom_factor = \
             self.fit_rebin(ar_wavelength_rest, ar_flux, normalized)
 
-        spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum)
+        spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
+                             boundary_value, boundary_value)
         return spectrum, normalization_factor
