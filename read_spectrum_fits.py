@@ -62,28 +62,39 @@ def return_spectra(meta_file, plate_dir=PLATE_DIR_DEFAULT):
         yield ogrid, spec
 
 
-def return_spectra_2(qso_record_list, plate_dir=PLATE_DIR_DEFAULT):
+def return_spectra_2(qso_record_list, plate_dir=PLATE_DIR_DEFAULT, pre_sort=True):
     """
     function returns a QSO object from the fits files based on the meta_file
     :rtype : (np.ndarray, np.ndarray, QSORecord)
     @type qso_record_list: list[QSORecord]
     """
-    for i in qso_record_list:
+    last_fits_filename = None
+    # sort by plate
+    if pre_sort:
+        qso_record_list_internal = sorted(qso_record_list, key=lambda x: x.plate)
+
+    for i in qso_record_list_internal:
         # get header
         fits_filename = "%s/%s/spPlate-%s-%s.fits" % \
                         (plate_dir, i.plate, str(i.plate).zfill(4), i.mjd)
-        header = pyfits.getheader(fits_filename)
-        c0 = header["COEFF0"]
-        c1 = header["COEFF1"]
-        l = header["NAXIS1"]
-        # wavelength grid
-        counter = np.arange(0, l)
-        ogrid = 10 ** (c0 + c1 * counter)
 
-        # get data
-        data = pyfits.getdata(fits_filename)
+        # skip reading headers and getting a data object if the filename hasn't changed
+        if fits_filename != last_fits_filename:
+            header = pyfits.getheader(fits_filename)
+            c0 = header["COEFF0"]
+            c1 = header["COEFF1"]
+            l = header["NAXIS1"]
+            # wavelength grid
+            counter = np.arange(0, l)
+            ogrid = 10 ** (c0 + c1 * counter)
+
+            # get data
+            data = pyfits.getdata(fits_filename)
+
+        # return requested spectrum
         spec = data[i.fiberID - 1]
 
+        last_fits_filename = fits_filename
         yield ogrid, spec, i
 
 
