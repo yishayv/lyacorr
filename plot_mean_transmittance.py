@@ -8,6 +8,7 @@ m = data[1]
 m_count = data[2]
 ar_z_range = data[0]
 
-plt.plot(ar_z_range, m * 100)
+plt.plot(ar_z_range, m * m_count[~np.isnan(m_count)].mean())
 plt.plot(ar_z_range, m_count)
+plt.plot(ar_z_range, m * m_count)
 plt.show()
