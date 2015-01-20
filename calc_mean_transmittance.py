@@ -1,7 +1,5 @@
 import numpy as np
-import cProfile
 import itertools
-import matplotlib.pyplot as plt
 import mean_flux
 import continuum_fit_pca
 import read_spectrum_fits
@@ -10,7 +8,7 @@ from read_spectrum_fits import QSO_fields_dict
 lya_center = 1215.67
 
 
-def profile_main(d):
+def mean_transmittance():
     fit_pca = continuum_fit_pca.ContinuumFitPCA('../../data/Suzuki/datafile4.txt',
                                                 '../../data/Suzuki/datafile3.txt',
                                                 '../../data/Suzuki/projection_matrix.csv')
@@ -70,16 +68,4 @@ def profile_main(d):
         # TODO: mean flux should be relative transmittance, not absolute flux
         m.add_flux_prebinned(ar_rel_transmittance_binned, ar_wavelength_mask)
 
-    d['m'] = m
-    d['ar_z_range'] = ar_z_range
-
-
-d = dict()
-cProfile.run('profile_main(d)', sort=2)
-ar_z_range_ = d['ar_z_range']
-m_ = d['m']
-
-plt.plot(ar_z_range_, m_.get_mean() * 100)
-plt.plot(ar_z_range_, m_.ar_count)
-plt.plot(ar_z_range_, m_.ar_total_flux)
-plt.show()
+    return m, ar_z_range
