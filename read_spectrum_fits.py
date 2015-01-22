@@ -20,9 +20,6 @@ def generate_qso_details():
     """
     data = pyfits.getdata(QSO_FILE)
     for obj in data:
-        # yield dict(zip(QSO_fields, [obj[0],obj[1]]))
-        # yield obj[QSO_fields_dict['z']]
-        # yield dict(itertools.izip(QSO_fields, obj))
         yield obj
 
 
