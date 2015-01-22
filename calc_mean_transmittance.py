@@ -54,7 +54,7 @@ def qso_transmittance(qso_spec_obj):
     return [ar_rel_transmittance_binned, ar_wavelength_mask_binned]
 
 
-def mean_transmittance():
+def mean_transmittance(sample_fraction=0.001):
     spec_sample = []
     qso_record_list = []
     pool = multiprocessing.Pool()
@@ -63,7 +63,8 @@ def mean_transmittance():
 
     spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
 
-    result_enum = pool.imap_unordered(qso_transmittance, spec_sample, 100)
+    result_enum = pool.imap_unordered(qso_transmittance,
+                                      itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample), 100)
 
     for i in result_enum:
         if i[0].size:
