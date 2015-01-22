@@ -3,9 +3,10 @@ import itertools
 import mean_flux
 import continuum_fit_pca
 import read_spectrum_fits
-from read_spectrum_fits import QSO_fields_dict
+from read_spectrum_fits import QSO_fields_dict, QSORecord
 import random
 import multiprocessing
+import astropy.table as table
 
 lya_center = 1215.67
 
@@ -53,45 +54,14 @@ def qso_transmittance(qso_spec_obj):
     return [ar_rel_transmittance_binned, ar_wavelength_mask_binned]
 
 
-# def accumulate_flux(ar_rel_transmittance_binned, ar_wavelength_mask_binned):
-# m.add_flux_prebinned(ar_rel_transmittance_binned, ar_wavelength_mask_binned)
-# print "adding flux"
-
-def create_rec(i):
-    if i[QSO_fields_dict['zWarning']]:
-        return None
-    return read_spectrum_fits.QSORecord(i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
-                                          i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
-                                          i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
-                                          i[QSO_fields_dict['fiberID']])
-
-
 def mean_transmittance():
     spec_sample = []
     qso_record_list = []
     pool = multiprocessing.Pool()
 
-    qso_record_list = pool.map(create_rec, itertools.ifilter(lambda x: random.random() < 0.01,
-                                           read_spectrum_fits.generate_qso_details()), 50)
-    # remove None values
-    qso_record_list = [x for x in qso_record_list if x is not None]
+    qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
 
-
-    # for i in itertools.ifilter(lambda x: random.random() < 0.01,
-    #                                 read_spectrum_fits.generate_qso_details()):
-    #     if i[QSO_fields_dict['zWarning']]:
-    #         continue
-    #     rec = read_spectrum_fits.QSORecord(i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
-    #                                        i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
-    #                                        i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
-    #                                        i[QSO_fields_dict['fiberID']])
-    #     # print rec
-    #     qso_record_list.append(rec)
-
-    spec_sample = read_spectrum_fits.return_spectra_2(qso_record_list)
-
-    # for i in spec_sample:
-    #     binned_flux_list = pool.apply_async(qso_transmittance, [i], callback=accumulate_flux)
+    spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
 
     result_enum = pool.imap_unordered(qso_transmittance, spec_sample, 100)
 

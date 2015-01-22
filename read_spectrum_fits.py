@@ -3,6 +3,7 @@ import pyfits
 import csv
 import itertools
 import os.path
+import astropy.table as table
 
 QSO_FILE = '../../data/QSOs_test.fit'
 # read header names for the QSO table
@@ -45,19 +46,21 @@ def find_fits_file(plate_dir_list, fits_partial_path):
     return None
 
 
-def return_spectra_2(qso_record_list, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True):
+def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True):
     """
     function returns a QSO object from the fits files based on the meta_file
+    :type qso_record_table: table.Table
     :rtype : (np.ndarray, np.ndarray, QSORecord)
     @type qso_record_list: list[QSORecord]
     """
     last_fits_partial_path = None
     # sort by plate to avoid reopening files too many times
     if pre_sort:
-        qso_record_list_internal = sorted(qso_record_list, key=lambda x: x.plate)
+        qso_record_table.sort(['plate'])
 
-    for i in qso_record_list_internal:
-        fits_partial_path = get_fits_partial_path(i)
+    for i in qso_record_table:
+        qso_rec = QSORecord.from_row(i)
+        fits_partial_path = get_fits_partial_path(qso_rec)
 
         # skip reading headers and getting a data object if the filename hasn't changed
         if fits_partial_path != last_fits_partial_path:
@@ -80,10 +83,10 @@ def return_spectra_2(qso_record_list, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort
             data = pyfits.getdata(fits_full_path)
 
         # return requested spectrum
-        spec = data[i.fiberID - 1]
+        spec = data[qso_rec.fiberID - 1]
 
         last_fits_partial_path = fits_partial_path
-        yield ogrid, spec, i
+        yield ogrid, spec, qso_rec
 
 
 class QSORecord:
@@ -95,6 +98,13 @@ class QSORecord:
         self.plate = plate
         self.mjd = mjd
         self.fiberID = fiberID
+
+    @classmethod
+    def from_row(cls, qso_row):
+        assert isinstance(qso_row, table.Row)
+        return cls(qso_row['specObjID'], qso_row['z'], qso_row['ra'], qso_row['dec'], qso_row['plate'],
+                   qso_row['mjd'], qso_row['fiberID'])
+
 
     def __str__(self):
         return " ".join([str(self.specObjID), str(self.z), str(self.ra), str(self.dec),

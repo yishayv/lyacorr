@@ -43,7 +43,7 @@ def create_QSO_table():
 def fill_qso_table(t):
     pool = multiprocessing.Pool()
     qso_record_list = pool.map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
-                                                               read_spectrum_fits.generate_qso_details()), 50)
+                                                               read_spectrum_fits.generate_qso_details()), 200)
     # remove None values
     qso_record_list = [i for i in qso_record_list if i is not None]
 
