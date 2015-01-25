@@ -64,7 +64,7 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
 
         # skip reading headers and getting a data object if the filename hasn't changed
         if fits_partial_path != last_fits_partial_path:
-            fits_full_path = find_fits_file(PLATE_DIR_DEFAULT, fits_partial_path)
+            fits_full_path = find_fits_file(plate_dir_list, fits_partial_path)
             if not fits_full_path:
                 print "Missing file:", fits_partial_path
                 continue

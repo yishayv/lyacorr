@@ -4,9 +4,12 @@ import mean_flux
 import continuum_fit_pca
 import read_spectrum_fits
 from read_spectrum_fits import QSO_fields_dict, QSORecord
+import read_spectrum_numpy
 import random
 import multiprocessing
 import astropy.table as table
+
+FORCE_SINGLE_PROCESS = 1
 
 lya_center = 1215.67
 
@@ -61,10 +64,16 @@ def mean_transmittance(sample_fraction=0.001):
 
     qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
 
-    spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
+    # spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
+    spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
 
-    result_enum = pool.imap_unordered(qso_transmittance,
-                                      itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample), 100)
+    if 1 == FORCE_SINGLE_PROCESS:
+        result_enum = itertools.imap(qso_transmittance,
+                                     itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample))
+    else:
+        result_enum = pool.imap_unordered(qso_transmittance,
+                                          itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample),
+                                          100)
 
     for i in result_enum:
         if i[0].size:

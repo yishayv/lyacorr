@@ -35,7 +35,7 @@ def profile_main():
 
     # load a individual spectrum from CSV
     count = 740
-    i = 405
+    i = 416
     # interesting objects: 137, 402, 716, 536(z=3.46, bright!!)
     # problematic objects: 0, 712, 715, 538, 552(bad fit)
 
@@ -109,8 +109,8 @@ def profile_main():
     # ar_flux / power_law_array(ar_wavelength, amp, index)
     # plt.loglog(ar_wavelength,
     # ar_flux/power_law_array(ar_wavelength,amp,index),'.',ms=2)
-    plt.plot(ar_wavelength,
-               power_law_array(ar_wavelength, amp=amp, index=index), color='r')
+    # plt.plot(ar_wavelength,
+    #            power_law_array(ar_wavelength, amp=amp, index=index), color='r')
 
     plt.subplot(2, 1, 2)
 
