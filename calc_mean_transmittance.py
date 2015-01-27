@@ -1,13 +1,14 @@
-import numpy as np
 import itertools
-import mean_flux
-import continuum_fit_pca
-import read_spectrum_fits
-from read_spectrum_fits import QSO_fields_dict, QSORecord
-import read_spectrum_numpy
 import random
 import multiprocessing
+
+import numpy as np
 import astropy.table as table
+
+import mean_flux
+import continuum_fit_pca
+import read_spectrum_numpy
+
 
 FORCE_SINGLE_PROCESS = 1
 
@@ -51,10 +52,19 @@ def qso_transmittance(qso_spec_obj):
     ar_rel_transmittance = ar_flux / fit_spectrum
     ar_rel_transmittance_clipped = ar_rel_transmittance[forest_mask & fit_mask]
     ar_z = ar_wavelength_clipped / lya_center - 1
+    return [ar_rel_transmittance_clipped, ar_z]
+
+
+def qso_transmittance_binned(qso_spec_obj):
+    [ar_rel_transmittance_clipped, ar_z] = qso_transmittance(qso_spec_obj)
+    if ar_rel_transmittance_clipped.size == 0:
+        # no samples found, no need to interpolate, just return the empty result
+        return [ar_rel_transmittance_clipped, ar_z]
+
     ar_rel_transmittance_binned = np.interp(ar_z_range, ar_z, ar_rel_transmittance_clipped, left=np.nan,
                                             right=np.nan)
-    ar_wavelength_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
-    return [ar_rel_transmittance_binned, ar_wavelength_mask_binned]
+    ar_z_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
+    return [ar_rel_transmittance_binned, ar_z_mask_binned]
 
 
 def mean_transmittance(sample_fraction=0.001):
@@ -68,10 +78,10 @@ def mean_transmittance(sample_fraction=0.001):
     spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
 
     if 1 == FORCE_SINGLE_PROCESS:
-        result_enum = itertools.imap(qso_transmittance,
+        result_enum = itertools.imap(qso_transmittance_binned,
                                      itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample))
     else:
-        result_enum = pool.imap_unordered(qso_transmittance,
+        result_enum = pool.imap_unordered(qso_transmittance_binned,
                                           itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample),
                                           100)
 
