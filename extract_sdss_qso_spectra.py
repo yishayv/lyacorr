@@ -1,10 +1,13 @@
-import numpy as np
-import astropy.table as table
 import multiprocessing
 import itertools
 import random
 
+import numpy as np
+import astropy.table as table
+
 import read_spectrum_fits
+from numpy_spectrum_container import NpSpectrumContainer
+
 
 MAX_SPECTRA = 1000
 MAX_WAVELENGTH_COUNT = 4992
@@ -30,8 +33,8 @@ qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
 
 spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
 
-fp = np.memmap('/mnt/gastro/yishay/sdss_QSOs/spectra.npy', dtype='f8', mode='w+',
-               shape=(MAX_SPECTRA, 2, MAX_WAVELENGTH_COUNT))
+output_spectra = NpSpectrumContainer('/mnt/gastro/yishay/sdss_QSOs/spectra.npy', readonly=False,
+                                     num_spectra=MAX_SPECTRA)
 
 pool = multiprocessing.Pool()
 
@@ -43,10 +46,10 @@ else:
                             itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample), 100)
 
 for i in result_enum:
-    np.copyto(fp[index, 0, :i[0].size], i[0])
-    np.copyto(fp[index, 1, :i[1].size], i[1])
+    output_spectra.set_wavelength(index, i[0])
+    output_spectra.set_flux(index, i[1])
     index += 1
 
-# pool.close()
-# pool.join()
+pool.close()
+pool.join()
 del fp
