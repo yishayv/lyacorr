@@ -41,7 +41,7 @@ class Hdf5SpectrumContainer(object):
     def _set_array(self, n, data, i):
         assert data.size < MAX_WAVELENGTH_COUNT
         if n >= self.data_set.shape[0]:
-            self.data_set.resize(n, 2, MAX_WAVELENGTH_COUNT)
+            self.data_set.resize((n, 2, MAX_WAVELENGTH_COUNT))
         self.data_set[n, i, :data.size] = data
 
     def _get_array(self, n, i):

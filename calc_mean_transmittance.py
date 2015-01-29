@@ -7,11 +7,10 @@ import astropy.table as table
 
 import mean_flux
 import continuum_fit_pca
-import read_spectrum_numpy
 import read_spectrum_hdf5
 
 
-FORCE_SINGLE_PROCESS = 1
+FORCE_SINGLE_PROCESS = 0
 
 lya_center = 1215.67
 
@@ -21,6 +20,7 @@ fit_pca = continuum_fit_pca.ContinuumFitPCA('../../data/Suzuki/datafile4.txt',
 z_range = (2.1, 3.5, 0.00001)
 ar_z_range = np.arange(*z_range)
 m = mean_flux.MeanFlux(z_range)
+
 
 
 def qso_transmittance(qso_spec_obj):
@@ -68,6 +68,31 @@ def qso_transmittance_binned(qso_spec_obj):
     return [ar_rel_transmittance_binned, ar_z_mask_binned]
 
 
+def mean_transmittance_chunk(spec_iter):
+    m = mean_flux.MeanFlux(z_range)
+    result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
+    for i in result_enum:
+        if i[0].size:
+            m.add_flux_prebinned(i[0], i[1])
+            mean_transmittance_chunk.numspec += 1
+
+    print "finished chunk", mean_transmittance_chunk.numspec
+    return m
+
+mean_transmittance_chunk.numspec = 0
+
+def chunks(n, iterable):
+    iterable = iter(iterable)
+    while True:
+        yield itertools.chain([next(iterable)], itertools.islice(iterable, n - 1))
+
+def split_seq(size, iterable):
+    it = iter(iterable)
+    item = list(itertools.islice(it, size))
+    while item:
+        yield item
+        item = list(itertools.islice(it, size))
+
 def mean_transmittance(sample_fraction=0.001):
     spec_sample = []
     qso_record_list = []
@@ -79,18 +104,19 @@ def mean_transmittance(sample_fraction=0.001):
     # spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
     spec_sample = read_spectrum_hdf5.return_spectra_2(qso_record_table)
 
-
     if 1 == FORCE_SINGLE_PROCESS:
-        result_enum = itertools.imap(qso_transmittance_binned,
-                                     itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample))
+        result_enum = itertools.imap(mean_transmittance_chunk,
+                                     split_seq(1000,
+                                            itertools.ifilter(lambda x: random.random() < sample_fraction,
+                                                              spec_sample)))
     else:
-        result_enum = pool.imap_unordered(qso_transmittance_binned,
-                                          itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample),
-                                          100)
+        result_enum = pool.imap_unordered(mean_transmittance_chunk,
+                                          split_seq(1000,
+                                                 itertools.ifilter(lambda x: random.random() < sample_fraction,
+                                                                   spec_sample)))
 
     for i in result_enum:
-        if i[0].size:
-            m.add_flux_prebinned(i[0], i[1])
+        m.merge(i)
 
     pool.close()
     pool.join()

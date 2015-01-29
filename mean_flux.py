@@ -10,6 +10,10 @@ class MeanFlux:
         self.ar_total_flux[ar_mask] += ar_flux[ar_mask]
         self.ar_count[ar_mask] += 1
 
+    def merge(self, mean_flux2):
+        self.ar_total_flux += mean_flux2.ar_total_flux
+        self.ar_count += mean_flux2.ar_count
+
     def get_mean(self):
         ar_count_no_zero = self.ar_count
         ar_count_no_zero[self.ar_count == 0] = np.nan
