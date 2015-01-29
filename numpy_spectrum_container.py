@@ -1,5 +1,7 @@
-import numpy as np
 import os.path
+
+import numpy as np
+
 
 MAX_SPECTRA = 1000
 MAX_WAVELENGTH_COUNT = 4992
@@ -46,6 +48,7 @@ class NpSpectrumIterator(object):
     """
     Iterate over all spectra
     """
+
     def __init__(self, np_spectrum_container):
         """
 

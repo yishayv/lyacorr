@@ -8,6 +8,7 @@ import astropy.table as table
 import mean_flux
 import continuum_fit_pca
 import read_spectrum_numpy
+import read_spectrum_hdf5
 
 
 FORCE_SINGLE_PROCESS = 1
@@ -75,7 +76,9 @@ def mean_transmittance(sample_fraction=0.001):
     qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
 
     # spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
-    spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
+    # spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
+    spec_sample = read_spectrum_hdf5.return_spectra_2(qso_record_table)
+
 
     if 1 == FORCE_SINGLE_PROCESS:
         result_enum = itertools.imap(qso_transmittance_binned,
