@@ -9,9 +9,9 @@ FILENAME = '/mnt/gastro/yishay/sdss_QSOs/spectra.hdf5'
 MAX_WAVELENGTH_COUNT = 4992
 
 
-def return_spectra_2(qso_record_table, mem_map_file=FILENAME):
+def return_spectra_2(qso_record_table, spectra_file=FILENAME):
 
-    spectra = Hdf5SpectrumContainer(mem_map_file, True)
+    spectra = Hdf5SpectrumContainer(spectra_file, True)
 
     # we assume that the order of spectra is the same as in the QSO list
     for i, j in itertools.izip(Hdf5SpectrumIterator(spectra), qso_record_table):

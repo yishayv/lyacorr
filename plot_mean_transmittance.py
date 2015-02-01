@@ -13,6 +13,7 @@ plt.subplot(2, 1, 1)
 plt.plot(ar_z_range, m)
 # plt.plot(ar_z_range, np.ones(m.size))
 plt.ylabel(r"$\left< f_q(z)/C_q(z) \right> $")
+plt.ylim(1, 1.5)
 
 plt.subplot(2, 1, 2)
 plt.plot(ar_z_range, m_count)

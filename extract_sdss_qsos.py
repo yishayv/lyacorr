@@ -1,18 +1,18 @@
-import numpy as np
-import astropy.table as table
-import astropy.units as u
 import multiprocessing
 import itertools
 import random
-import cPickle
+
+import numpy as np
+import astropy.table as table
+import astropy.units as u
 
 import read_spectrum_fits
 from read_spectrum_fits import QSO_fields_dict
 
 
 def create_rec(i):
-    if i[QSO_fields_dict['zWarning']]:
-        return None
+    # make sure we have no QSOs with warning bits set (other than bit #4)
+    assert i[QSO_fields_dict['zWarning']] & ~0x10
     return read_spectrum_fits.QSORecord(i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
                                         i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
                                         i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
@@ -20,15 +20,15 @@ def create_rec(i):
 
 
 def create_rec_2(i):
-    if i[QSO_fields_dict['zWarning']]:
-        return None
+    # make sure we have no QSOs with warning bits set (other than bit #4)
+    assert i[QSO_fields_dict['zWarning']] & ~0x10
     return [i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
             i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
             i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
             i[QSO_fields_dict['fiberID']]]
 
 
-def create_QSO_table():
+def create_qso_table():
     t = table.Table()
     t.add_columns([table.Column(name='specObjID', dtype='i8', unit=None),
                    table.Column(name='z', unit=u.dimensionless_unscaled),
@@ -53,6 +53,6 @@ def fill_qso_table(t):
     return t
 
 
-t_ = create_QSO_table()
+t_ = create_qso_table()
 fill_qso_table(t_)
 np.save('../../data/QSO_table.npy', t_)
