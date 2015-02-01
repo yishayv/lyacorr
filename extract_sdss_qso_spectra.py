@@ -9,7 +9,7 @@ import read_spectrum_fits
 from hdf5_spectrum_container import Hdf5SpectrumContainer
 
 
-MAX_SPECTRA = 1000
+MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992
 
 FORCE_SINGLE_PROCESS = 0

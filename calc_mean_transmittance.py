@@ -106,12 +106,12 @@ def mean_transmittance(sample_fraction=0.001):
 
     if 1 == FORCE_SINGLE_PROCESS:
         result_enum = itertools.imap(mean_transmittance_chunk,
-                                     split_seq(1000,
+                                     split_seq(10000,
                                             itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                               spec_sample)))
     else:
         result_enum = pool.imap_unordered(mean_transmittance_chunk,
-                                          split_seq(1000,
+                                          split_seq(10000,
                                                  itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                    spec_sample)))
 
