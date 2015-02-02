@@ -3,7 +3,7 @@ import numpy as np
 
 class MeanFlux:
     def __init__(self, z_range):
-        self.ar_total_flux = np.arange(*z_range)
+        self.ar_total_flux = np.arange(*z_range)*0
         self.ar_count = np.zeros(self.ar_total_flux.size)
 
     def add_flux_prebinned(self, ar_flux, ar_mask):
