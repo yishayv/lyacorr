@@ -2,22 +2,30 @@ import calc_mean_transmittance
 import matplotlib.pyplot as plt
 import numpy as np
 
+lya_center = 1215.67
+
 
 data = np.load('../../data/mean_transmittance.npy')
 m = data[1]
 m_count = data[2]
 ar_z_range = data[0]
-mean_count = m_count[~np.isnan(m_count)].mean()
+mean_count = m_count[~np.isnan(m_count)].sum()/m_count.size
 
-plt.subplot(2, 1, 1)
-plt.plot(ar_z_range, m)
+fig = plt.figure()
+ax1 = fig.add_subplot(2, 1, 1)
+ax2 = ax1.twiny()
+ax1.plot(ar_z_range, m)
 # plt.plot(ar_z_range, np.ones(m.size))
-plt.ylabel(r"$\left< f_q(z)/C_q(z) \right> $")
+ax1.set_ylabel(r"$\left< f_q(z)/C_q(z) \right> $")
 plt.ylim(1, 1.5)
+# add wavelength tick marks on top
+xlim2 = tuple([lya_center*(1+z) for z in ax1.get_xlim()])
+ax2.set_xlim(xlim2)
+plt.axis()
 
-plt.subplot(2, 1, 2)
-plt.plot(ar_z_range, m_count)
-plt.plot(ar_z_range, m * m_count)
-plt.ylabel(r"$\sum_q f_q(z)/C_q(z)$")
-plt.xlabel(r"$z$")
+ax3 = fig.add_subplot(2, 1, 2)
+ax3.plot(ar_z_range, m_count)
+ax3.plot(ar_z_range, m * m_count)
+ax3.set_ylabel(r"$\sum_q f_q(z)/C_q(z)$")
+ax3.set_xlabel(r"$z$")
 plt.show()
