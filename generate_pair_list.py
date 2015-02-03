@@ -42,6 +42,22 @@ def fast_comoving_distance(ar_z, _comoving_table_distance):
     return fast_linear_interpolate(_comoving_table_distance, ar_index)
 
 
+def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles):
+    PairSeparationBins = bins_2d.Bins2D(50, 50)
+    for i, j, k in pairs:
+        # find distance between QSOs
+        # qso1 = coord_set[i]
+        # qso2 = coord_set[j]
+        qso_angle = pairs_angles[k]
+        r_parallel = abs(ar_distance[i] - ar_distance[j])
+        mean_distance = (ar_distance[i] + ar_distance[j]) / 2
+        r_transverse = mean_distance * qso_angle
+        # print 'QSO pair with r_parallel %s, r_transverse %s' % (r_parallel, r_transverse)
+        # iterate over spectra and then call:
+
+        PairSeparationBins.add(0, r_parallel, r_transverse)
+
+
 def profile_main():
     comoving_table_z = np.arange(z_start, z_end, z_step)
     comoving_table_distance = Planck13.comoving_distance(comoving_table_z).to(u.Mpc).value
@@ -66,26 +82,16 @@ def profile_main():
                                distance=ar_distance * u.Mpc)
     # print coord_set
 
-    x = matching.search_around_sky(coord_set, coord_set, max_angular_separation)
+    # find all QSO pairs
+    # for now, limit to up to 10th of the pairs, for a reasonable runtime
+    x = matching.search_around_sky(coord_set[:17000], coord_set, max_angular_separation)
 
     pairs_with_unity = np.vstack((x[0], x[1], np.arange(x[0].size)))
     pairs = pairs_with_unity.T[pairs_with_unity[1] != pairs_with_unity[0]]
     pairs_angles = x[2].to(u.rad).value
     print 'number of QSO pairs:', pairs.size
 
-    PairSeparationBins = bins_2d.Bins2D(50, 50)
-    for i, j, k in pairs:
-        # find distance between QSOs
-        # qso1 = coord_set[i]
-        # qso2 = coord_set[j]
-        qso_angle = pairs_angles[k]
-        r_parallel = abs(ar_distance[i] - ar_distance[j])
-        mean_distance = (ar_distance[i] + ar_distance[j]) / 2
-        r_transverse = mean_distance * qso_angle
-        # print 'QSO pair with r_parallel %s, r_transverse %s' % (r_parallel, r_transverse)
-        # iterate over spectra and then call:
-
-        PairSeparationBins.add(0, r_parallel, r_transverse)
+    add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles)
 
 
 cProfile.run('profile_main()', sort=2)
