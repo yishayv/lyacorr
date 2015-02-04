@@ -9,6 +9,7 @@ from astropy.cosmology import Planck13
 from astropy.coordinates import matching as matching
 from astropy.coordinates import Angle
 from astropy import table
+import read_spectrum_hdf5
 
 import bins_2d
 from read_spectrum_fits import QSORecord
@@ -42,7 +43,7 @@ def fast_comoving_distance(ar_z, _comoving_table_distance):
     return fast_linear_interpolate(_comoving_table_distance, ar_index)
 
 
-def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles):
+def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata):
     PairSeparationBins = bins_2d.Bins2D(50, 50)
     for i, j, k in pairs:
         # find distance between QSOs
@@ -55,6 +56,8 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles):
         # print 'QSO pair with r_parallel %s, r_transverse %s' % (r_parallel, r_transverse)
         # iterate over spectra and then call:
 
+        spec_1 = spectra_with_metadata.return_spectrum(i)
+        spec_2 = spectra_with_metadata.return_spectrum(j)
         PairSeparationBins.add(0, r_parallel, r_transverse)
 
 
@@ -66,7 +69,11 @@ def profile_main():
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
     # print 'minimum distance', min_distance, 'Mpc/rad'
 
+    # initialize data sources
     qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
+    spectra_with_metadata = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table)
+
+    # prepare data for quicker access
     qso_record_list = [QSORecord.from_row(i) for i in qso_record_table]
     ar_ra = np.array([i.ra for i in qso_record_list])
     ar_dec = np.array([i.dec for i in qso_record_list])
@@ -91,7 +98,7 @@ def profile_main():
     pairs_angles = x[2].to(u.rad).value
     print 'number of QSO pairs:', pairs.size
 
-    add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles)
+    add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata)
 
 
 cProfile.run('profile_main()', sort=2)
