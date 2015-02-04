@@ -32,7 +32,7 @@ def save_spectrum(qso_spec_obj):
 
 sample_fraction = 1
 
-qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
+qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 
 spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
 

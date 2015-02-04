@@ -1,18 +1,23 @@
-import numpy as np
-import pyfits
 import csv
 import itertools
 import os.path
+
+import numpy as np
+import pyfits
 import astropy.table as table
 
-QSO_FILE = '../../data/QSOs_test.fit'
+import common_settings
+
+
+settings = common_settings.Settings()
+
+QSO_FILE = settings.get_qso_metadata_fits()
 # read header names for the QSO table
-QSO_FIELDS_FILE = '../../data/QSOs_test_header.csv'
+QSO_FIELDS_FILE = settings.get_qso_metadata_fields()
 with open(QSO_FIELDS_FILE, mode='rb') as f:
     QSO_fields = list(csv.reader(f))[0]
 QSO_fields_dict = dict(zip(QSO_fields, itertools.count()))
-PLATE_DIR_DEFAULT = ['/mnt/gastro/sdss/spectro/redux/v5_7_0',
-                     '/mnt/gastro/sdss/spectro/redux/v5_7_2']
+PLATE_DIR_DEFAULT = settings.get_plate_dir_list()
 
 
 def generate_qso_details():

@@ -9,10 +9,16 @@ import astropy.units as u
 import read_spectrum_fits
 from read_spectrum_fits import QSO_fields_dict
 
+import common_settings
+
+FORCE_SINGLE_PROCESS = 1
+
+settings = common_settings.Settings()
+
 
 def create_rec(i):
     # make sure we have no QSOs with warning bits set (other than bit #4)
-    assert i[QSO_fields_dict['zWarning']] & ~0x10
+    assert not i[QSO_fields_dict['zWarning']] & ~0x10
     return read_spectrum_fits.QSORecord(i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
                                         i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
                                         i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
@@ -21,7 +27,7 @@ def create_rec(i):
 
 def create_rec_2(i):
     # make sure we have no QSOs with warning bits set (other than bit #4)
-    assert i[QSO_fields_dict['zWarning']] & ~0x10
+    assert not i[QSO_fields_dict['zWarning']] & ~0x10
     return [i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
             i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
             i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
@@ -42,7 +48,12 @@ def create_qso_table():
 
 def fill_qso_table(t):
     pool = multiprocessing.Pool()
-    qso_record_list = pool.map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
+
+    if 1 == FORCE_SINGLE_PROCESS:
+        qso_record_list = map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
+                                                               read_spectrum_fits.generate_qso_details()))
+    else:
+        qso_record_list = pool.map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
                                                                read_spectrum_fits.generate_qso_details()), 200)
     # remove None values
     qso_record_list = [i for i in qso_record_list if i is not None]
@@ -55,4 +66,4 @@ def fill_qso_table(t):
 
 t_ = create_qso_table()
 fill_qso_table(t_)
-np.save('../../data/QSO_table.npy', t_)
+np.save(settings.get_qso_metadata_npy(), t_)
