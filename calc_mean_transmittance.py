@@ -68,7 +68,11 @@ def qso_transmittance_binned(qso_spec_obj):
     return [ar_rel_transmittance_binned, ar_z_mask_binned]
 
 
-def mean_transmittance_chunk(spec_iter):
+def mean_transmittance_chunk(qso_record_table_numbered):
+    qso_record_table = [a for a, b in qso_record_table_numbered]
+    qso_record_count = [b for a, b in qso_record_table_numbered]
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table)
+    spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     m = mean_flux.MeanFlux(z_range)
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
     for i in result_enum:
@@ -98,26 +102,25 @@ def split_seq(size, iterable):
 
 
 def mean_transmittance(sample_fraction=0.001):
-    spec_sample = []
-    qso_record_list = []
     pool = multiprocessing.Pool()
 
     qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
+    qso_record_table_numbered = itertools.izip(qso_record_table, itertools.count())
 
     # spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
     # spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
-    spec_sample = read_spectrum_hdf5.return_spectra_2(qso_record_table)
+    # spec_sample = read_spectrum_hdf5.return_spectra_2(qso_record_table)
 
     if 1 == FORCE_SINGLE_PROCESS:
         result_enum = itertools.imap(mean_transmittance_chunk,
                                      split_seq(10000,
                                                itertools.ifilter(lambda x: random.random() < sample_fraction,
-                                                                 spec_sample)))
+                                                                 qso_record_table_numbered)))
     else:
         result_enum = pool.imap_unordered(mean_transmittance_chunk,
                                           split_seq(10000,
                                                     itertools.ifilter(lambda x: random.random() < sample_fraction,
-                                                                      spec_sample)))
+                                                                      qso_record_table_numbered)))
 
     for i in result_enum:
         m.merge(i)
