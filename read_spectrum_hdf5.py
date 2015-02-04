@@ -21,13 +21,14 @@ def return_spectra_2(qso_record_table, spectra_file=FILENAME):
 
 # TODO: refactor this or remove completely
 class SpectraWithMetadata:
-    def __init__(self, qso_record_table, spectra_file=FILENAME):
+    def __init__(self, qso_record_table, spectra_file=FILENAME, table_offset=0):
         self.spectra = Hdf5SpectrumContainer(spectra_file, True)
         self.qso_record_table = qso_record_table
+        self.table_offset = table_offset
 
     def return_spectrum(self, n):
         # we assume that the order of spectra is the same as in the QSO list
-        qso_rec = QSORecord.from_row(self.qso_record_table[n])
+        qso_rec = QSORecord.from_row(self.qso_record_table[n - self.table_offset])
         ar_wavelength = self.spectra.get_wavelength(n)
         ar_flux = self.spectra.get_flux(n)
         return ar_wavelength, ar_flux, qso_rec

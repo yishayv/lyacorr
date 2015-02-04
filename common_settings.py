@@ -29,6 +29,10 @@ class Settings():
     # table of QSO metadata (npy)
     opt_qso_metadata_npy = 'QSO_Metadata_npy'
 
+    section_performance = 'Performance'
+    # default chunk size for multiprocessing
+    opt_chunk_size = 'Chunk_Size'
+
 
     def write_default_settings(self):
         value_plate_dir_list = _SEP.join(['/mnt/gastro/sdss/spectro/redux/v5_7_0',
@@ -42,10 +46,11 @@ class Settings():
         value_qso_metadata_fields = '../../data/QSOs_test_header.csv'
         value_qso_metadata_npy = '../../data/QSO_table.npy'
 
+        value_chunk_size = 10000
 
         # replace config parser with an empty one
         self.config_parser = ConfigParser.SafeConfigParser()
-        self.config_parser.add_section(Settings.section_file_paths)
+        self.config_parser.add_section(self.section_file_paths)
         self.config_parser.set(self.section_file_paths, self.opt_plate_dir_list, value_plate_dir_list)
         self.config_parser.set(self.section_file_paths, self.opt_pca_continuum_tables, value_pca_continuum_tables)
         self.config_parser.set(self.section_file_paths, self.opt_qso_spectra_hdf5, value_qso_spectra_hdf5)
@@ -53,6 +58,9 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fits, value_qso_metadata_fits)
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fields, value_qso_metadata_fields)
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_npy, value_qso_metadata_npy)
+
+        self.config_parser.add_section(self.section_performance)
+        self.config_parser.set(self.section_performance, self.opt_chunk_size, str(value_chunk_size))
 
         with open(self.settings_file_name, 'wb') as configfile:
             self.config_parser.write(configfile)
@@ -78,9 +86,12 @@ class Settings():
     def get_qso_metadata_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_qso_metadata_npy)
 
+    def get_chunk_size(self):
+        return int(self.config_parser.get(self.section_performance, self.opt_chunk_size))
+
 
 # TODO: remove
-Settings().write_default_settings()
+# Settings().write_default_settings()
 
 with open(Settings.settings_file_name, 'rb') as f:
     print f.read()

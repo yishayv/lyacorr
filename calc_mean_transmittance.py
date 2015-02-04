@@ -71,7 +71,7 @@ def qso_transmittance_binned(qso_spec_obj):
 def mean_transmittance_chunk(qso_record_table_numbered):
     qso_record_table = [a for a, b in qso_record_table_numbered]
     qso_record_count = [b for a, b in qso_record_table_numbered]
-    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table)
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, table_offset=qso_record_count[0])
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     m = mean_flux.MeanFlux(z_range)
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
@@ -113,12 +113,12 @@ def mean_transmittance(sample_fraction=0.001):
 
     if 1 == FORCE_SINGLE_PROCESS:
         result_enum = itertools.imap(mean_transmittance_chunk,
-                                     split_seq(10000,
+                                     split_seq(settings.get_chunk_size(),
                                                itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                  qso_record_table_numbered)))
     else:
         result_enum = pool.imap_unordered(mean_transmittance_chunk,
-                                          split_seq(10000,
+                                          split_seq(settings.get_chunk_size(),
                                                     itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                       qso_record_table_numbered)))
 
