@@ -8,19 +8,19 @@ import astropy.table as table
 import mean_flux
 import continuum_fit_pca
 import read_spectrum_hdf5
+import common_settings
 
 
 FORCE_SINGLE_PROCESS = 0
 
 lya_center = 1215.67
 
-fit_pca = continuum_fit_pca.ContinuumFitPCA('../../data/Suzuki/datafile4.txt',
-                                            '../../data/Suzuki/datafile3.txt',
-                                            '../../data/Suzuki/projection_matrix.csv')
+settings = common_settings.Settings()
+fit_pca_files = settings.get_pca_continuum_tables()
+fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (2.1, 3.5, 0.00001)
 ar_z_range = np.arange(*z_range)
 m = mean_flux.MeanFlux(z_range)
-
 
 
 def qso_transmittance(qso_spec_obj):
@@ -79,12 +79,15 @@ def mean_transmittance_chunk(spec_iter):
     print "finished chunk", mean_transmittance_chunk.numspec
     return m
 
+
 mean_transmittance_chunk.numspec = 0
+
 
 def chunks(n, iterable):
     iterable = iter(iterable)
     while True:
         yield itertools.chain([next(iterable)], itertools.islice(iterable, n - 1))
+
 
 def split_seq(size, iterable):
     it = iter(iterable)
@@ -92,6 +95,7 @@ def split_seq(size, iterable):
     while item:
         yield item
         item = list(itertools.islice(it, size))
+
 
 def mean_transmittance(sample_fraction=0.001):
     spec_sample = []
@@ -107,13 +111,13 @@ def mean_transmittance(sample_fraction=0.001):
     if 1 == FORCE_SINGLE_PROCESS:
         result_enum = itertools.imap(mean_transmittance_chunk,
                                      split_seq(10000,
-                                            itertools.ifilter(lambda x: random.random() < sample_fraction,
-                                                              spec_sample)))
+                                               itertools.ifilter(lambda x: random.random() < sample_fraction,
+                                                                 spec_sample)))
     else:
         result_enum = pool.imap_unordered(mean_transmittance_chunk,
                                           split_seq(10000,
-                                                 itertools.ifilter(lambda x: random.random() < sample_fraction,
-                                                                   spec_sample)))
+                                                    itertools.ifilter(lambda x: random.random() < sample_fraction,
+                                                                      spec_sample)))
 
     for i in result_enum:
         m.merge(i)

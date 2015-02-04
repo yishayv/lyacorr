@@ -7,6 +7,7 @@ import astropy.table as table
 
 import read_spectrum_fits
 from hdf5_spectrum_container import Hdf5SpectrumContainer
+import common_settings
 
 
 MAX_SPECTRA = 220000
@@ -17,6 +18,8 @@ FORCE_SINGLE_PROCESS = 0
 index = 0
 
 fp = None
+
+settings = common_settings.Settings()
 
 
 def save_spectrum(qso_spec_obj):
@@ -33,8 +36,9 @@ qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
 
 spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
 
-output_spectra = Hdf5SpectrumContainer('/mnt/gastro/yishay/sdss_QSOs/spectra.hdf5', readonly=False,
-                                     num_spectra=MAX_SPECTRA)
+mean_qso_spectra_hdf5 = settings.get_mean_qso_spectra_hdf5()
+output_spectra = Hdf5SpectrumContainer(mean_qso_spectra_hdf5, readonly=False,
+                                       num_spectra=MAX_SPECTRA)
 
 pool = multiprocessing.Pool()
 
