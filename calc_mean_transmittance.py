@@ -11,11 +11,11 @@ import read_spectrum_hdf5
 import common_settings
 
 
-FORCE_SINGLE_PROCESS = 0
 
 lya_center = 1215.67
 
 settings = common_settings.Settings()
+force_single_process = settings.get_single_process()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (2.1, 3.5, 0.00001)
@@ -111,7 +111,7 @@ def mean_transmittance(sample_fraction=0.001):
     # spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
     # spec_sample = read_spectrum_hdf5.return_spectra_2(qso_record_table)
 
-    if 1 == FORCE_SINGLE_PROCESS:
+    if force_single_process:
         result_enum = itertools.imap(mean_transmittance_chunk,
                                      split_seq(settings.get_chunk_size(),
                                                itertools.ifilter(lambda x: random.random() < sample_fraction,

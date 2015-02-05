@@ -9,10 +9,15 @@ from astropy.cosmology import Planck13
 from astropy.coordinates import matching as matching
 from astropy.coordinates import Angle
 from astropy import table
+
 import read_spectrum_hdf5
+import common_settings
 
 import bins_2d
 from read_spectrum_fits import QSORecord
+
+
+settings = common_settings.Settings()
 
 
 def find_nearby_pixels(qso1, n, qso2, r):
@@ -91,7 +96,7 @@ def profile_main():
 
     # find all QSO pairs
     # for now, limit to up to 10th of the pairs, for a reasonable runtime
-    x = matching.search_around_sky(coord_set[:17000], coord_set, max_angular_separation)
+    x = matching.search_around_sky(coord_set[:17], coord_set, max_angular_separation)
 
     pairs_with_unity = np.vstack((x[0], x[1], np.arange(x[0].size)))
     pairs = pairs_with_unity.T[pairs_with_unity[1] != pairs_with_unity[0]]
@@ -101,4 +106,7 @@ def profile_main():
     add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata)
 
 
-cProfile.run('profile_main()', sort=2)
+if settings.get_profile():
+    cProfile.run('profile_main()', filename='generate_pair_list.prof', sort=2)
+else:
+    profile_main()

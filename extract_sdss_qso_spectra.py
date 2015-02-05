@@ -13,8 +13,6 @@ import common_settings
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992
 
-FORCE_SINGLE_PROCESS = 0
-
 index = 0
 
 fp = None
@@ -42,7 +40,7 @@ output_spectra = Hdf5SpectrumContainer(mean_qso_spectra_hdf5, readonly=False,
 
 pool = multiprocessing.Pool()
 
-if 1 == FORCE_SINGLE_PROCESS:
+if settings.get_single_process():
     result_enum = itertools.imap(save_spectrum,
                                  itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample))
 else:

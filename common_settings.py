@@ -32,6 +32,10 @@ class Settings():
     section_performance = 'Performance'
     # default chunk size for multiprocessing
     opt_chunk_size = 'Chunk_Size'
+    # don't use multiprocessing for easier profiling and debugging
+    opt_single_process = 'Single_Process'
+    # enable/disable cProfile
+    opt_profile = 'Profile'
 
 
     def write_default_settings(self):
@@ -47,6 +51,8 @@ class Settings():
         value_qso_metadata_npy = '../../data/QSO_table.npy'
 
         value_chunk_size = 10000
+        value_single_process = False
+        value_profile = False
 
         # replace config parser with an empty one
         self.config_parser = ConfigParser.SafeConfigParser()
@@ -61,6 +67,8 @@ class Settings():
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_chunk_size, str(value_chunk_size))
+        self.config_parser.set(self.section_performance, self.opt_single_process, str(value_single_process))
+        self.config_parser.set(self.section_performance, self.opt_profile, str(value_profile))
 
         with open(self.settings_file_name, 'wb') as configfile:
             self.config_parser.write(configfile)
@@ -89,9 +97,8 @@ class Settings():
     def get_chunk_size(self):
         return int(self.config_parser.get(self.section_performance, self.opt_chunk_size))
 
+    def get_single_process(self):
+        return bool(self.config_parser.get(self.section_performance, self.opt_single_process))
 
-# TODO: remove
-# Settings().write_default_settings()
-
-with open(Settings.settings_file_name, 'rb') as f:
-    print f.read()
+    def get_profile(self):
+        return bool(self.config_parser.get(self.section_performance, self.opt_profile))

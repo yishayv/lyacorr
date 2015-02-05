@@ -1,6 +1,7 @@
 import multiprocessing
 import itertools
 import random
+import cProfile
 
 import numpy as np
 import astropy.table as table
@@ -10,8 +11,6 @@ import read_spectrum_fits
 from read_spectrum_fits import QSO_fields_dict
 
 import common_settings
-
-FORCE_SINGLE_PROCESS = 1
 
 settings = common_settings.Settings()
 
@@ -49,7 +48,7 @@ def create_qso_table():
 def fill_qso_table(t):
     pool = multiprocessing.Pool()
 
-    if 1 == FORCE_SINGLE_PROCESS:
+    if settings.get_single_process():
         qso_record_list = map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
                                                                read_spectrum_fits.generate_qso_details()))
     else:
@@ -63,7 +62,13 @@ def fill_qso_table(t):
 
     return t
 
+def profile_main():
+    t_ = create_qso_table()
+    fill_qso_table(t_)
+    np.save(settings.get_qso_metadata_npy(), t_)
 
-t_ = create_qso_table()
-fill_qso_table(t_)
-np.save(settings.get_qso_metadata_npy(), t_)
+
+if settings.opt_profile():
+    cProfile.run('profile_main()', sort=2)
+else:
+    profile_main()
