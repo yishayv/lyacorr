@@ -11,6 +11,7 @@ settings = common_settings.Settings()
 
 def profile_main():
     m, ar_z_range = calc_mean_transmittance.mean_transmittance(sample_fraction=1)
+    calc_mean_transmittance.delta_transmittance(sample_fraction=1)
 
     d['m'] = m
     d['ar_z_range'] = ar_z_range

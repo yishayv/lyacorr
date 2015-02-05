@@ -3,23 +3,29 @@ import os.path
 import numpy as np
 
 
-MAX_SPECTRA = 1000
+MAX_SPECTRA = 200000
 MAX_WAVELENGTH_COUNT = 4992
 
 
 class NpSpectrumContainer(object):
     """
-    Holds spectra in a numpy memory mapped file.
+    Holds spectra in a numpy memory mapped file, or a memory based array
     """
 
-    def __init__(self, filename, readonly, num_spectra=-1):
+    def __init__(self, readonly, num_spectra=-1, filename=None):
+        assert num_spectra < MAX_SPECTRA
         self.filename = filename
         self.readonly = readonly
-        mode = 'r' if readonly else 'w+'
-        self.np_array = np.memmap(filename, 'f8', mode=mode, shape=(MAX_SPECTRA, 2, MAX_WAVELENGTH_COUNT))
-        self.num_spectra = os.path.getsize(filename) // (2 * MAX_WAVELENGTH_COUNT * 8)
-        if not readonly:
-            assert self.num_spectra == num_spectra
+        if filename:
+            mode = 'r' if readonly else 'w+'
+            self.np_array = np.memmap(filename, 'f8', mode=mode, shape=(num_spectra, 2, MAX_WAVELENGTH_COUNT))
+            if readonly:
+                self.num_spectra = os.path.getsize(filename) // (2 * MAX_WAVELENGTH_COUNT * 8)
+                if num_spectra != -1:
+                    assert self.num_spectra == num_spectra
+        else:
+            self.np_array = np.ndarray(shape=(num_spectra, 2, MAX_WAVELENGTH_COUNT))
+            self.num_spectra = num_spectra
 
     def get_wavelength(self, n):
         return self._get_array(n, 0)
@@ -39,9 +45,9 @@ class NpSpectrumContainer(object):
 
     def _get_array(self, n, i):
         assert n < self.num_spectra
-        ar = self.np_array[n][i]
-        # trim zeros
-        return ar[ar != 0]
+        ar_wavelength = self.np_array[n][0]
+        # trim zeros, always according to wavelength
+        return self.np_array[n][i][ar_wavelength != 0]
 
 
 class NpSpectrumIterator(object):
@@ -61,10 +67,10 @@ class NpSpectrumIterator(object):
         return self
 
     def next(self):
+        self._n += 1
         if self._n >= self._np_spectrum_container.num_spectra:
             raise StopIteration
         else:
-            self._n += 1
             return self
 
     def get_flux(self):

@@ -4,7 +4,7 @@ import h5py
 INITIAL_SPECTRA = 1000
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992
-CHUNK_COUNT = 1000
+CHUNK_COUNT = 20
 
 
 class Hdf5SpectrumContainer(object):
@@ -41,7 +41,7 @@ class Hdf5SpectrumContainer(object):
     def _set_array(self, n, data, i):
         assert data.size < MAX_WAVELENGTH_COUNT
         if n >= self.data_set.shape[0]:
-            self.data_set.resize((n+1000, 2, MAX_WAVELENGTH_COUNT))
+            self.data_set.resize((n + CHUNK_COUNT, 2, MAX_WAVELENGTH_COUNT))
         self.data_set[n, i, :data.size] = data
 
     def _get_array(self, n, i):

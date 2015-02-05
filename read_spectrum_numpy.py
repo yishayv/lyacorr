@@ -11,7 +11,7 @@ MAX_WAVELENGTH_COUNT = 4992
 
 def return_spectra_2(qso_record_table, mem_map_file=MEM_MAP_FILE):
 
-    spectra = NpSpectrumContainer(mem_map_file, True)
+    spectra = NpSpectrumContainer(True, mem_map_file)
 
     # we assume that the order of spectra is the same as in the QSO list
     for i, j in itertools.izip(NpSpectrumIterator(spectra), qso_record_table):

@@ -9,7 +9,7 @@ import mean_flux
 import continuum_fit_pca
 import read_spectrum_hdf5
 import common_settings
-
+from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 
 
 lya_center = 1215.67
@@ -20,7 +20,6 @@ fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (2.1, 3.5, 0.00001)
 ar_z_range = np.arange(*z_range)
-m = mean_flux.MeanFlux(z_range)
 
 
 def qso_transmittance(qso_spec_obj):
@@ -75,22 +74,33 @@ def mean_transmittance_chunk(qso_record_table_numbered):
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     m = mean_flux.MeanFlux(z_range)
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
-    for i in result_enum:
-        if i[0].size:
-            m.add_flux_prebinned(i[0], i[1])
+    for flux, mask in result_enum:
+        if flux.size:
+            m.add_flux_prebinned(flux, mask)
             mean_transmittance_chunk.numspec += 1
 
     print "finished chunk", mean_transmittance_chunk.numspec
     return m
 
 
+def delta_transmittance_chunk(qso_record_table_numbered):
+    qso_record_table = [a for a, b in qso_record_table_numbered]
+    qso_record_count = [b for a, b in qso_record_table_numbered]
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, table_offset=qso_record_count[0])
+    spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
+    delta_t = NpSpectrumContainer(False, len(qso_record_count))
+    result_enum = itertools.imap(qso_transmittance, spec_iter)
+    n = 0
+    for flux, z in result_enum:
+        if z.size:
+            delta_t.set_wavelength(n, z)
+            delta_t.set_flux(n, flux)
+            n += 1
+
+    return delta_t
+
+
 mean_transmittance_chunk.numspec = 0
-
-
-def chunks(n, iterable):
-    iterable = iter(iterable)
-    while True:
-        yield itertools.chain([next(iterable)], itertools.islice(iterable, n - 1))
 
 
 def split_seq(size, iterable):
@@ -101,23 +111,20 @@ def split_seq(size, iterable):
         item = list(itertools.islice(it, size))
 
 
-def mean_transmittance(sample_fraction=0.001):
+def apply_to_spectra(func, sample_fraction=0.001):
+    m = mean_flux.MeanFlux(z_range)
     pool = multiprocessing.Pool()
 
     qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
     qso_record_table_numbered = itertools.izip(qso_record_table, itertools.count())
 
-    # spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
-    # spec_sample = read_spectrum_numpy.return_spectra_2(qso_record_table)
-    # spec_sample = read_spectrum_hdf5.return_spectra_2(qso_record_table)
-
     if force_single_process:
-        result_enum = itertools.imap(mean_transmittance_chunk,
+        result_enum = itertools.imap(func,
                                      split_seq(settings.get_chunk_size(),
                                                itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                  qso_record_table_numbered)))
     else:
-        result_enum = pool.imap_unordered(mean_transmittance_chunk,
+        result_enum = pool.imap_unordered(func,
                                           split_seq(settings.get_chunk_size(),
                                                     itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                       qso_record_table_numbered)))
@@ -129,3 +136,40 @@ def mean_transmittance(sample_fraction=0.001):
     pool.join()
 
     return m, ar_z_range
+
+
+def apply_to_spectra_delta(func, sample_fraction=0.001):
+    qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
+    qso_record_table_numbered = itertools.izip(qso_record_table, itertools.count())
+    delta_t_file = NpSpectrumContainer(False, len(qso_record_table), settings.get_delta_t_npy())
+
+    if force_single_process:
+        result_enum = itertools.imap(func,
+                                     split_seq(settings.get_chunk_size(),
+                                               itertools.ifilter(lambda x: random.random() < sample_fraction,
+                                                                 qso_record_table_numbered)))
+    else:
+        pool = multiprocessing.Pool()
+        result_enum = pool.imap_unordered(func,
+                                          split_seq(settings.get_chunk_size(),
+                                                    itertools.ifilter(lambda x: random.random() < sample_fraction,
+                                                                      qso_record_table_numbered)))
+
+    n = 0
+    for i in result_enum:
+        for j in NpSpectrumIterator(i):
+            delta_t_file.set_wavelength(n, j.get_wavelength())
+            delta_t_file.set_flux(n, j.get_flux())
+            n += 1
+
+    if not force_single_process:
+        pool.close()
+        pool.join()
+
+
+def mean_transmittance(sample_fraction=0.001):
+    return apply_to_spectra(mean_transmittance_chunk, sample_fraction)
+
+
+def delta_transmittance(sample_fraction=0.001):
+    return apply_to_spectra_delta(delta_transmittance_chunk, sample_fraction)
