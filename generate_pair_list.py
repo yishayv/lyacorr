@@ -12,21 +12,76 @@ from astropy import table
 
 import read_spectrum_hdf5
 import common_settings
-
 import bins_2d
 from read_spectrum_fits import QSORecord
 
 
 settings = common_settings.Settings()
 
+# bin size in Mpc/h
+BIN_SIZE = 4
 
-def find_nearby_pixels(qso1, n, qso2, r):
+
+# def find_nearby_pixels(qso_angle, spec2, spec1_pixel, r):
+# """
+# Find the pixels in QSO2 within radius r of an nth-pixel QSO1
+# :param qso1:
+# :param qso2:
+# """
+# coord1 = coord.sky
+
+
+def find_nearby_pixels(pair_separation_bins, qso_angle, spec1, spec2, r):
     """
-    Find the pixels in QSO2 within radius r of the nth-pixel QSO1
-    :param qso1:
-    :param qso2:
+    Find all pixel pairs in QSO1,QSO2 that are closer than radius r
+    :param pair_separation_bins: bins_2d.Bins2D
+    :param qso_angle: float64
+    :param spec1: [np.array, np.array, QSORecord]
+    :param spec2: [np.array, np.array, QSORecord]
+    :param r:
+    :return:
     """
-    coord1 = coord.sky
+    # for i in spec1:
+    # find_nearby_pixels(qso_angle, spec2, i, r)
+
+
+    # use law of cosines to find the distance between pairs of pixels
+    qso_angle_cosine = np.cos(qso_angle)
+    r_sq = np.square(r)
+
+    # note: through this method, "flux" means delta_f
+    spec1_distances = spec1[0]
+    spec1_flux = spec1[1]
+
+    spec2_distances = spec2[0]
+    spec2_flux = spec2[1]
+
+    spec1_distances_sq = np.square(spec1_distances)
+    spec2_distances_sq = np.square(spec2_distances)
+
+    # create matrices with first dimension of spec1 data points,
+    # second dimension of spec2 data points
+
+    spec1_times_spec2_dist = np.outer(spec1_distances, spec2_distances)
+
+    spec1_spec2_dist_sq = np.add(- 2 * spec1_times_spec2_dist * qso_angle_cosine,
+                                 spec1_distances_sq[:, None])
+    spec1_spec2_dist_sq = np.add(spec1_spec2_dist_sq,
+                                 spec2_distances_sq[None, :])
+
+    # a matrix of flux products
+    # TODO: add weights for a proper calculation of "xi(i,j)"
+    flux_products = np.outer(spec1_flux, spec2_flux)
+
+    # mask all elements that are close enough
+    mask_matrix = spec1_spec2_dist_sq > r_sq
+
+    r_parallel = np.abs(spec1_distances[:, None] - spec2_distances)
+    r_transverse = qso_angle * (spec1_distances[:, None] + spec2_distances) / 2
+
+    pair_separation_bins.add_array(flux_products[mask_matrix],
+                             r_parallel[mask_matrix]/BIN_SIZE,
+                             r_transverse[mask_matrix]/BIN_SIZE)
 
 
 z_start = 2.1
@@ -49,7 +104,7 @@ def fast_comoving_distance(ar_z, _comoving_table_distance):
 
 
 def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata):
-    PairSeparationBins = bins_2d.Bins2D(50, 50)
+    pair_separation_bins = bins_2d.Bins2D(50, 50)
     for i, j, k in pairs:
         # find distance between QSOs
         # qso1 = coord_set[i]
@@ -59,16 +114,16 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
         mean_distance = (ar_distance[i] + ar_distance[j]) / 2
         r_transverse = mean_distance * qso_angle
         # print 'QSO pair with r_parallel %s, r_transverse %s' % (r_parallel, r_transverse)
-        # iterate over spectra and then call:
-
-        spec_1 = spectra_with_metadata.return_spectrum(i)
-        spec_2 = spectra_with_metadata.return_spectrum(j)
-        PairSeparationBins.add(0, r_parallel, r_transverse)
+        spec1 = spectra_with_metadata.return_spectrum(i)
+        spec2 = spectra_with_metadata.return_spectrum(j)
+        # TODO: read the default 200Mpc value from elsewhere
+        find_nearby_pixels(pair_separation_bins, qso_angle, spec1, spec2, 200)
+    return pair_separation_bins
 
 
 def profile_main():
-    comoving_table_z = np.arange(z_start, z_end, z_step)
-    comoving_table_distance = Planck13.comoving_distance(comoving_table_z).to(u.Mpc).value
+    comoving_z_table = np.arange(z_start, z_end, z_step)
+    comoving_distance_table = Planck13.comoving_distance(comoving_z_table).to(u.Mpc).value
 
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
@@ -83,7 +138,7 @@ def profile_main():
     ar_ra = np.array([i.ra for i in qso_record_list])
     ar_dec = np.array([i.dec for i in qso_record_list])
     ar_z = np.array([i.z for i in qso_record_list])
-    ar_distance = fast_comoving_distance(ar_z, comoving_table_distance)
+    ar_distance = fast_comoving_distance(ar_z, comoving_distance_table)
     print 'QSO table size:', len(ar_distance)
 
     # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
@@ -98,7 +153,7 @@ def profile_main():
 
     # find all QSO pairs
     # for now, limit to up to 10th of the pairs, for a reasonable runtime
-    x = matching.search_around_sky(coord_set[:17], coord_set, max_angular_separation)
+    x = matching.search_around_sky(coord_set[:1], coord_set[:50], max_angular_separation)
 
     pairs_with_unity = np.vstack((x[0], x[1], np.arange(x[0].size)))
     pairs = pairs_with_unity.T[pairs_with_unity[1] != pairs_with_unity[0]]

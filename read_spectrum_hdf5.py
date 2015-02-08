@@ -28,6 +28,10 @@ class SpectraWithMetadata:
 
     def return_spectrum(self, n):
         # we assume that the order of spectra is the same as in the QSO list
+        """
+
+        :rtype : np.array, np.array, QSORecord
+        """
         qso_rec = QSORecord.from_row(self.qso_record_table[n - self.table_offset])
         ar_wavelength = self.spectra.get_wavelength(n)
         ar_flux = self.spectra.get_flux(n)
