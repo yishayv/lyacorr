@@ -102,10 +102,10 @@ class Settings():
         return self.config_parser.get(self.section_file_paths, self.opt_delta_t_npy)
 
     def get_chunk_size(self):
-        return int(self.config_parser.get(self.section_performance, self.opt_chunk_size))
+        return self.config_parser.getint(self.section_performance, self.opt_chunk_size)
 
     def get_single_process(self):
-        return bool(self.config_parser.get(self.section_performance, self.opt_single_process))
+        return self.config_parser.getboolean(self.section_performance, self.opt_single_process)
 
     def get_profile(self):
-        return bool(self.config_parser.get(self.section_performance, self.opt_profile))
+        return self.config_parser.getboolean(self.section_performance, self.opt_profile)
