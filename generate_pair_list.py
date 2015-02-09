@@ -1,6 +1,7 @@
 __author__ = 'yishay'
 
 import cProfile
+import kernprof
 
 import numpy as np
 from astropy import coordinates as coord
@@ -30,10 +31,34 @@ BIN_SIZE = 4
 # """
 # coord1 = coord.sky
 
+class PreAllocMatrices:
+    def __init__(self):
+        self.spec1_spec2_dist_sq = np.zeros([5000, 5000])
+        self.spec1_times_spec2_dist = np.zeros([5000, 5000])
+        self.m1 = np.zeros([5000, 5000])
+        self.m2 = np.zeros([5000, 5000])
+        self.m4 = np.zeros([5000, 5000])
+        self.m5 = np.zeros([5000, 5000])
+        self.v1 = np.zeros(5000)
+        self.v2 = np.zeros(5000)
+        self.mask1 = np.zeros([5000, 5000], dtype=bool)
 
-def find_nearby_pixels(pair_separation_bins, qso_angle, spec1, spec2, r):
+    def zero(self):
+        self.spec1_spec2_dist_sq.fill(0)
+        self.spec1_times_spec2_dist.fill(0)
+        self.m1.fill(0)
+        self.m2.fill(0)
+        self.mask1.fill(0)
+        self.v1.fill(0)
+        self.v2.fill(0)
+        self.m4.fill(0)
+        self.m5.fill(0)
+
+
+def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, r):
     """
     Find all pixel pairs in QSO1,QSO2 that are closer than radius r
+    :param pre_alloc_matrices: PreAllocMatrices
     :param pair_separation_bins: bins_2d.Bins2D
     :param qso_angle: float64
     :param spec1: [np.array, np.array, QSORecord]
@@ -41,47 +66,66 @@ def find_nearby_pixels(pair_separation_bins, qso_angle, spec1, spec2, r):
     :param r:
     :return:
     """
-    # for i in spec1:
-    # find_nearby_pixels(qso_angle, spec2, i, r)
 
+    # Note: not using pre_alloc_matrices.zero()
 
     # use law of cosines to find the distance between pairs of pixels
     qso_angle_cosine = np.cos(qso_angle)
     r_sq = np.square(r)
 
-    # note: through this method, "flux" means delta_f
+    # Note: throughout this method, "flux" means delta_f
     spec1_distances = spec1[0]
     spec1_flux = spec1[1]
 
     spec2_distances = spec2[0]
     spec2_flux = spec2[1]
 
-    spec1_distances_sq = np.square(spec1_distances)
-    spec2_distances_sq = np.square(spec2_distances)
-
     # create matrices with first dimension of spec1 data points,
     # second dimension of spec2 data points
+    y = spec1_distances.size
+    x = spec2_distances.size
 
-    spec1_times_spec2_dist = np.outer(spec1_distances, spec2_distances)
+    m1 = pre_alloc_matrices.m1[:y, :x]
+    flux_products = pre_alloc_matrices.m2[:y, :x]
+    mask_matrix = pre_alloc_matrices.mask1[:y, :x]
+    r_parallel = pre_alloc_matrices.m4[:y, :x]
+    r_transverse = pre_alloc_matrices.m5[:y, :x]
+    spec1_distances_sq = pre_alloc_matrices.v1[:y]
+    spec2_distances_sq = pre_alloc_matrices.v2[:x]
 
-    spec1_spec2_dist_sq = np.add(- 2 * spec1_times_spec2_dist * qso_angle_cosine,
-                                 spec1_distances_sq[:, None])
-    spec1_spec2_dist_sq = np.add(spec1_spec2_dist_sq,
-                                 spec2_distances_sq[None, :])
+    np.square(spec1_distances, out=spec1_distances_sq)
+    np.square(spec2_distances, out=spec2_distances_sq)
+
+    # calculate all mutual distances
+    # d^2 = r1^2 + r2^2 - 2*r1*r2*cos(a)
+    np.outer(spec1_distances, spec2_distances, out=m1)
+    np.multiply(m1, - 2 * qso_angle_cosine, out=m1)
+    np.add(m1, spec1_distances_sq[:, None], out=m1)
+    np.add(m1, spec2_distances_sq[None, :], out=m1)
+
+    spec1_spec2_dist_sq = m1
 
     # a matrix of flux products
     # TODO: add weights for a proper calculation of "xi(i,j)"
-    flux_products = np.outer(spec1_flux, spec2_flux)
+    np.outer(spec1_flux, spec2_flux, out=flux_products)
 
     # mask all elements that are close enough
-    mask_matrix = spec1_spec2_dist_sq > r_sq
+    np.less(spec1_spec2_dist_sq, r_sq, out=mask_matrix)
 
-    r_parallel = np.abs(spec1_distances[:, None] - spec2_distances)
-    r_transverse = qso_angle * (spec1_distances[:, None] + spec2_distances) / 2
+    # r|| = abs(r1 - r2)
+    np.subtract(spec1_distances[:, None], spec2_distances, out=r_parallel)
+    np.abs(r_parallel, out=r_parallel)
+    np.multiply(r_parallel, 1 / BIN_SIZE)
 
-    pair_separation_bins.add_array(flux_products[mask_matrix],
-                             r_parallel[mask_matrix]/BIN_SIZE,
-                             r_transverse[mask_matrix]/BIN_SIZE)
+    # r_ =  (r1 + r2)/2 * qso_angle
+    np.add(spec1_distances[:, None], spec2_distances, out=r_transverse)
+    np.multiply(r_transverse, qso_angle / (2 * BIN_SIZE), out=r_transverse)
+
+    # add flux products for all nearby pairs, and bin by r_parallel, r_transverse
+    pair_separation_bins.add_array_with_mask(flux_products,
+                                             r_parallel,
+                                             r_transverse,
+                                             mask_matrix)
 
 
 z_start = 2.1
@@ -105,6 +149,7 @@ def fast_comoving_distance(ar_z, _comoving_table_distance):
 
 def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata):
     pair_separation_bins = bins_2d.Bins2D(50, 50)
+    pre_alloc_matrices = PreAllocMatrices()
     for i, j, k in pairs:
         # find distance between QSOs
         # qso1 = coord_set[i]
@@ -117,7 +162,8 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
         spec1 = spectra_with_metadata.return_spectrum(i)
         spec2 = spectra_with_metadata.return_spectrum(j)
         # TODO: read the default 200Mpc value from elsewhere
-        find_nearby_pixels(pair_separation_bins, qso_angle, spec1, spec2, 200)
+        find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, 200)
+        print 'intermediate number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int)
     return pair_separation_bins
 
 
@@ -152,15 +198,16 @@ def profile_main():
     # print coord_set
 
     # find all QSO pairs
-    # for now, limit to up to 10th of the pairs, for a reasonable runtime
-    x = matching.search_around_sky(coord_set[:1], coord_set[:50], max_angular_separation)
+    # for now, limit to a small set of the pairs, for a reasonable runtime
+    x = matching.search_around_sky(coord_set[:2], coord_set[:50], max_angular_separation)
 
     pairs_with_unity = np.vstack((x[0], x[1], np.arange(x[0].size)))
     pairs = pairs_with_unity.T[pairs_with_unity[1] != pairs_with_unity[0]]
     pairs_angles = x[2].to(u.rad).value
     print 'number of QSO pairs:', pairs.size
 
-    add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata)
+    pair_separation_bins = add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata)
+    print 'total number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int)
 
 
 if settings.get_profile():
