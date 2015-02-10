@@ -15,6 +15,7 @@ import read_spectrum_hdf5
 import common_settings
 import bins_2d
 from read_spectrum_fits import QSORecord
+import comoving_distance
 
 
 settings = common_settings.Settings()
@@ -133,20 +134,6 @@ z_end = 3.5
 z_step = 0.001
 
 
-def fast_linear_interpolate(f, x):
-    x = np.asarray(x)
-
-    x0 = np.floor(x).astype(int)
-    x1 = x0 + 1
-
-    return (x1 - x) * f[x0] + (x - x0) * f[x1]
-
-
-def fast_comoving_distance(ar_z, _comoving_table_distance):
-    ar_index = (ar_z - z_start) / (z_end - z_start)
-    return fast_linear_interpolate(_comoving_table_distance, ar_index)
-
-
 def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata):
     pair_separation_bins = bins_2d.Bins2D(50, 50)
     pre_alloc_matrices = PreAllocMatrices()
@@ -168,8 +155,7 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
 
 
 def profile_main():
-    comoving_z_table = np.arange(z_start, z_end, z_step)
-    comoving_distance_table = Planck13.comoving_distance(comoving_z_table).to(u.Mpc).value
+    cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
 
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
@@ -184,7 +170,7 @@ def profile_main():
     ar_ra = np.array([i.ra for i in qso_record_list])
     ar_dec = np.array([i.dec for i in qso_record_list])
     ar_z = np.array([i.z for i in qso_record_list])
-    ar_distance = fast_comoving_distance(ar_z, comoving_distance_table)
+    ar_distance = cd.fast_comoving_distance(ar_z)
     print 'QSO table size:', len(ar_distance)
 
     # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
