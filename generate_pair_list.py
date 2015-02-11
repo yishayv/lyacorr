@@ -1,7 +1,6 @@
 __author__ = 'yishay'
 
 import cProfile
-import kernprof
 
 import numpy as np
 from astropy import coordinates as coord
@@ -16,6 +15,7 @@ import common_settings
 import bins_2d
 from read_spectrum_fits import QSORecord
 import comoving_distance
+from numpy_spectrum_container import NpSpectrumContainer
 
 
 settings = common_settings.Settings()
@@ -56,14 +56,16 @@ class PreAllocMatrices:
         self.m5.fill(0)
 
 
-def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, r):
+def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
+                       spec1_index, spec2_index, delta_t_file, r):
     """
     Find all pixel pairs in QSO1,QSO2 that are closer than radius r
     :param pre_alloc_matrices: PreAllocMatrices
     :param pair_separation_bins: bins_2d.Bins2D
     :param qso_angle: float64
-    :param spec1: [np.array, np.array, QSORecord]
-    :param spec2: [np.array, np.array, QSORecord]
+    :param spec1_index: int
+    :param spec2_index: int
+    :param delta_t_file: NpSpectrumContainer
     :param r:
     :return:
     """
@@ -75,11 +77,14 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec
     r_sq = np.square(r)
 
     # Note: throughout this method, "flux" means delta_f
-    spec1_distances = spec1[0]
-    spec1_flux = spec1[1]
+    spec1_distances = delta_t_file.get_wavelength(spec1_index)
+    spec1_flux = delta_t_file.get_flux(spec1_index)
 
-    spec2_distances = spec2[0]
-    spec2_flux = spec2[1]
+    spec2_distances = delta_t_file.get_wavelength(spec2_index)
+    spec2_flux = delta_t_file.get_flux(spec2_index)
+
+    if not (spec1_distances.size and spec2_distances.size):
+        return
 
     # create matrices with first dimension of spec1 data points,
     # second dimension of spec2 data points
@@ -134,7 +139,16 @@ z_end = 3.5
 z_step = 0.001
 
 
-def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata):
+def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata, delta_t_file):
+    """
+
+    :param ar_distance: np.array
+    :param pairs: np.array
+    :param pairs_angles: np.array
+    :param spectra_with_metadata: read_spectrum_hdf5.SpectraWithMetadata
+    :param delta_t_file: NpSpectrumContainer
+    :return: bins_2d.Bins2D
+    """
     pair_separation_bins = bins_2d.Bins2D(50, 50)
     pre_alloc_matrices = PreAllocMatrices()
     for i, j, k in pairs:
@@ -146,11 +160,11 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
         mean_distance = (ar_distance[i] + ar_distance[j]) / 2
         r_transverse = mean_distance * qso_angle
         # print 'QSO pair with r_parallel %s, r_transverse %s' % (r_parallel, r_transverse)
-        spec1 = spectra_with_metadata.return_spectrum(i)
-        spec2 = spectra_with_metadata.return_spectrum(j)
+        spec1 = i
+        spec2 = j
         # TODO: read the default 200Mpc value from elsewhere
-        find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, 200)
-        print 'intermediate number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int)
+        find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, delta_t_file, 200)
+        # print 'intermediate number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int)
     return pair_separation_bins
 
 
@@ -164,6 +178,7 @@ def profile_main():
     # initialize data sources
     qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
     spectra_with_metadata = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table)
+    delta_t_file = NpSpectrumContainer(True, len(qso_record_table), settings.get_delta_t_npy())
 
     # prepare data for quicker access
     qso_record_list = [QSORecord.from_row(i) for i in qso_record_table]
@@ -185,15 +200,17 @@ def profile_main():
 
     # find all QSO pairs
     # for now, limit to a small set of the pairs, for a reasonable runtime
-    x = matching.search_around_sky(coord_set[:2], coord_set[:50], max_angular_separation)
+    x = matching.search_around_sky(coord_set[:800], coord_set[:800], max_angular_separation)
 
     pairs_with_unity = np.vstack((x[0], x[1], np.arange(x[0].size)))
     pairs = pairs_with_unity.T[pairs_with_unity[1] != pairs_with_unity[0]]
     pairs_angles = x[2].to(u.rad).value
     print 'number of QSO pairs:', pairs.size
 
-    pair_separation_bins = add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata)
+    pair_separation_bins = add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles,
+                                                 spectra_with_metadata, delta_t_file)
     print 'total number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int)
+    pair_separation_bins.save(settings.get_estimator_bins())
 
 
 if settings.get_profile():

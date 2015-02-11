@@ -10,6 +10,7 @@ import continuum_fit_pca
 import read_spectrum_hdf5
 import common_settings
 from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
+import comoving_distance
 
 
 lya_center = 1215.67
@@ -20,6 +21,7 @@ fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (2.1, 3.5, 0.00001)
 ar_z_range = np.arange(*z_range)
+cd = comoving_distance.ComovingDistance(2.1, 3.5, 0.001)
 
 
 class DeltaTransmittanceAccumulator:
@@ -101,9 +103,9 @@ def mean_transmittance_chunk(qso_record_table_numbered):
     for flux, mask in result_enum:
         if flux.size:
             m.add_flux_prebinned(flux, mask)
-            mean_transmittance_chunk.numspec += 1
+            mean_transmittance_chunk.num_spec += 1
 
-    print "finished chunk", mean_transmittance_chunk.numspec
+    print "finished chunk", mean_transmittance_chunk.num_spec
     return m
 
 
@@ -117,14 +119,15 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     n = 0
     for flux, z in result_enum:
         if z.size:
-            delta_t.set_wavelength(n, z)
+            # Note: using wavelength field to store co-moving distance
+            delta_t.set_wavelength(n, cd.fast_comoving_distance(z))
             delta_t.set_flux(n, flux)
-            n += 1
+        n += 1
 
     return delta_t
 
 
-mean_transmittance_chunk.numspec = 0
+mean_transmittance_chunk.num_spec = 0
 
 
 def split_seq(size, iterable):
@@ -147,10 +150,11 @@ def accumulate_over_spectra(func, accumulator, sample_fraction=0.001):
                                                                  qso_record_table_numbered)))
     else:
         pool = multiprocessing.Pool()
-        result_enum = pool.imap_unordered(func,
-                                          split_seq(settings.get_chunk_size(),
-                                                    itertools.ifilter(lambda x: random.random() < sample_fraction,
-                                                                      qso_record_table_numbered)))
+        # TODO: is ordered imap efficient enough?
+        result_enum = pool.imap(func,
+                                split_seq(settings.get_chunk_size(),
+                                          itertools.ifilter(lambda x: random.random() < sample_fraction,
+                                                            qso_record_table_numbered)))
 
     acc_result = acc.accumulate(result_enum)
 

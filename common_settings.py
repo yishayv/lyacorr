@@ -30,6 +30,8 @@ class Settings():
     opt_qso_metadata_npy = 'QSO_Metadata_npy'
     # delta_t array (npy)
     opt_delta_t_npy = 'Delta_Transmittance_npy'
+    # correlation estimator bins
+    opt_estimator_bins = 'Estimator_Bins_npy'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
@@ -52,6 +54,7 @@ class Settings():
         value_qso_metadata_fields = '../../data/QSOs_test_header.csv'
         value_qso_metadata_npy = '../../data/QSO_table.npy'
         value_delta_t_npy = '../../data/delta_t.npy'
+        value_estimator_bins_npy = '../../data/estimator_bins.npy'
 
         value_chunk_size = 10000
         value_single_process = False
@@ -68,6 +71,7 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fields, value_qso_metadata_fields)
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_npy, value_qso_metadata_npy)
         self.config_parser.set(self.section_file_paths, self.opt_delta_t_npy, value_delta_t_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_estimator_bins, value_estimator_bins_npy)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_chunk_size, str(value_chunk_size))
@@ -100,6 +104,9 @@ class Settings():
 
     def get_delta_t_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_delta_t_npy)
+
+    def get_estimator_bins(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_estimator_bins)
 
     def get_chunk_size(self):
         return self.config_parser.getint(self.section_performance, self.opt_chunk_size)
