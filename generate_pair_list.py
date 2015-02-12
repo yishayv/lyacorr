@@ -23,6 +23,12 @@ settings = common_settings.Settings()
 # bin size in Mpc/h
 BIN_SIZE = 4
 
+z_start = 2.1
+z_end = 3.5
+z_step = 0.001
+
+cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
+
 
 # def find_nearby_pixels(qso_angle, spec2, spec1_pixel, r):
 # """
@@ -77,10 +83,10 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
     r_sq = np.square(r)
 
     # Note: throughout this method, "flux" means delta_f
-    spec1_distances = delta_t_file.get_wavelength(spec1_index)
+    spec1_distances = cd.fast_comoving_distance(delta_t_file.get_wavelength(spec1_index))
     spec1_flux = delta_t_file.get_flux(spec1_index)
 
-    spec2_distances = delta_t_file.get_wavelength(spec2_index)
+    spec2_distances = cd.fast_comoving_distance(delta_t_file.get_wavelength(spec2_index))
     spec2_flux = delta_t_file.get_flux(spec2_index)
 
     if not (spec1_distances.size and spec2_distances.size):
@@ -134,11 +140,6 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
                                              mask_matrix)
 
 
-z_start = 2.1
-z_end = 3.5
-z_step = 0.001
-
-
 def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadata, delta_t_file):
     """
 
@@ -169,8 +170,6 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
 
 
 def profile_main():
-    cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
-
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
     # print 'minimum distance', min_distance, 'Mpc/rad'

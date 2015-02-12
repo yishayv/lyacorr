@@ -19,7 +19,7 @@ settings = common_settings.Settings()
 force_single_process = settings.get_single_process()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
-z_range = (2.1, 3.5, 0.00001)
+z_range = (2.1, 3.5, 0.0001)
 ar_z_range = np.arange(*z_range)
 cd = comoving_distance.ComovingDistance(2.1, 3.5, 0.001)
 
@@ -40,12 +40,12 @@ class DeltaTransmittanceAccumulator:
 
 class MeanTransmittanceAccumulator:
     def __init__(self, qso_record_table):
-        self.m = mean_flux.MeanFlux(z_range)
+        self.m = mean_flux.MeanFlux(np.arange(*z_range))
 
     def accumulate(self, result_enum):
         for i in result_enum:
             self.m.merge(i)
-        return self.m, ar_z_range
+        return self.m
 
 
 def qso_transmittance(qso_spec_obj):
@@ -98,11 +98,11 @@ def mean_transmittance_chunk(qso_record_table_numbered):
     qso_record_count = [b for a, b in qso_record_table_numbered]
     spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, table_offset=qso_record_count[0])
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
-    m = mean_flux.MeanFlux(z_range)
+    m = mean_flux.MeanFlux(np.arange(*z_range))
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
     for flux, mask in result_enum:
         if flux.size:
-            m.add_flux_prebinned(flux, mask)
+            m.add_flux_pre_binned(flux, mask)
             mean_transmittance_chunk.num_spec += 1
 
     print "finished chunk", mean_transmittance_chunk.num_spec
@@ -119,9 +119,11 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     n = 0
     for flux, z in result_enum:
         if z.size:
-            # Note: using wavelength field to store co-moving distance
-            delta_t.set_wavelength(n, cd.fast_comoving_distance(z))
-            delta_t.set_flux(n, flux)
+            # Note: using wavelength field to store redshift
+            delta_t.set_wavelength(n, z)
+            # delta transmittance is the change in relative transmittance vs the mean
+            # therefore, subtract 1
+            delta_t.set_flux(n, flux - 1.)
         n += 1
 
     return delta_t
