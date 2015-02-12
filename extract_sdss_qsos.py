@@ -68,7 +68,7 @@ def profile_main():
     np.save(settings.get_qso_metadata_npy(), t_)
 
 
-if settings.opt_profile():
+if settings.get_profile():
     cProfile.run('profile_main()', sort=2)
 else:
     profile_main()
