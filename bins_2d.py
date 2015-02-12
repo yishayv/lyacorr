@@ -7,9 +7,6 @@ class Bins2D:
         self.ar_count = np.zeros((x_count, y_count))
         self.x_count = x_count
         self.y_count = y_count
-        # pre-allocation:
-        self.ar_x_int = np.zeros([5000, 5000], dtype='int64')
-        self.ar_y_int = np.zeros([5000, 5000], dtype='int64')
 
     def add(self, flux, x, y):
         x_int = int(x)
@@ -38,27 +35,16 @@ class Bins2D:
         ar_indices_y = ar_y_int[m]
         # make sure we don't invert x an y
         # represent bins in 1D. this is faster than a 2D numpy histogram
-        ar_indices_xy = ar_indices_y + (50 * ar_indices_x)
+        ar_indices_xy = ar_indices_y + (self.y_count * ar_indices_x)
         # bin data according to x,y values
-        flux_hist_1d = np.bincount(ar_indices_xy, ar_flux_new, 2500)
-        count_hist_1d = np.bincount(ar_indices_xy, minlength=2500)
+        flux_hist_1d = np.bincount(ar_indices_xy, ar_flux_new, self.y_count*self.x_count)
+        count_hist_1d = np.bincount(ar_indices_xy, minlength=self.y_count*self.x_count)
         # return from 1D to a 2d array
-        flux_hist = flux_hist_1d.reshape((50, 50))
-        count_hist = count_hist_1d.reshape((50, 50))
+        flux_hist = flux_hist_1d.reshape((self.x_count, self.y_count))
+        count_hist = count_hist_1d.reshape((self.x_count, self.y_count))
         # accumulate new data
         self.ar_flux += flux_hist
         self.ar_count += count_hist
-
-    def add_array_with_mask_preallocate(self, ar_flux, ar_x, ar_y, mask):
-        ar_x_int = self.ar_x_int[:ar_x.shape[0], : ar_x.shape[1]]
-        ar_x_int[:] = ar_x
-        ar_y_int = self.ar_y_int[:ar_y.shape[0], : ar_y.shape[1]]
-        ar_y_int[:] = ar_y
-        m = np.logical_and(np.logical_and(np.logical_and(ar_x_int >= 0, ar_y_int >= 0),
-                                          np.logical_and(ar_x_int < self.x_count, ar_y_int < self.y_count)),
-                           mask)
-        self.ar_flux[ar_x_int[m], ar_y_int[m]] += ar_flux[m]
-        self.ar_count[ar_x_int[m], ar_y_int[m]] += 1
 
     def merge(self, bins_2d_2):
         self.ar_flux += bins_2d_2.ar_flux
@@ -71,3 +57,5 @@ class Bins2D:
         stacked_array = np.load(filename)
         self.ar_flux = stacked_array[:, :, 0]
         self.ar_count = stacked_array[:, :, 1]
+        self.x_count = self.ar_count.shape[0]
+        self.y_count = self.ar_count.shape[1]
