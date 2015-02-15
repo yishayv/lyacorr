@@ -13,7 +13,7 @@ class NpSpectrumContainer(object):
     """
 
     def __init__(self, readonly, num_spectra=-1, filename=None):
-        assert num_spectra < MAX_SPECTRA
+        assert num_spectra <= MAX_SPECTRA
         self.filename = filename
         self.readonly = readonly
         if filename:
@@ -40,11 +40,11 @@ class NpSpectrumContainer(object):
         return self._set_array(n, data, 1)
 
     def _set_array(self, n, data, i):
-        assert data.size < MAX_WAVELENGTH_COUNT, "data size too large: %d" % data.size
+        assert data.size <= MAX_WAVELENGTH_COUNT, "data size too large: %d" % data.size
         np.copyto(self.np_array[n, i, :data.size], data)
 
     def _get_array(self, n, i):
-        assert n < self.num_spectra
+        assert n <= self.num_spectra
         ar_wavelength = self.np_array[n][0]
         # trim zeros, always according to wavelength
         return self.np_array[n][i][ar_wavelength != 0]
