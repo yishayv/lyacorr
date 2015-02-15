@@ -126,7 +126,7 @@ def delta_transmittance_chunk(qso_record_table_numbered):
             # delta transmittance is the change in relative transmittance vs the mean
             # therefore, subtract 1
             m_mean_current = np.interp(z, m.ar_z, m_mean)
-            delta_t.set_flux(n, flux/m_mean_current - 1.)
+            delta_t.set_flux(n, flux / m_mean_current - 1.)
         n += 1
 
     return delta_t
@@ -153,6 +153,7 @@ def accumulate_over_spectra(func, accumulator, sample_fraction=0.001):
                                      split_seq(settings.get_chunk_size(),
                                                itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                  qso_record_table_numbered)))
+        acc_result = acc.accumulate(result_enum)
     else:
         pool = multiprocessing.Pool()
         # TODO: is ordered imap efficient enough?
@@ -160,10 +161,7 @@ def accumulate_over_spectra(func, accumulator, sample_fraction=0.001):
                                 split_seq(settings.get_chunk_size(),
                                           itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                             qso_record_table_numbered)))
-
-    acc_result = acc.accumulate(result_enum)
-
-    if not force_single_process:
+        acc_result = acc.accumulate(result_enum)
         pool.close()
         pool.join()
 
