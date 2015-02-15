@@ -32,7 +32,7 @@ class MeanFlux:
         self.ar_count = stacked_array[2]
 
     @classmethod
-    def fromfile(cls, filename):
+    def from_file(cls, filename):
         """
 
         :rtype : MeanFlux

@@ -116,6 +116,8 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     delta_t = NpSpectrumContainer(False, len(qso_record_count))
     result_enum = itertools.imap(qso_transmittance, spec_iter)
+    m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
+    m_mean = m.get_mean()
     n = 0
     for flux, z in result_enum:
         if z.size:
@@ -123,7 +125,8 @@ def delta_transmittance_chunk(qso_record_table_numbered):
             delta_t.set_wavelength(n, z)
             # delta transmittance is the change in relative transmittance vs the mean
             # therefore, subtract 1
-            delta_t.set_flux(n, flux - 1.)
+            m_mean_current = np.interp(z, m.ar_z, m_mean)
+            delta_t.set_flux(n, flux/m_mean_current - 1.)
         n += 1
 
     return delta_t

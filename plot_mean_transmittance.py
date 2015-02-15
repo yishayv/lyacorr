@@ -7,7 +7,7 @@ import mean_flux
 lya_center = 1215.67
 
 settings = common_settings.Settings()
-m = mean_flux.MeanFlux.fromfile(settings.get_mean_transmittance_npy())
+m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
 
 fig = plt.figure()
 ax1 = fig.add_subplot(2, 1, 1)
