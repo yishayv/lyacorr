@@ -40,7 +40,7 @@ class NpSpectrumContainer(object):
         return self._set_array(n, data, 1)
 
     def _set_array(self, n, data, i):
-        assert data.size < MAX_WAVELENGTH_COUNT
+        assert data.size < MAX_WAVELENGTH_COUNT, "data size too large: %d" % data.size
         np.copyto(self.np_array[n, i, :data.size], data)
 
     def _get_array(self, n, i):

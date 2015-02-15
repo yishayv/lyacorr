@@ -171,7 +171,8 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
         # TODO: read the default 200Mpc value from elsewhere
         find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, delta_t_file, 200)
         if n % 1000 == 0:
-            print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (n, pair_separation_bins.ar_count.sum().astype(int))
+            print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
+                n, pair_separation_bins.ar_count.sum().astype(int))
             pair_separation_bins.save(settings.get_estimator_bins())
         n += 1
     return pair_separation_bins
