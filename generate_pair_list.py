@@ -82,15 +82,19 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
     qso_angle_cosine = np.cos(qso_angle)
     r_sq = np.square(r)
 
-    # Note: throughout this method, "flux" means delta_f
-    spec1_distances = cd.fast_comoving_distance(delta_t_file.get_wavelength(spec1_index))
-    spec1_flux = delta_t_file.get_flux(spec1_index)
-
-    spec2_distances = cd.fast_comoving_distance(delta_t_file.get_wavelength(spec2_index))
-    spec2_flux = delta_t_file.get_flux(spec2_index)
-
-    if not (spec1_distances.size and spec2_distances.size):
+    spec1_z = delta_t_file.get_wavelength(spec1_index)
+    spec2_z = delta_t_file.get_wavelength(spec2_index)
+    if not (spec1_z.size and spec2_z.size):
         return
+
+    # Note: throughout this method, "flux" means delta_f
+    spec1_flux = delta_t_file.get_flux(spec1_index)
+    spec1_distances = cd.fast_comoving_distance(spec1_z)
+
+    spec2_flux = delta_t_file.get_flux(spec2_index)
+    # print spec2_flux
+    spec2_distances = cd.fast_comoving_distance(spec2_z)
+
 
     # create matrices with first dimension of spec1 data points,
     # second dimension of spec2 data points
@@ -152,6 +156,7 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
     """
     pair_separation_bins = bins_2d.Bins2D(50, 50)
     pre_alloc_matrices = PreAllocMatrices()
+    n = 0
     for i, j, k in pairs:
         # find distance between QSOs
         # qso1 = coord_set[i]
@@ -160,12 +165,15 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
         r_parallel = abs(ar_distance[i] - ar_distance[j])
         mean_distance = (ar_distance[i] + ar_distance[j]) / 2
         r_transverse = mean_distance * qso_angle
-        # print 'QSO pair with r_parallel %s, r_transverse %s' % (r_parallel, r_transverse)
+        # print 'QSO pair with r_parallel %f, r_transverse %f' % (r_parallel, r_transverse)
         spec1 = i
         spec2 = j
         # TODO: read the default 200Mpc value from elsewhere
         find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, delta_t_file, 200)
-        # print 'intermediate number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int)
+        if n % 1000 == 0:
+            print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (n, pair_separation_bins.ar_count.sum().astype(int))
+            pair_separation_bins.save(settings.get_estimator_bins())
+        n += 1
     return pair_separation_bins
 
 
