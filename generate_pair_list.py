@@ -23,8 +23,8 @@ settings = common_settings.Settings()
 # bin size in Mpc/h
 BIN_SIZE = 4
 
-z_start = 2.1
-z_end = 3.5
+z_start = 2.0
+z_end = 3.6
 z_step = 0.001
 
 cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
