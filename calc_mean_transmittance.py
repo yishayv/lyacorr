@@ -161,9 +161,11 @@ def accumulate_over_spectra(func, accumulator, sample_fraction=0.001):
                                 split_seq(settings.get_chunk_size(),
                                           itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                             qso_record_table_numbered)))
-        acc_result = acc.accumulate(result_enum)
+        # wait for all processes to finish
         pool.close()
         pool.join()
+        # "reduce" results
+        acc_result = acc.accumulate(result_enum)
 
     return acc_result
 

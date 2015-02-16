@@ -87,8 +87,8 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
     if not (spec1_z.size and spec2_z.size):
         return
 
-    assert spec1_z.min >= 0, "z out of range: {0}, spec index {1}".format(spec1_z.min(), spec1_index)
-    assert spec2_z.min >= 0, "z out of range: {0}, spec index {1}".format(spec2_z.min(), spec2_index)
+    assert spec1_z.min() > 0, "z out of range: {0}, spec index {1}".format(spec1_z.min(), spec1_index)
+    assert spec2_z.min() > 0, "z out of range: {0}, spec index {1}".format(spec2_z.min(), spec2_index)
 
     # Note: throughout this method, "flux" means delta_f
     spec1_flux = delta_t_file.get_flux(spec1_index)
