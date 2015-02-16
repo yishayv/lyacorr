@@ -78,6 +78,8 @@ def qso_transmittance(qso_spec_obj):
     ar_rel_transmittance = ar_flux / fit_spectrum
     ar_rel_transmittance_clipped = ar_rel_transmittance[forest_mask & fit_mask]
     ar_z = ar_wavelength_clipped / lya_center - 1
+    assert ar_z.size == ar_rel_transmittance_clipped.size
+    assert not np.isnan(ar_rel_transmittance_clipped.sum())
     return [ar_rel_transmittance_clipped, ar_z]
 
 
@@ -122,11 +124,13 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     for flux, z in result_enum:
         if z.size:
             # Note: using wavelength field to store redshift
-            delta_t.set_wavelength(n, z)
-            # delta transmittance is the change in relative transmittance vs the mean
-            # therefore, subtract 1
             m_mean_current = np.interp(z, m.ar_z, m_mean)
-            delta_t.set_flux(n, flux / m_mean_current - 1.)
+            # delta transmittance is the change in relative transmittance vs the mean
+            # therefore, subtract 1.
+            ar_delta_t = flux / m_mean_current - 1
+            # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
+            delta_t.set_wavelength(n, z[np.isfinite(ar_delta_t)])
+            delta_t.set_flux(n, ar_delta_t[np.isfinite(ar_delta_t)])
         n += 1
 
     return delta_t

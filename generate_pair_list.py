@@ -22,8 +22,10 @@ settings = common_settings.Settings()
 
 # bin size in Mpc/h
 BIN_SIZE = 4
+NUM_BINS_X = 50
+NUM_BINS_Y = 50
 
-z_start = 2.0
+z_start = 1.8
 z_end = 3.6
 z_step = 0.001
 
@@ -40,26 +42,33 @@ cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
 
 class PreAllocMatrices:
     def __init__(self):
-        self.spec1_spec2_dist_sq = np.zeros([5000, 5000])
-        self.spec1_times_spec2_dist = np.zeros([5000, 5000])
         self.m1 = np.zeros([5000, 5000])
         self.m2 = np.zeros([5000, 5000])
         self.m4 = np.zeros([5000, 5000])
         self.m5 = np.zeros([5000, 5000])
+        self.m6 = np.zeros([5000, 5000])
+        self.m7 = np.zeros([5000, 5000])
         self.v1 = np.zeros(5000)
         self.v2 = np.zeros(5000)
+        self.v3 = np.zeros(5000)
+        self.v4 = np.zeros(5000)
+        self.v5 = np.zeros(5000)
+        self.v6 = np.zeros(5000)
         self.mask1 = np.zeros([5000, 5000], dtype=bool)
 
     def zero(self):
-        self.spec1_spec2_dist_sq.fill(0)
-        self.spec1_times_spec2_dist.fill(0)
         self.m1.fill(0)
         self.m2.fill(0)
         self.mask1.fill(0)
-        self.v1.fill(0)
-        self.v2.fill(0)
         self.m4.fill(0)
         self.m5.fill(0)
+        self.m6.fill(0)
+        self.v1.fill(0)
+        self.v2.fill(0)
+        self.v3.fill(0)
+        self.v4.fill(0)
+        self.v5.fill(0)
+        self.v6.fill(0)
 
 
 def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
@@ -104,6 +113,7 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
     y = spec1_distances.size
     x = spec2_distances.size
 
+    # assign variables to pre-allocated memory
     m1 = pre_alloc_matrices.m1[:y, :x]
     flux_products = pre_alloc_matrices.m2[:y, :x]
     mask_matrix = pre_alloc_matrices.mask1[:y, :x]
@@ -111,6 +121,12 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
     r_transverse = pre_alloc_matrices.m5[:y, :x]
     spec1_distances_sq = pre_alloc_matrices.v1[:y]
     spec2_distances_sq = pre_alloc_matrices.v2[:x]
+    z_plus_1_1 = pre_alloc_matrices.v3[:y]
+    z_plus_1_2 = pre_alloc_matrices.v4[:x]
+    z_plus_1_power_1 = pre_alloc_matrices.v5[:y]
+    z_plus_1_power_2 = pre_alloc_matrices.v6[:x]
+    z_weights = pre_alloc_matrices.m6[:y, :x]
+    weighted_flux_products = pre_alloc_matrices.m7[:y, :x]
 
     np.square(spec1_distances, out=spec1_distances_sq)
     np.square(spec2_distances, out=spec2_distances_sq)
@@ -134,11 +150,22 @@ def find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
     # r|| = abs(r1 - r2)
     np.subtract(spec1_distances[:, None], spec2_distances, out=r_parallel)
     np.abs(r_parallel, out=r_parallel)
-    np.multiply(r_parallel, 1 / BIN_SIZE)
+    np.multiply(r_parallel, 1. / BIN_SIZE, out=r_parallel)
 
     # r_ =  (r1 + r2)/2 * qso_angle
     np.add(spec1_distances[:, None], spec2_distances, out=r_transverse)
     np.multiply(r_transverse, qso_angle / (2 * BIN_SIZE), out=r_transverse)
+
+    # calculate z-based weights
+    gamma = 3.8
+    np.add(spec1_z, 1, out=z_plus_1_1)
+    np.add(spec2_z, 1, out=z_plus_1_2)
+    np.power(z_plus_1_1, gamma, out=z_plus_1_power_1)
+    np.power(z_plus_1_2, gamma, out=z_plus_1_power_2)
+    np.outer(z_plus_1_power_1, z_plus_1_power_2, out=z_weights)
+
+    np.multiply(flux_products, z_weights, weighted_flux_products)
+    assert not np.isnan(weighted_flux_products.sum())
 
     # add flux products for all nearby pairs, and bin by r_parallel, r_transverse
     pair_separation_bins.add_array_with_mask(flux_products,
@@ -157,7 +184,7 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
     :param delta_t_file: NpSpectrumContainer
     :return: bins_2d.Bins2D
     """
-    pair_separation_bins = bins_2d.Bins2D(50, 50)
+    pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y)
     pre_alloc_matrices = PreAllocMatrices()
     n = 0
     for i, j, k in pairs:
@@ -169,10 +196,12 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
         mean_distance = (ar_distance[i] + ar_distance[j]) / 2
         r_transverse = mean_distance * qso_angle
         # print 'QSO pair with r_parallel %f, r_transverse %f' % (r_parallel, r_transverse)
-        spec1 = i
-        spec2 = j
+        spec1_index = i
+        spec2_index = j
         # TODO: read the default 200Mpc value from elsewhere
-        find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle, spec1, spec2, delta_t_file, 200)
+        find_nearby_pixels(pre_alloc_matrices, pair_separation_bins, qso_angle,
+                           spec1_index, spec2_index, delta_t_file,
+                           r=200 * np.sqrt(2))
         if n % 1000 == 0:
             print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
                 n, pair_separation_bins.ar_count.sum().astype(int))
@@ -201,7 +230,8 @@ def profile_main():
 
     # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
     # TODO: does the article assume h=100km/s/mpc?
-    max_angular_separation = 200 * u.Mpc / (Planck13.comoving_transverse_distance(2.1) / u.radian)
+    # TODO: find a more precise value instead of z=1.9
+    max_angular_separation = 200 * u.Mpc / (Planck13.comoving_transverse_distance(1.9) / u.radian)
     print 'maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree)
 
     # print ar_list
