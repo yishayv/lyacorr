@@ -12,19 +12,20 @@ class NpSpectrumContainer(object):
     Holds spectra in a numpy memory mapped file, or a memory based array
     """
 
-    def __init__(self, readonly, num_spectra=-1, filename=None):
+    def __init__(self, readonly, num_spectra=-1, filename=None, max_wavelength_count=MAX_WAVELENGTH_COUNT):
         assert num_spectra <= MAX_SPECTRA
         self.filename = filename
         self.readonly = readonly
+        self.max_wavelength_count = max_wavelength_count
         if filename:
             mode = 'r' if readonly else 'w+'
-            self.np_array = np.memmap(filename, 'f8', mode=mode, shape=(num_spectra, 2, MAX_WAVELENGTH_COUNT))
+            self.np_array = np.memmap(filename, 'f8', mode=mode, shape=(num_spectra, 2, self.max_wavelength_count))
             if readonly:
-                self.num_spectra = os.path.getsize(filename) // (2 * MAX_WAVELENGTH_COUNT * 8)
+                self.num_spectra = os.path.getsize(filename) // (2 * self.max_wavelength_count * 8)
                 if num_spectra != -1:
                     assert self.num_spectra == num_spectra
         else:
-            self.np_array = np.ndarray(shape=(num_spectra, 2, MAX_WAVELENGTH_COUNT))
+            self.np_array = np.ndarray(shape=(num_spectra, 2, self.max_wavelength_count))
             self.num_spectra = num_spectra
 
     def get_wavelength(self, n):
@@ -40,7 +41,7 @@ class NpSpectrumContainer(object):
         return self._set_array(n, data, 1)
 
     def _set_array(self, n, data, i):
-        assert data.size <= MAX_WAVELENGTH_COUNT, "data size too large: %d" % data.size
+        assert data.size <= self.max_wavelength_count, "data size too large: %d" % data.size
         np.copyto(self.np_array[n, i, :data.size], data)
 
     def _get_array(self, n, i):

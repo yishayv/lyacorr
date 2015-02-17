@@ -24,6 +24,7 @@ settings = common_settings.Settings()
 BIN_SIZE = 4
 NUM_BINS_X = 50
 NUM_BINS_Y = 50
+MAX_Z_RESOLUTION = 1000
 
 z_start = 1.8
 z_end = 3.6
@@ -41,20 +42,21 @@ cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
 # coord1 = coord.sky
 
 class PreAllocMatrices:
-    def __init__(self):
-        self.m1 = np.zeros([5000, 5000])
-        self.m2 = np.zeros([5000, 5000])
-        self.m4 = np.zeros([5000, 5000])
-        self.m5 = np.zeros([5000, 5000])
-        self.m6 = np.zeros([5000, 5000])
-        self.m7 = np.zeros([5000, 5000])
-        self.v1 = np.zeros(5000)
-        self.v2 = np.zeros(5000)
-        self.v3 = np.zeros(5000)
-        self.v4 = np.zeros(5000)
-        self.v5 = np.zeros(5000)
-        self.v6 = np.zeros(5000)
-        self.mask1 = np.zeros([5000, 5000], dtype=bool)
+    def __init__(self, z_res):
+        self.z_res = z_res
+        self.m1 = np.zeros([z_res, z_res])
+        self.m2 = np.zeros([z_res, z_res])
+        self.m4 = np.zeros([z_res, z_res])
+        self.m5 = np.zeros([z_res, z_res])
+        self.m6 = np.zeros([z_res, z_res])
+        self.m7 = np.zeros([z_res, z_res])
+        self.v1 = np.zeros(z_res)
+        self.v2 = np.zeros(z_res)
+        self.v3 = np.zeros(z_res)
+        self.v4 = np.zeros(z_res)
+        self.v5 = np.zeros(z_res)
+        self.v6 = np.zeros(z_res)
+        self.mask1 = np.zeros([z_res, z_res], dtype=bool)
 
     def zero(self):
         self.m1.fill(0)
@@ -185,7 +187,7 @@ def add_qso_pairs_to_bins(ar_distance, pairs, pairs_angles, spectra_with_metadat
     :return: bins_2d.Bins2D
     """
     pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y)
-    pre_alloc_matrices = PreAllocMatrices()
+    pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
     n = 0
     for i, j, k in pairs:
         # find distance between QSOs
@@ -218,7 +220,8 @@ def profile_main():
     # initialize data sources
     qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
     spectra_with_metadata = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table)
-    delta_t_file = NpSpectrumContainer(True, len(qso_record_table), settings.get_delta_t_npy())
+    delta_t_file = NpSpectrumContainer(True, len(qso_record_table), settings.get_delta_t_npy(),
+                                       max_wavelength_count=1000)
 
     # prepare data for quicker access
     qso_record_list = [QSORecord.from_row(i) for i in qso_record_table]

@@ -26,7 +26,8 @@ cd = comoving_distance.ComovingDistance(2.0, 3.6, 0.001)
 
 class DeltaTransmittanceAccumulator:
     def __init__(self, qso_record_table):
-        self.delta_t_file = NpSpectrumContainer(False, len(qso_record_table), settings.get_delta_t_npy())
+        self.delta_t_file = NpSpectrumContainer(False, len(qso_record_table), settings.get_delta_t_npy(),
+                                                max_wavelength_count=1000)
 
     def accumulate(self, result_enum):
         # initialize file
