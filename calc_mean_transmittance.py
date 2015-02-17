@@ -29,6 +29,8 @@ class DeltaTransmittanceAccumulator:
         self.delta_t_file = NpSpectrumContainer(False, len(qso_record_table), settings.get_delta_t_npy())
 
     def accumulate(self, result_enum):
+        # initialize file
+        self.delta_t_file.zero()
         n = 0
         for i in result_enum:
             for j in NpSpectrumIterator(i):
@@ -117,6 +119,8 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, table_offset=qso_record_count[0])
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     delta_t = NpSpectrumContainer(False, len(qso_record_count))
+    # warning: np.ndarray is not initialized by default. zeroing manually.
+    delta_t.zero()
     result_enum = itertools.imap(qso_transmittance, spec_iter)
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
     m_mean = m.get_mean()
@@ -165,11 +169,11 @@ def accumulate_over_spectra(func, accumulator, sample_fraction=0.001):
                                 split_seq(settings.get_chunk_size(),
                                           itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                             qso_record_table_numbered)))
+        # "reduce" results
+        acc_result = acc.accumulate(result_enum)
         # wait for all processes to finish
         pool.close()
         pool.join()
-        # "reduce" results
-        acc_result = acc.accumulate(result_enum)
 
     return acc_result
 

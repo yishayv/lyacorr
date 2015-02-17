@@ -49,6 +49,9 @@ class NpSpectrumContainer(object):
         # trim zeros, always according to wavelength
         return self.np_array[n][i][ar_wavelength != 0]
 
+    def zero(self):
+        self.np_array[:] = 0
+
 
 class NpSpectrumIterator(object):
     """
