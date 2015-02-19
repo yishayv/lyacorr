@@ -97,27 +97,20 @@ def profile_main():
     local_end_index = local_start_index + chunk_sizes[comm.rank]
     l_print('matching objects in range:', local_start_index, 'to', local_end_index)
     # each node matches a range of objects against the full list.
-    x = matching.search_around_sky(coord_set[local_start_index:local_end_index],
-                                   coord_set,
-                                   max_angular_separation)
-
-    # local_qso1 = np.zeros(chunk_sizes[comm.rank], dtype='int64')
-    # local_qso2 = np.zeros(chunk_sizes[comm.rank], dtype='int64')
-    # local_pair_angles = np.zeros(chunk_sizes[comm.rank], dtype='float64')
-    # comm.Scatterv([x[0], chunk_sizes, chunk_offsets, MPI.LONG], [local_qso1, MPI.LONG])
-    # comm.Scatterv([x[1], chunk_sizes, chunk_offsets, MPI.LONG], [local_qso2, MPI.LONG])
-    # comm.Scatterv([x[2].to(u.rad).value, chunk_sizes, chunk_offsets, MPI.DOUBLE], [local_pair_angles, MPI.DOUBLE])
+    count = matching.search_around_sky(coord_set[local_start_index:local_end_index],
+                                       coord_set,
+                                       max_angular_separation)
 
     # search around sky returns indices in the input lists.
     # each node should add its offset to get the QSO index in the original list (only for x[0]).
     # qso2 which contains the unmodified index to the full list of QSOs.
     # the third vector is a count so we can keep a reference to the angles vector.
-    local_pairs_with_unity = np.vstack((x[0] + local_start_index,
-                                        x[1],
-                                        np.arange(x[0].size)))
+    local_pairs_with_unity = np.vstack((count[0] + local_start_index,
+                                        count[1],
+                                        np.arange(count[0].size)))
 
-    local_pair_angles = x[2].to(u.rad).value
-    l_print('number of QSO pairs (including identity pairs):', x[0].size)
+    local_pair_angles = count[2].to(u.rad).value
+    l_print('number of QSO pairs (including identity pairs):', count[0].size)
     l_print('angle vector size:', local_pair_angles.size)
 
     # remove pairs of the same QSO.
@@ -135,17 +128,18 @@ def profile_main():
     comm.Gatherv(local_pair_separation_bins.ar_count, pair_separation_bins_count)
     comm.Gatherv(local_pair_separation_bins.ar_flux, pair_separation_bins_flux)
 
-    # TODO: rewrite!
-    pair_separation_bins = bins_2d.Bins2D(calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y)
-    for k, l in itertools.izip(pair_separation_bins_count, pair_separation_bins_flux):
-        local_bins = bins_2d.Bins2D(calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y)
-        local_bins.ar_count = k
-        local_bins.ar_flux = l
-        pair_separation_bins.merge(local_bins)
-
     if comm.rank == 0:
-        r_print('total number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int))
-        pair_separation_bins.save(settings.get_estimator_bins())
+        # TODO: rewrite!
+        list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux) for count, flux in
+                                     itertools.izip(pair_separation_bins_count, pair_separation_bins_flux)]
+        if list_pair_separation_bins:
+            pair_separation_bins = reduce(lambda x, y: x + y, list_pair_separation_bins,
+                                          bins_2d.Bins2D.init_as(list_pair_separation_bins[0]))
+
+            r_print('total number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int))
+            pair_separation_bins.save(settings.get_estimator_bins())
+        else:
+            print('no results received.')
 
 
 if settings.get_profile():

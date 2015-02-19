@@ -7,6 +7,7 @@ class Bins2D:
         self.ar_count = np.zeros((x_count, y_count))
         self.x_count = x_count
         self.y_count = y_count
+        self.index_type = ''
         self.update_index_type()
 
     def add(self, flux, x, y):
@@ -48,8 +49,11 @@ class Bins2D:
         self.ar_count += count_hist
 
     def merge(self, bins_2d_2):
+        assert self.ar_flux.shape == bins_2d_2.ar_flux.shape
+        assert self.ar_count.shape == bins_2d_2.ar_count.shape
         self.ar_flux += bins_2d_2.ar_flux
         self.ar_count += bins_2d_2.ar_count
+        return self
 
     def save(self, filename):
         np.save(filename, np.dstack((self.ar_flux, self.ar_count)))
@@ -66,3 +70,33 @@ class Bins2D:
     def update_index_type(self):
         # choose integer type according to number of bins
         self.index_type = 'int32' if self.x_count * self.y_count > 32767 else 'int16'
+
+    def __radd__(self, other):
+        return self.init_as(self).merge(self).merge(other)
+
+    @classmethod
+    def init_as(cls, other):
+        """
+
+        :type other: Bins2D
+        """
+        return cls(other.x_count, other.y_count)
+
+    @classmethod
+    def from_other(cls, other):
+        new_obj = cls.init_as(other)
+        new_obj.merge(other)
+
+    @classmethod
+    def from_np_arrays(cls, ar_count, ar_flux):
+        """
+
+        :param ar_count: np.array
+        :param ar_flux: np.array
+        """
+        assert ar_count.ndim == ar_flux.ndim == 2
+        assert ar_count.shape == ar_flux.shape
+        new_bins = cls(ar_count.shape[0], ar_count.shape[1])
+        new_bins.ar_count = ar_count
+        new_bins.ar_flux = ar_flux
+        return new_bins
