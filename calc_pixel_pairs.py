@@ -83,6 +83,9 @@ def find_nearby_pixels(cd, pre_alloc_matrices, pair_separation_bins, qso_angle,
     # print spec2_flux
     spec2_distances = cd.fast_comoving_distance(spec2_z)
 
+    # if the parallel distance between forests is too large, they will not form pairs.
+    if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
+        return
 
     # create matrices with first dimension of spec1 data points,
     # second dimension of spec2 data points
