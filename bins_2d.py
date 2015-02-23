@@ -2,13 +2,14 @@ import numpy as np
 
 
 class Bins2D:
-    def __init__(self, x_count, y_count):
+    def __init__(self, x_count, y_count, filename=''):
         self.ar_flux = np.zeros((x_count, y_count))
         self.ar_count = np.zeros((x_count, y_count))
         self.x_count = x_count
         self.y_count = y_count
         self.index_type = ''
         self.update_index_type()
+        self.filename = filename
 
     def add(self, flux, x, y):
         x_int = int(x)
@@ -56,7 +57,8 @@ class Bins2D:
         return self
 
     def save(self, filename):
-        np.save(filename, np.dstack((self.ar_flux, self.ar_count)))
+        self.filename = filename
+        self.flush()
 
     def load(self, filename):
         # TODO: to static
@@ -100,3 +102,9 @@ class Bins2D:
         new_bins.ar_count = ar_count
         new_bins.ar_flux = ar_flux
         return new_bins
+
+    def set_filename(self, filename):
+        self.filename = filename
+
+    def flush(self):
+        np.save(self.filename, np.dstack((self.ar_flux, self.ar_count)))

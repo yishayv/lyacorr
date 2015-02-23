@@ -118,8 +118,8 @@ def profile_main():
     # l_print(pairs)
     l_print('number of QSO pairs:', pairs.shape[0])
     # l_print('angle vector:', x[2])
-    local_pair_separation_bins = calc_pixel_pairs.add_qso_pairs_to_bins(cd, ar_distance, pairs, local_pair_angles,
-                                                                        spectra_with_metadata, delta_t_file)
+    local_pair_separation_bins = \
+        calc_pixel_pairs.add_qso_pairs_to_bins(cd, pairs, local_pair_angles, delta_t_file)
     # l_print(local_qso1 + local_start_index)
     l_print('local pair count:', local_pair_separation_bins.ar_count.sum())
 

@@ -57,7 +57,7 @@ def find_nearby_pixels(cd, pre_alloc_matrices, pair_separation_bins, qso_angle,
     :param spec1_index: int
     :param spec2_index: int
     :param delta_t_file: NpSpectrumContainer
-    :param r:
+    :param r: float64
     :return:
     """
 
@@ -146,14 +146,48 @@ def find_nearby_pixels(cd, pre_alloc_matrices, pair_separation_bins, qso_angle,
     np.multiply(flux_products, z_weights, weighted_flux_products)
     assert not np.isnan(weighted_flux_products.sum())
 
-    # add flux products for all nearby pairs, and bin by r_parallel, r_transverse
-    pair_separation_bins.add_array_with_mask(flux_products,
-                                             r_parallel,
-                                             r_transverse,
-                                             mask_matrix)
+    return pair_separation_bins.add_array_with_mask(flux_products,
+                                                    r_parallel,
+                                                    r_transverse,
+                                                    mask_matrix)
 
 
-def add_qso_pairs_to_bins(cd, ar_distance, pairs, pairs_angles, spectra_with_metadata, delta_t_file):
+def apply_to_flux_pairs(cd, pairs, pairs_angles, delta_t_file, accumulator):
+    """
+
+    :param cd: comoving_distance.ComovingDistance
+    :param ar_distance: np.array
+    :param pairs: np.array
+    :param pairs_angles: np.array
+    :param spectra_with_metadata: read_spectrum_hdf5.SpectraWithMetadata
+    :param delta_t_file: NpSpectrumContainer
+    :param accumulator
+    :return: accumulator
+    """
+
+    pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
+    n = 0
+    for i, j, k in pairs:
+        qso_angle = pairs_angles[k]
+        # r_parallel = abs(ar_distance[i] - ar_distance[j])
+        # mean_distance = (ar_distance[i] + ar_distance[j]) / 2
+        # r_transverse = mean_distance * qso_angle
+        # print 'QSO pair with r_parallel %f, r_transverse %f' % (r_parallel, r_transverse)
+        spec1_index = i
+        spec2_index = j
+        # TODO: read the default 200Mpc value from elsewhere
+        find_nearby_pixels(cd, pre_alloc_matrices, accumulator, qso_angle,
+                           spec1_index, spec2_index, delta_t_file,
+                           r=200 * np.sqrt(2))
+        if n % 1000 == 0:
+            print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
+                n, accumulator.ar_count.sum().astype(int))
+            accumulator.flush()
+        n += 1
+    return accumulator
+
+
+def add_qso_pairs_to_bins(cd, pairs, pairs_angles, delta_t_file):
     """
 
     :param cd: comoving_distance.ComovingDistance
@@ -165,26 +199,6 @@ def add_qso_pairs_to_bins(cd, ar_distance, pairs, pairs_angles, spectra_with_met
     :return: bins_2d.Bins2D
     """
     pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y)
-    pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
-    n = 0
-    for i, j, k in pairs:
-        # find distance between QSOs
-        # qso1 = coord_set[i]
-        # qso2 = coord_set[j]
-        qso_angle = pairs_angles[k]
-        r_parallel = abs(ar_distance[i] - ar_distance[j])
-        mean_distance = (ar_distance[i] + ar_distance[j]) / 2
-        r_transverse = mean_distance * qso_angle
-        # print 'QSO pair with r_parallel %f, r_transverse %f' % (r_parallel, r_transverse)
-        spec1_index = i
-        spec2_index = j
-        # TODO: read the default 200Mpc value from elsewhere
-        find_nearby_pixels(cd, pre_alloc_matrices, pair_separation_bins, qso_angle,
-                           spec1_index, spec2_index, delta_t_file,
-                           r=200 * np.sqrt(2))
-        if n % 1000 == 0:
-            print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
-                n, pair_separation_bins.ar_count.sum().astype(int))
-            pair_separation_bins.save(settings.get_estimator_bins())
-        n += 1
+    pair_separation_bins.set_filename(settings.get_estimator_bins())
+    apply_to_flux_pairs(cd, pairs, pairs_angles, delta_t_file, pair_separation_bins)
     return pair_separation_bins
