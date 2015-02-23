@@ -4,7 +4,6 @@ import common_settings
 import bins_2d
 
 
-
 # bin size in Mpc/h
 BIN_SIZE = 4
 NUM_BINS_X = 50
@@ -156,10 +155,8 @@ def apply_to_flux_pairs(cd, pairs, pairs_angles, delta_t_file, accumulator):
     """
 
     :param cd: comoving_distance.ComovingDistance
-    :param ar_distance: np.array
     :param pairs: np.array
     :param pairs_angles: np.array
-    :param spectra_with_metadata: read_spectrum_hdf5.SpectraWithMetadata
     :param delta_t_file: NpSpectrumContainer
     :param accumulator
     :return: accumulator
@@ -191,10 +188,8 @@ def add_qso_pairs_to_bins(cd, pairs, pairs_angles, delta_t_file):
     """
 
     :param cd: comoving_distance.ComovingDistance
-    :param ar_distance: np.array
     :param pairs: np.array
     :param pairs_angles: np.array
-    :param spectra_with_metadata: read_spectrum_hdf5.SpectraWithMetadata
     :param delta_t_file: NpSpectrumContainer
     :return: bins_2d.Bins2D
     """

@@ -1,7 +1,7 @@
 import numpy as np
+from flux_accumulator import AccumulatorBase
 
-
-class Bins2D:
+class Bins2D(AccumulatorBase):
     def __init__(self, x_count, y_count, filename=''):
         self.ar_flux = np.zeros((x_count, y_count))
         self.ar_count = np.zeros((x_count, y_count))
@@ -75,6 +75,9 @@ class Bins2D:
 
     def __radd__(self, other):
         return self.init_as(self).merge(self).merge(other)
+
+    # def __add__(self, other):
+    #     return self.init_as(self).merge(self).merge(other)
 
     @classmethod
     def init_as(cls, other):
