@@ -142,13 +142,15 @@ def find_nearby_pixels(cd, pre_alloc_matrices, pair_separation_bins, qso_angle,
     np.power(z_plus_1_2, gamma, out=z_plus_1_power_2)
     np.outer(z_plus_1_power_1, z_plus_1_power_2, out=z_weights)
 
-    np.multiply(flux_products, z_weights, weighted_flux_products)
-    assert not np.isnan(weighted_flux_products.sum())
+    # np.multiply(flux_products, z_weights, weighted_flux_products)
+    assert not np.isnan(flux_products.sum())
+    assert not np.isnan(z_weights.sum())
 
     return pair_separation_bins.add_array_with_mask(flux_products,
                                                     r_parallel,
                                                     r_transverse,
-                                                    mask_matrix)
+                                                    mask_matrix,
+                                                    z_weights)
 
 
 def apply_to_flux_pairs(cd, pairs, pairs_angles, delta_t_file, accumulator):

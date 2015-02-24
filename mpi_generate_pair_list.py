@@ -125,13 +125,16 @@ def profile_main():
 
     pair_separation_bins_count = np.zeros(shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
     pair_separation_bins_flux = np.zeros(shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
+    pair_separation_bins_weights = np.zeros(shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
     comm.Gatherv(local_pair_separation_bins.ar_count, pair_separation_bins_count)
     comm.Gatherv(local_pair_separation_bins.ar_flux, pair_separation_bins_flux)
+    comm.Gatherv(local_pair_separation_bins.ar_weights, pair_separation_bins_weights)
 
     if comm.rank == 0:
         # TODO: rewrite!
-        list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux) for count, flux in
-                                     itertools.izip(pair_separation_bins_count, pair_separation_bins_flux)]
+        list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux, weights) for count, flux, weights in
+                                     itertools.izip(pair_separation_bins_count, pair_separation_bins_flux,
+                                                    pair_separation_bins_weights)]
         if list_pair_separation_bins:
             pair_separation_bins = reduce(lambda x, y: x + y, list_pair_separation_bins,
                                           bins_2d.Bins2D.init_as(list_pair_separation_bins[0]))
