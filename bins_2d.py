@@ -1,5 +1,7 @@
 import numpy as np
+
 from flux_accumulator import AccumulatorBase
+
 
 class Bins2D(AccumulatorBase):
     def __init__(self, x_count, y_count, filename=''):
@@ -10,22 +12,6 @@ class Bins2D(AccumulatorBase):
         self.index_type = ''
         self.update_index_type()
         self.filename = filename
-
-    def add(self, flux, x, y):
-        x_int = int(x)
-        y_int = int(y)
-        if x < 0 or y < 0 or x >= self.x_count or y >= self.y_count:
-            return
-        self.ar_flux[x, y] += flux
-        self.ar_count[x, y] += 1
-
-    def add_array(self, ar_flux, ar_x, ar_y):
-        ar_x_int = ar_x.astype(int)
-        ar_y_int = ar_y.astype(int)
-        mask = np.logical_and(np.logical_and(ar_x_int >= 0, ar_y_int >= 0),
-                              np.logical_and(ar_x_int < self.x_count, ar_y_int < self.y_count))
-        self.ar_flux[ar_x_int[mask], ar_y_int[mask]] += ar_flux[mask]
-        self.ar_count[ar_x_int[mask], ar_y_int[mask]] += 1
 
     def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask):
         ar_x_int = ar_x.astype(self.index_type)
@@ -76,8 +62,8 @@ class Bins2D(AccumulatorBase):
     def __radd__(self, other):
         return self.init_as(self).merge(self).merge(other)
 
-    # def __add__(self, other):
-    #     return self.init_as(self).merge(self).merge(other)
+    def __add__(self, other):
+        return self.init_as(self).merge(self).merge(other)
 
     @classmethod
     def init_as(cls, other):
@@ -111,3 +97,38 @@ class Bins2D(AccumulatorBase):
 
     def flush(self):
         np.save(self.filename, np.dstack((self.ar_flux, self.ar_count)))
+
+
+class Expandable1DArray(object):
+    def __init__(self, *args, **kwargs):
+        self.ar = np.copy(np.array(*args, **kwargs))
+        self.size = self.ar.size
+
+    def get_array_view(self):
+        return self.ar[:self.size]
+
+    def add_array(self, ar):
+        new_required_size = self.size + ar.size
+        # if a resize is needed, resize to the next power of 2
+        if self.ar.size < new_required_size:
+            self.ar.resize([self._new_size(new_required_size)])
+            # old_ar = self.ar
+            # self.ar = np.zeros(self._new_size(new_required_size))
+            # np.copyto(self.get_array_view(), old_ar)
+        np.copyto(self.ar[self.size:self.size + ar.size], ar)
+        self.size += ar.size
+        return self.get_array_view()
+
+    @classmethod
+    def _new_size(cls, n):
+        return max(cls.get_next_power_of_2(n), 0)
+
+    @classmethod
+    def get_next_power_of_2(cls, n):
+        return 1 << n.bit_length()
+
+
+class Bins2DLists:
+    def __init__(self):
+        self.bins = [Expandable1DArray() for i in 2500]
+
