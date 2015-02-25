@@ -41,6 +41,10 @@ class Settings():
     # enable/disable cProfile
     opt_profile = 'Profile'
 
+    section_data_processing = 'DataProcessing'
+    # low continuum flux cutoff
+    opt_min_continuum_threshold = 'Min_Continuum_Threshold'
+
 
     def write_default_settings(self):
         value_plate_dir_list = _SEP.join(['/mnt/gastro/sdss/spectro/redux/v5_7_0',
@@ -60,6 +64,8 @@ class Settings():
         value_single_process = False
         value_profile = False
 
+        value_min_continuum_threshold = 0.5
+
         # replace config parser with an empty one
         self.config_parser = ConfigParser.SafeConfigParser()
         self.config_parser.add_section(self.section_file_paths)
@@ -77,6 +83,10 @@ class Settings():
         self.config_parser.set(self.section_performance, self.opt_chunk_size, str(value_chunk_size))
         self.config_parser.set(self.section_performance, self.opt_single_process, str(value_single_process))
         self.config_parser.set(self.section_performance, self.opt_profile, str(value_profile))
+
+        self.config_parser.add_section(self.section_data_processing)
+        self.config_parser.set(self.section_data_processing, self.opt_min_continuum_threshold,
+                               str(value_min_continuum_threshold))
 
         with open(self.settings_file_name, 'wb') as configfile:
             self.config_parser.write(configfile)
@@ -116,3 +126,6 @@ class Settings():
 
     def get_profile(self):
         return self.config_parser.getboolean(self.section_performance, self.opt_profile)
+
+    def get_min_continuum_threshold(self):
+        return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)

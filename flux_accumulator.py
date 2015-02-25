@@ -22,13 +22,14 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
-    def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask):
+    def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask, ar_weights):
         """
         Add flux with two corresponding coordinates, and a mask.
         :param ar_flux:
         :param ar_x:
         :param ar_y:
         :param mask:
+        :param ar_weights:
         :return:
         """
         return

@@ -22,6 +22,7 @@ fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], 
 z_range = (2.1, 3.5, 0.0001)
 ar_z_range = np.arange(*z_range)
 cd = comoving_distance.ComovingDistance(2.0, 3.6, 0.001)
+min_continuum_threshold = settings.get_min_continuum_threshold()
 
 
 class DeltaTransmittanceAccumulator:
@@ -62,7 +63,7 @@ def qso_transmittance(qso_spec_obj):
         fit_pca.fit(ar_wavelength / (1 + z), ar_flux, normalized=False, boundary_value=np.nan)
 
     fit_min_value = fit_spectrum[~np.isnan(fit_spectrum)].min()
-    if fit_min_value < 0.01:
+    if fit_min_value < min_continuum_threshold:
         print "low continuum - rejected QSO:", qso_rec
         return empty_result
 
