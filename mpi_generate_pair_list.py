@@ -77,10 +77,11 @@ def profile_main():
     ar_distance = cd.fast_comoving_distance(ar_z)
     r_print('QSO table size:', len(ar_distance))
 
-    # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
-    # TODO: does the article assume h=100km/s/mpc?
     # TODO: find a more precise value instead of z=1.9
-    max_angular_separation = 200 * u.Mpc / (Planck13.comoving_transverse_distance(1.9) / u.radian)
+    # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
+    # the article assumes h=100km/s/mpc
+    radius = (200. * (100. * u.km / (u.Mpc * u.s)) / Planck13.H0).value
+    max_angular_separation = radius * u.Mpc / (Planck13.comoving_transverse_distance(1.9) / u.radian)
     r_print('maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree))
 
     # print ar_list
@@ -118,7 +119,9 @@ def profile_main():
     # l_print(pairs)
     l_print('number of QSO pairs:', pairs.shape[0])
     # l_print('angle vector:', x[2])
-    pixel_pairs = calc_pixel_pairs.PixelPairs(cd)
+
+    # multiply by sqrt(2) to reach the entire square bin grid
+    pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius * np.sqrt(2))
     local_pair_separation_bins = \
         pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
     # l_print(local_qso1 + local_start_index)

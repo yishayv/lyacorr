@@ -47,7 +47,7 @@ class PreAllocMatrices:
 
 
 class PixelPairs:
-    def __init__(self, cd, weight_eta=None, weight_sigma_lss=None):
+    def __init__(self, cd, radius, weight_eta=None, weight_sigma_lss=None):
         """
         initialize persistent objects
         :type cd: comoving_distance.ComovingDistance
@@ -61,6 +61,7 @@ class PixelPairs:
             WeightEta(*default_weight_z_range)
         self.weight_sigma_lss = weight_sigma_lss if weight_sigma_lss else \
             SigmaSquaredLSS(*default_weight_z_range)
+        self.radius = radius
 
     def find_nearby_pixels(self, accumulator, qso_angle,
                            spec1_index, spec2_index, delta_t_file, r):
@@ -194,10 +195,9 @@ class PixelPairs:
             # print 'QSO pair with r_parallel %f, r_transverse %f' % (r_parallel, r_transverse)
             spec1_index = i
             spec2_index = j
-            # TODO: read the default 200Mpc value from elsewhere
             self.find_nearby_pixels(accumulator, qso_angle,
                                     spec1_index, spec2_index, delta_t_file,
-                                    r=200 * np.sqrt(2))
+                                    r=self.radius)
             if n % 1000 == 0:
                 print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
                     n, accumulator.ar_count.sum().astype(int))
