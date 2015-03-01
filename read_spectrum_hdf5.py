@@ -1,7 +1,7 @@
 import itertools
 
-from read_spectrum_fits import QSORecord
 from hdf5_spectrum_container import Hdf5SpectrumContainer, Hdf5SpectrumIterator
+from qso_data import QSORecord, QSOData
 
 FILENAME = '/mnt/gastro/yishay/sdss_QSOs/spectra.hdf5'
 MAX_WAVELENGTH_COUNT = 4992
@@ -19,6 +19,7 @@ def return_spectra_2(qso_record_table, spectra_file=FILENAME):
             continue
         yield ar_wavelength, ar_flux, qso_rec
 
+
 # TODO: refactor this or remove completely
 class SpectraWithMetadata:
     def __init__(self, qso_record_table, spectra_file=FILENAME, table_offset=0):
@@ -30,9 +31,9 @@ class SpectraWithMetadata:
         # we assume that the order of spectra is the same as in the QSO list
         """
 
-        :rtype : np.array, np.array, QSORecord
+        :rtype : QSOData
         """
         qso_rec = QSORecord.from_row(self.qso_record_table[n - self.table_offset])
         ar_wavelength = self.spectra.get_wavelength(n)
         ar_flux = self.spectra.get_flux(n)
-        return ar_wavelength, ar_flux, qso_rec
+        return QSOData(qso_rec, ar_wavelength, ar_flux)

@@ -49,14 +49,14 @@ def find_nearby_pixels(cd, pre_alloc_matrices, pair_separation_bins, qso_angle,
                        spec1_index, spec2_index, delta_t_file, r):
     """
     Find all pixel pairs in QSO1,QSO2 that are closer than radius r
-    :param cd: comoving_distance.ComovingDistance
-    :param pre_alloc_matrices: PreAllocMatrices
-    :param pair_separation_bins: bins_2d.Bins2D
-    :param qso_angle: float64
-    :param spec1_index: int
-    :param spec2_index: int
-    :param delta_t_file: NpSpectrumContainer
-    :param r: float64
+    :type cd: comoving_distance.ComovingDistance
+    :type pre_alloc_matrices: PreAllocMatrices
+    :type pair_separation_bins: bins_2d.Bins2D
+    :type qso_angle: float64
+    :type spec1_index: int
+    :type spec2_index: int
+    :type delta_t_file: NpSpectrumContainer
+    :type r: float64
     :return:
     """
 
@@ -156,12 +156,12 @@ def find_nearby_pixels(cd, pre_alloc_matrices, pair_separation_bins, qso_angle,
 def apply_to_flux_pairs(cd, pairs, pairs_angles, delta_t_file, accumulator):
     """
 
-    :param cd: comoving_distance.ComovingDistance
-    :param pairs: np.array
-    :param pairs_angles: np.array
-    :param delta_t_file: NpSpectrumContainer
-    :param accumulator
-    :return: accumulator
+    :type cd: comoving_distance.ComovingDistance
+    :type pairs: np.array
+    :type pairs_angles: np.array
+    :type delta_t_file: NpSpectrumContainer
+    :type accumulator
+    :rtype: accumulator
     """
 
     pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
@@ -189,11 +189,11 @@ def apply_to_flux_pairs(cd, pairs, pairs_angles, delta_t_file, accumulator):
 def add_qso_pairs_to_bins(cd, pairs, pairs_angles, delta_t_file):
     """
 
-    :param cd: comoving_distance.ComovingDistance
-    :param pairs: np.array
-    :param pairs_angles: np.array
-    :param delta_t_file: NpSpectrumContainer
-    :return: bins_2d.Bins2D
+    :type cd: comoving_distance.ComovingDistance
+    :type pairs: np.array
+    :type pairs_angles: np.array
+    :type delta_t_file: NpSpectrumContainer
+    :rtype: bins_2d.Bins2D
     """
     pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y)
     pair_separation_bins.set_filename(settings.get_estimator_bins())

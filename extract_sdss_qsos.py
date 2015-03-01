@@ -8,9 +8,10 @@ import astropy.table as table
 import astropy.units as u
 
 import read_spectrum_fits
+from qso_data import QSORecord
 from read_spectrum_fits import QSO_fields_dict
-
 import common_settings
+
 
 settings = common_settings.Settings()
 
@@ -18,10 +19,10 @@ settings = common_settings.Settings()
 def create_rec(i):
     # make sure we have no QSOs with warning bits set (other than bit #4)
     assert not i[QSO_fields_dict['zWarning']] & ~0x10
-    return read_spectrum_fits.QSORecord(i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
-                                        i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
-                                        i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
-                                        i[QSO_fields_dict['fiberID']])
+    return QSORecord(i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
+                     i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
+                     i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
+                     i[QSO_fields_dict['fiberID']])
 
 
 def create_rec_2(i):
@@ -50,10 +51,10 @@ def fill_qso_table(t):
 
     if settings.get_single_process():
         qso_record_list = map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
-                                                               read_spectrum_fits.generate_qso_details()))
+                                                              read_spectrum_fits.generate_qso_details()))
     else:
         qso_record_list = pool.map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
-                                                               read_spectrum_fits.generate_qso_details()), 200)
+                                                                   read_spectrum_fits.generate_qso_details()), 200)
     # remove None values
     qso_record_list = [i for i in qso_record_list if i is not None]
 
@@ -61,6 +62,7 @@ def fill_qso_table(t):
         t.add_row(i)
 
     return t
+
 
 def profile_main():
     t_ = create_qso_table()

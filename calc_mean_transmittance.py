@@ -10,6 +10,7 @@ import continuum_fit_pca
 import read_spectrum_hdf5
 import common_settings
 from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
+from qso_data import QSOData
 import comoving_distance
 
 
@@ -53,10 +54,15 @@ class MeanTransmittanceAccumulator:
 
 
 def qso_transmittance(qso_spec_obj):
-    qso_rec = qso_spec_obj[2]
+    """
+
+    :type qso_spec_obj: QSOData
+    :return:
+    """
+    qso_rec = qso_spec_obj.qso_rec
     z = qso_rec.z
-    ar_wavelength = qso_spec_obj[0]
-    ar_flux = qso_spec_obj[1]
+    ar_wavelength = qso_spec_obj.ar_wavelength
+    ar_flux = qso_spec_obj.ar_flux
     empty_result = (np.array([]), np.array([]))
 
     fit_spectrum, fit_normalization_factor = \

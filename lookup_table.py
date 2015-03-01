@@ -15,10 +15,10 @@ class LinearInterpTable:
     def __init__(self, func, x_start, x_end, x_step):
         """
 
-        :param func: a function with a 1D array argument
-        :param x_start: float64
-        :param x_end: float64
-        :param x_step: float64
+        :type func: a function with a 1D array argument
+        :type x_start: float64
+        :type x_end: float64
+        :type x_step: float64
         """
         self._x_table = np.arange(x_start, x_end, x_step)
         self._func_value_table = func(self._x_table)
@@ -29,8 +29,8 @@ class LinearInterpTable:
     def evaluate(self, ar_x):
         """
 
-        :param ar_x: np.array
-        :return: float64
+        :type ar_x: np.array
+        :rtype: float64
         """
         assert np.all(ar_x < self.x_end) & np.all(ar_x > self.x_start), "lookup value out of range"
         ar_index = self._func_value_table.size * (ar_x - self.x_start) / (self.x_end - self.x_start)

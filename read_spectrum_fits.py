@@ -7,6 +7,7 @@ import pyfits
 import astropy.table as table
 
 import common_settings
+from qso_data import QSORecord, QSOData
 
 
 settings = common_settings.Settings()
@@ -91,27 +92,7 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
         spec = data[qso_rec.fiberID - 1]
 
         last_fits_partial_path = fits_partial_path
-        yield ogrid, spec, qso_rec
+        yield QSOData(qso_rec, ogrid, spec)
 
 
-class QSORecord:
-    def __init__(self, specObjID, z, ra, dec, plate, mjd, fiberID):
-        self.specObjID = specObjID
-        self.z = z
-        self.ra = ra
-        self.dec = dec
-        self.plate = plate
-        self.mjd = mjd
-        self.fiberID = fiberID
-
-    @classmethod
-    def from_row(cls, qso_row):
-        assert isinstance(qso_row, table.Row)
-        return cls(qso_row['specObjID'], qso_row['z'], qso_row['ra'], qso_row['dec'], qso_row['plate'],
-                   qso_row['mjd'], qso_row['fiberID'])
-
-
-    def __str__(self):
-        return " ".join([str(self.specObjID), str(self.z), str(self.ra), str(self.dec),
-                         str(self.plate), str(self.mjd), str(self.fiberID)])
 

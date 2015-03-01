@@ -9,6 +9,7 @@ import astropy.table as table
 import read_spectrum_fits
 from hdf5_spectrum_container import Hdf5SpectrumContainer
 import common_settings
+from qso_data import QSORecord, QSOData
 
 
 MAX_SPECTRA = 220000
@@ -18,10 +19,15 @@ settings = common_settings.Settings()
 
 
 def save_spectrum(qso_spec_obj):
-    qso_rec = qso_spec_obj[2]
+    """
+
+    :type qso_spec_obj: QSOData
+    :return:
+    """
+    qso_rec = qso_spec_obj.qso_rec
     z = qso_rec.z
-    ar_wavelength = qso_spec_obj[0]
-    ar_flux = qso_spec_obj[1]
+    ar_wavelength = qso_spec_obj.ar_wavelength
+    ar_flux = qso_spec_obj.ar_flux
     return [ar_wavelength, ar_flux]
 
 

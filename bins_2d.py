@@ -93,9 +93,9 @@ class Bins2D(AccumulatorBase):
     def from_np_arrays(cls, ar_count, ar_flux, ar_weights):
         """
 
-        :param ar_count: np.array
-        :param ar_flux: np.array
-        :param ar_weights: np.array
+        :type ar_count: np.array
+        :type ar_flux: np.array
+        :type ar_weights: np.array
         """
         assert ar_count.ndim == ar_flux.ndim == ar_weights.ndim == 2
         assert ar_count.shape == ar_flux.shape == ar_weights.shape

@@ -25,11 +25,11 @@ class AccumulatorBase(object):
     def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask, ar_weights):
         """
         Add flux with two corresponding coordinates, and a mask.
-        :param ar_flux:
-        :param ar_x:
-        :param ar_y:
-        :param mask:
-        :param ar_weights:
+        :type ar_flux:
+        :type ar_x:
+        :type ar_y:
+        :type mask:
+        :type ar_weights:
         :return:
         """
         return

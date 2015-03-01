@@ -29,7 +29,7 @@ class WeightsEta:
     def _sigma_function(ar_z):
         ar_sigma = np.loadtxt(settings.get_weights_eta(), skiprows=1)
         # interpolate results to a fixed grid for fast lookup
-        return np.interp(ar_z, ar_sigma[0], ar_sigma[1])
+        return np.interp(ar_z, ar_sigma[:, 0], ar_sigma[:, 1])
 
     def evaluate(self, ar_z):
         return self.lookup_table.evaluate(ar_z)
