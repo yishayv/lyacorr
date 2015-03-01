@@ -64,7 +64,7 @@ class Settings():
         value_delta_t_npy = '../../data/delta_t.npy'
         value_estimator_bins_npy = '../../data/estimator_bins.npy'
         value_sigma_sq_lss = '../../data/Sigma_sq_LSS.txt'
-        value_weights_eta = '../../data/Weights_eta_func.txt'
+        value_weight_eta = '../../data/Weight_eta_func.txt'
 
         value_chunk_size = 10000
         value_single_process = False
@@ -85,7 +85,7 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_delta_t_npy, value_delta_t_npy)
         self.config_parser.set(self.section_file_paths, self.opt_estimator_bins, value_estimator_bins_npy)
         self.config_parser.set(self.section_file_paths, self.opt_sigma_sq_lss, value_sigma_sq_lss)
-        self.config_parser.set(self.section_file_paths, self.opt_weight_eta, value_weights_eta)
+        self.config_parser.set(self.section_file_paths, self.opt_weight_eta, value_weight_eta)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_chunk_size, str(value_chunk_size))
@@ -129,7 +129,7 @@ class Settings():
     def get_sigma_squared_lss(self):
         return self.config_parser.get(self.section_file_paths, self.opt_sigma_sq_lss)
 
-    def get_weights_eta(self):
+    def get_weight_eta(self):
         return self.config_parser.get(self.section_file_paths, self.opt_weight_eta)
 
     def get_chunk_size(self):

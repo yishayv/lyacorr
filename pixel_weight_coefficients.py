@@ -21,13 +21,13 @@ class SigmaSquaredLSS:
         return self.lookup_table.evaluate(ar_z)
 
 
-class WeightsEta:
+class WeightEta:
     def __init__(self, z_start, z_end, z_step):
         self.lookup_table = lookup_table.LinearInterpTable(self._sigma_function, z_start, z_end, z_step)
 
     @staticmethod
     def _sigma_function(ar_z):
-        ar_sigma = np.loadtxt(settings.get_weights_eta(), skiprows=1)
+        ar_sigma = np.loadtxt(settings.get_weight_eta(), skiprows=1)
         # interpolate results to a fixed grid for fast lookup
         return np.interp(ar_z, ar_sigma[:, 0], ar_sigma[:, 1])
 
