@@ -3,10 +3,9 @@ import numpy as np
 import common_settings
 import bins_2d
 from pixel_weight_coefficients import SigmaSquaredLSS, WeightEta
+from flux_accumulator import AccumulatorBase
 
 
-# bin size in Mpc/h
-BIN_SIZE = 4
 NUM_BINS_X = 50
 NUM_BINS_Y = 50
 MAX_Z_RESOLUTION = 1000
@@ -17,18 +16,18 @@ settings = common_settings.Settings()
 class PreAllocMatrices:
     def __init__(self, z_res):
         self.z_res = z_res
-        self.m1 = np.zeros([z_res, z_res])
-        self.m2 = np.zeros([z_res, z_res])
-        self.m4 = np.zeros([z_res, z_res])
-        self.m5 = np.zeros([z_res, z_res])
-        self.m6 = np.zeros([z_res, z_res])
-        self.m7 = np.zeros([z_res, z_res])
-        self.v1 = np.zeros(z_res)
-        self.v2 = np.zeros(z_res)
-        self.v3 = np.zeros(z_res)
-        self.v4 = np.zeros(z_res)
-        self.v5 = np.zeros(z_res)
-        self.v6 = np.zeros(z_res)
+        self.m1 = np.zeros([z_res, z_res], dtype='float32')
+        self.m2 = np.zeros([z_res, z_res], dtype='float32')
+        self.m4 = np.zeros([z_res, z_res], dtype='float32')
+        self.m5 = np.zeros([z_res, z_res], dtype='float32')
+        self.m6 = np.zeros([z_res, z_res], dtype='float32')
+        self.m7 = np.zeros([z_res, z_res], dtype='float32')
+        self.v1 = np.zeros(z_res, dtype='float32')
+        self.v2 = np.zeros(z_res, dtype='float32')
+        self.v3 = np.zeros(z_res, dtype='float32')
+        self.v4 = np.zeros(z_res, dtype='float32')
+        self.v5 = np.zeros(z_res, dtype='float32')
+        self.v6 = np.zeros(z_res, dtype='float32')
         self.mask1 = np.zeros([z_res, z_res], dtype=bool)
 
     def zero(self):
@@ -64,15 +63,14 @@ class PixelPairs:
         self.radius = radius
 
     def find_nearby_pixels(self, accumulator, qso_angle,
-                           spec1_index, spec2_index, delta_t_file, r):
+                           spec1_index, spec2_index, delta_t_file):
         """
         Find all pixel pairs in QSO1,QSO2 that are closer than radius r
-        :type accumulator: bins_2d.AccumulatorBase
+        :type accumulator: AccumulatorBase
         :type qso_angle: float64
         :type spec1_index: int
         :type spec2_index: int
         :type delta_t_file: NpSpectrumContainer
-        :type r: float64
         :return:
         """
 
@@ -80,6 +78,8 @@ class PixelPairs:
 
         # use law of cosines to find the distance between pairs of pixels
         qso_angle_cosine = np.cos(qso_angle)
+        # the maximum distance that can be stored in the accumulator
+        r = accumulator.get_max_range()
         r_sq = np.square(r)
 
         spec1_z = delta_t_file.get_wavelength(spec1_index)
@@ -144,11 +144,11 @@ class PixelPairs:
         # r|| = abs(r1 - r2)
         np.subtract(spec1_distances[:, None], spec2_distances, out=r_parallel)
         np.abs(r_parallel, out=r_parallel)
-        np.multiply(r_parallel, 1. / BIN_SIZE, out=r_parallel)
+        np.multiply(r_parallel, 1. / accumulator.get_x_bin_size(), out=r_parallel)
 
         # r_ =  (r1 + r2)/2 * qso_angle
         np.add(spec1_distances[:, None], spec2_distances, out=r_transverse)
-        np.multiply(r_transverse, qso_angle / (2 * BIN_SIZE), out=r_transverse)
+        np.multiply(r_transverse, qso_angle / 2. / accumulator.get_y_bin_size(), out=r_transverse)
 
         # calculate z-based weights
         gamma = 3.8
@@ -183,7 +183,7 @@ class PixelPairs:
         :type pairs_angles: np.array
         :type delta_t_file: NpSpectrumContainer
         :type accumulator
-        :rtype: accumulator
+        :rtype: AccumulatorBase
         """
 
         n = 0
@@ -195,9 +195,9 @@ class PixelPairs:
             # print 'QSO pair with r_parallel %f, r_transverse %f' % (r_parallel, r_transverse)
             spec1_index = i
             spec2_index = j
+
             self.find_nearby_pixels(accumulator, qso_angle,
-                                    spec1_index, spec2_index, delta_t_file,
-                                    r=self.radius)
+                                    spec1_index, spec2_index, delta_t_file)
             if n % 1000 == 0:
                 print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
                     n, accumulator.ar_count.sum().astype(int))
@@ -213,7 +213,7 @@ class PixelPairs:
         :type delta_t_file: NpSpectrumContainer
         :rtype: bins_2d.Bins2D
         """
-        pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y)
+        pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
         pair_separation_bins.set_filename(settings.get_estimator_bins())
         self.apply_to_flux_pairs(pairs, pairs_angles, delta_t_file, pair_separation_bins)
         return pair_separation_bins

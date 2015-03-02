@@ -120,8 +120,7 @@ def profile_main():
     l_print('number of QSO pairs:', pairs.shape[0])
     # l_print('angle vector:', x[2])
 
-    # multiply by sqrt(2) to reach the entire square bin grid
-    pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius * np.sqrt(2))
+    pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius)
     local_pair_separation_bins = \
         pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
     # l_print(local_qso1 + local_start_index)
@@ -136,7 +135,8 @@ def profile_main():
 
     if comm.rank == 0:
         # TODO: rewrite!
-        list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux, weights) for count, flux, weights in
+        list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux, weights, radius, radius)
+                                     for count, flux, weights in
                                      itertools.izip(pair_separation_bins_count, pair_separation_bins_flux,
                                                     pair_separation_bins_weights)]
         if list_pair_separation_bins:

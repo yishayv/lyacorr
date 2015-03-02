@@ -4,7 +4,7 @@ from flux_accumulator import AccumulatorBase
 
 
 class Bins2D(AccumulatorBase):
-    def __init__(self, x_count, y_count, filename=''):
+    def __init__(self, x_count, y_count, x_range, y_range, filename=''):
         self.ar_flux = np.zeros((x_count, y_count))
         self.ar_weights = np.zeros((x_count, y_count))
         self.ar_count = np.zeros((x_count, y_count))
@@ -13,8 +13,22 @@ class Bins2D(AccumulatorBase):
         self.index_type = ''
         self.update_index_type()
         self.filename = filename
+        self.max_range = np.sqrt(np.square(x_range) + np.square(y_range))
+        self.x_range = x_range
+        self.y_range = y_range
+        self.x_bin_size = float(x_range) / x_count
+        self.y_bin_size = float(y_range) / y_count
 
     def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask, ar_weights):
+        """
+        add flux to x,y bins with weights and a filter mask.
+        note: the x,y values should be rescaled prior to calling this method.
+        :type ar_flux: np.ndarray
+        :param ar_x: np.ndarray
+        :param ar_y: np.ndarray
+        :param mask: np.ndarray
+        :param ar_weights: np.ndarray
+        """
         ar_x_int = ar_x.astype(self.index_type)
         ar_y_int = ar_y.astype(self.index_type)
         m = np.logical_and(np.logical_and(np.logical_and(ar_x_int >= 0, ar_y_int >= 0),
@@ -47,6 +61,10 @@ class Bins2D(AccumulatorBase):
         assert self.ar_flux.shape == bins_2d_2.ar_flux.shape
         assert self.ar_weights.shape == bins_2d_2.ar_weights.shape
         assert self.ar_count.shape == bins_2d_2.ar_count.shape
+        assert self.x_range == bins_2d_2.x_range
+        assert self.y_range == bins_2d_2.y_range
+        assert self.x_count == bins_2d_2.x_count
+        assert self.y_count == bins_2d_2.y_count
         self.ar_flux += bins_2d_2.ar_flux
         self.ar_weights += bins_2d_2.ar_weights
         self.ar_count += bins_2d_2.ar_count
@@ -82,7 +100,7 @@ class Bins2D(AccumulatorBase):
 
         :type other: Bins2D
         """
-        return cls(other.x_count, other.y_count)
+        return cls(other.x_count, other.y_count, other.x_range, other.y_range)
 
     @classmethod
     def from_other(cls, other):
@@ -90,7 +108,7 @@ class Bins2D(AccumulatorBase):
         new_obj.merge(other)
 
     @classmethod
-    def from_np_arrays(cls, ar_count, ar_flux, ar_weights):
+    def from_np_arrays(cls, ar_count, ar_flux, ar_weights, x_range, y_range):
         """
 
         :type ar_count: np.array
@@ -99,7 +117,7 @@ class Bins2D(AccumulatorBase):
         """
         assert ar_count.ndim == ar_flux.ndim == ar_weights.ndim == 2
         assert ar_count.shape == ar_flux.shape == ar_weights.shape
-        new_bins = cls(ar_count.shape[0], ar_count.shape[1])
+        new_bins = cls(ar_count.shape[0], ar_count.shape[1], x_range, y_range)
         new_bins.ar_count = ar_count
         new_bins.ar_flux = ar_flux
         new_bins.ar_weights = ar_weights
@@ -110,6 +128,15 @@ class Bins2D(AccumulatorBase):
 
     def flush(self):
         np.save(self.filename, np.dstack((self.ar_flux, self.ar_count, self.ar_weights)))
+
+    def get_max_range(self):
+        return self.max_range
+
+    def get_x_bin_size(self):
+        return self.x_bin_size
+
+    def get_y_bin_size(self):
+        return self.y_bin_size
 
 
 class Expandable1DArray(object):
