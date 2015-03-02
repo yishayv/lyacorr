@@ -151,11 +151,11 @@ class PixelPairs:
         np.multiply(r_transverse, qso_angle / 2. / accumulator.get_y_bin_size(), out=r_transverse)
 
         # calculate z-based weights
-        gamma = 3.8
+        half_gamma = 3.8 / 2
         np.add(spec1_z, 1, out=z_plus_1_1)
         np.add(spec2_z, 1, out=z_plus_1_2)
-        np.power(z_plus_1_1, gamma, out=z_plus_1_power_1)
-        np.power(z_plus_1_2, gamma, out=z_plus_1_power_2)
+        np.power(z_plus_1_1, half_gamma, out=z_plus_1_power_1)
+        np.power(z_plus_1_2, half_gamma, out=z_plus_1_power_2)
 
         # xi_11  = sigma_pipeline^2 / eta + sigma_LSS^2
         xi_11 = 1 / self.weight_eta.evaluate(spec1_z) + self.weight_sigma_lss.evaluate(spec1_z)
