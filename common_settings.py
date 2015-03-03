@@ -36,6 +36,8 @@ class Settings():
     opt_sigma_sq_lss = 'Sigma_Squared_LSS_txt'
     # eta correction function for weights
     opt_weight_eta = 'Weight_Eta_Function_txt'
+    # inverse variance of the continuum
+    opt_continuum_ivar = 'Continuum_Inverse_Variance_npy'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
@@ -65,6 +67,7 @@ class Settings():
         value_estimator_bins_npy = '../../data/estimator_bins.npy'
         value_sigma_sq_lss = '../../data/Sigma_sq_LSS.txt'
         value_weight_eta = '../../data/Weight_eta_func.txt'
+        value_continuum_ivar = '../../data/continuum_ivar.npy'
 
         value_chunk_size = 10000
         value_single_process = False
@@ -86,6 +89,7 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_estimator_bins, value_estimator_bins_npy)
         self.config_parser.set(self.section_file_paths, self.opt_sigma_sq_lss, value_sigma_sq_lss)
         self.config_parser.set(self.section_file_paths, self.opt_weight_eta, value_weight_eta)
+        self.config_parser.set(self.section_file_paths, self.opt_continuum_ivar, value_continuum_ivar)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_chunk_size, str(value_chunk_size))
@@ -131,6 +135,9 @@ class Settings():
 
     def get_weight_eta(self):
         return self.config_parser.get(self.section_file_paths, self.opt_weight_eta)
+
+    def get_continuum_ivar(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_continuum_ivar)
 
     def get_chunk_size(self):
         return self.config_parser.getint(self.section_performance, self.opt_chunk_size)

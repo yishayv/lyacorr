@@ -46,7 +46,7 @@ class PreAllocMatrices:
 
 
 class PixelPairs:
-    def __init__(self, cd, radius, weight_eta=None, weight_sigma_lss=None):
+    def __init__(self, cd, radius, weight_eta=None, weight_sigma_lss=None, weight_continuum_ivar=None):
         """
         initialize persistent objects
         :type cd: comoving_distance.ComovingDistance
@@ -60,6 +60,8 @@ class PixelPairs:
             WeightEta(*default_weight_z_range)
         self.weight_sigma_lss = weight_sigma_lss if weight_sigma_lss else \
             SigmaSquaredLSS(*default_weight_z_range)
+        self.weight_continuum_ivar = weight_continuum_ivar if weight_continuum_ivar else \
+            np.load(settings.get_continuum_ivar())
         self.radius = radius
 
     def find_nearby_pixels(self, accumulator, qso_angle,
@@ -97,6 +99,10 @@ class PixelPairs:
         spec2_flux = delta_t_file.get_flux(spec2_index)
         # print spec2_flux
         spec2_distances = self.cd.fast_comoving_distance(spec2_z)
+
+        # get continuum inverse variance for each QSO for weight calculation
+        qso1_ivar = self.weight_continuum_ivar[spec1_index]
+        qso2_ivar = self.weight_continuum_ivar[spec2_index]
 
         # if the parallel distance between forests is too large, they will not form pairs.
         if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
@@ -158,8 +164,8 @@ class PixelPairs:
         np.power(z_plus_1_2, half_gamma, out=z_plus_1_power_2)
 
         # xi_11  = sigma_pipeline^2 / eta + sigma_LSS^2
-        xi_11 = 1 / self.weight_eta.evaluate(spec1_z) + self.weight_sigma_lss.evaluate(spec1_z)
-        xi_22 = 1 / self.weight_eta.evaluate(spec2_z) + self.weight_sigma_lss.evaluate(spec2_z)
+        xi_11 = qso1_ivar / self.weight_eta.evaluate(spec1_z) + self.weight_sigma_lss.evaluate(spec1_z)
+        xi_22 = qso2_ivar / self.weight_eta.evaluate(spec2_z) + self.weight_sigma_lss.evaluate(spec2_z)
 
         # w12 = wz1 * wz2 / (xi_11 * xi_22)
         z_plus_1_power_1 /= xi_11
