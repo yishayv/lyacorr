@@ -25,13 +25,15 @@ class QSORecord:
 
 
 class QSOData:
-    def __init__(self, qso_rec, ar_wavelength, ar_flux):
+    def __init__(self, qso_rec, ar_wavelength, ar_flux, ar_ivar):
         """
 
         :type qso_rec: QSORecord
         :type ar_wavelength: np.ndarray
         :type ar_flux: np.ndarray
+        :type ar_ivar: np.ndarray
         """
         self.qso_rec = qso_rec
         self.ar_wavelength = ar_wavelength
         self.ar_flux = ar_flux
+        self.ar_ivar = ar_ivar

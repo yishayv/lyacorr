@@ -36,4 +36,5 @@ class SpectraWithMetadata:
         qso_rec = QSORecord.from_row(self.qso_record_table[n - self.table_offset])
         ar_wavelength = self.spectra.get_wavelength(n)
         ar_flux = self.spectra.get_flux(n)
-        return QSOData(qso_rec, ar_wavelength, ar_flux)
+        ar_ivar = self.spectra.get_ivar(n)
+        return QSOData(qso_rec, ar_wavelength, ar_flux, ar_ivar)

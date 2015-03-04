@@ -9,6 +9,7 @@ settings = common_settings.Settings()
 
 def profile_main():
     m = calc_mean_transmittance.mean_transmittance(sample_fraction=1)
+    m.save(settings.get_mean_transmittance_npy())
     calc_mean_transmittance.delta_transmittance(sample_fraction=1)
 
     d['m'] = m
@@ -21,4 +22,3 @@ else:
     profile_main()
 m_ = d['m']
 
-m_.save(settings.get_mean_transmittance_npy())

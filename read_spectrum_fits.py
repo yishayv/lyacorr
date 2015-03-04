@@ -56,8 +56,7 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
     """
     function returns a QSO object from the fits files based on the meta_file
     :type qso_record_table: table.Table
-    :rtype : (np.ndarray, np.ndarray, QSORecord)
-    @type qso_record_list: list[QSORecord]
+    :rtype : QSOData
     """
     last_fits_partial_path = None
     # sort by plate to avoid reopening files too many times
@@ -77,22 +76,32 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
 
 
             # get header
-            header = pyfits.getheader(fits_full_path)
-            c0 = header["COEFF0"]
-            c1 = header["COEFF1"]
-            l = header["NAXIS1"]
+            hdu_list = pyfits.open(fits_full_path)
+            hdu0_header = hdu_list[0].header
+            hdu1_header = hdu_list[1].header
+
+            l1 = hdu1_header["NAXIS1"]
+
+            c0 = hdu0_header["COEFF0"]
+            c1 = hdu0_header["COEFF1"]
+            l = hdu0_header["NAXIS1"]
+
+            assert l1 == l, "flux and ivar dimensions must be equal"
+
             # wavelength grid
             counter = np.arange(0, l)
-            ogrid = 10 ** (c0 + c1 * counter)
+            o_grid = 10 ** (c0 + c1 * counter)
 
             # get data
-            data = pyfits.getdata(fits_full_path)
+            data = hdu_list[0].data
+            data1 = hdu_list[1].data
 
         # return requested spectrum
         spec = data[qso_rec.fiberID - 1]
+        ivar = data1[qso_rec.fiberID - 1]
 
         last_fits_partial_path = fits_partial_path
-        yield QSOData(qso_rec, ogrid, spec)
+        yield QSOData(qso_rec, o_grid, spec, ivar)
 
 
 

@@ -28,7 +28,8 @@ def save_spectrum(qso_spec_obj):
     z = qso_rec.z
     ar_wavelength = qso_spec_obj.ar_wavelength
     ar_flux = qso_spec_obj.ar_flux
-    return [ar_wavelength, ar_flux]
+    ar_ivar = qso_spec_obj.ar_ivar
+    return [ar_wavelength, ar_flux, ar_ivar]
 
 
 sample_fraction = 1
@@ -56,6 +57,7 @@ def profile_main():
     for i in result_enum:
         output_spectra.set_wavelength(index, i[0])
         output_spectra.set_flux(index, i[1])
+        output_spectra.set_ivar(index, i[2])
         index += 1
 
     if not settings.get_single_process():

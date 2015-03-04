@@ -5,6 +5,7 @@ import numpy as np
 
 MAX_SPECTRA = 200000
 MAX_WAVELENGTH_COUNT = 4992
+NUM_FIELDS = 3
 
 
 class NpSpectrumContainer(object):
@@ -19,13 +20,14 @@ class NpSpectrumContainer(object):
         self.max_wavelength_count = max_wavelength_count
         if filename:
             mode = 'r' if readonly else 'w+'
-            self.np_array = np.memmap(filename, 'f8', mode=mode, shape=(num_spectra, 2, self.max_wavelength_count))
+            self.np_array = np.memmap(filename, 'f8', mode=mode,
+                                      shape=(num_spectra, NUM_FIELDS, self.max_wavelength_count))
             if readonly:
-                self.num_spectra = os.path.getsize(filename) // (2 * self.max_wavelength_count * 8)
+                self.num_spectra = os.path.getsize(filename) // (NUM_FIELDS * self.max_wavelength_count * 8)
                 if num_spectra != -1:
                     assert self.num_spectra == num_spectra
         else:
-            self.np_array = np.ndarray(shape=(num_spectra, 2, self.max_wavelength_count))
+            self.np_array = np.ndarray(shape=(num_spectra, NUM_FIELDS, self.max_wavelength_count))
             self.num_spectra = num_spectra
 
     def get_wavelength(self, n):
@@ -34,11 +36,17 @@ class NpSpectrumContainer(object):
     def get_flux(self, n):
         return self._get_array(n, 1)
 
+    def get_ivar(self, n):
+        return self._get_array(n, 2)
+
     def set_wavelength(self, n, data):
         return self._set_array(n, data, 0)
 
     def set_flux(self, n, data):
         return self._set_array(n, data, 1)
+
+    def set_ivar(self, n, data):
+        return self._set_array(n, data, 2)
 
     def _set_array(self, n, data, i):
         assert data.size <= self.max_wavelength_count, "data size too large: %d" % data.size
@@ -82,3 +90,6 @@ class NpSpectrumIterator(object):
 
     def get_wavelength(self):
         return self._np_spectrum_container.get_wavelength(self._n)
+
+    def get_ivar(self):
+        return self._np_spectrum_container.get_ivar(self._n)

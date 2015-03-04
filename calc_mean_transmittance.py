@@ -12,7 +12,6 @@ import common_settings
 from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from qso_data import QSOData
 import comoving_distance
-import statistics_helper
 
 
 lya_center = 1215.67
@@ -38,17 +37,12 @@ class DeltaTransmittanceAccumulator:
         # initialize file
         self.delta_t_file.zero()
         n = 0
-        m = 0
-        for delta_t, ar_continuum_ivar in result_enum:
+        for delta_t in result_enum:
             for j in NpSpectrumIterator(delta_t):
                 self.delta_t_file.set_wavelength(n, j.get_wavelength())
                 self.delta_t_file.set_flux(n, j.get_flux())
+                self.delta_t_file.set_ivar(n, j.get_ivar())
                 n += 1
-
-            # there is an ivar value for each spectrum:
-            np.copyto(self.ar_continuum_ivar[m:n + 1], ar_continuum_ivar)
-            m = n
-        np.save(settings.get_continuum_ivar(), self.ar_continuum_ivar)
         return n
 
 
@@ -72,6 +66,7 @@ def qso_transmittance(qso_spec_obj):
     z = qso_rec.z
     ar_wavelength = qso_spec_obj.ar_wavelength
     ar_flux = qso_spec_obj.ar_flux
+    ar_ivar = qso_spec_obj.ar_ivar
     empty_result = (np.array([]), np.array([]), np.nan)
 
     fit_spectrum, fit_normalization_factor = \
@@ -95,30 +90,31 @@ def qso_transmittance(qso_spec_obj):
         print "skipped QSO (low pixel count): ", qso_rec
         return empty_result
 
-    # calculate the inverse variance average of the continuum
-    ar_sigma_sq_flux = np.ones(ar_wavelength_clipped.size)
-    continuum_ivar = statistics_helper.ivar_average(ar_fit_spectrum_clipped, ar_sigma_sq_flux)
-
-    print "accepted QSO", qso_rec, "ivar average:", continuum_ivar
+    print "accepted QSO", qso_rec
 
     ar_rel_transmittance = ar_flux / fit_spectrum
-    ar_rel_transmittance_clipped = ar_rel_transmittance[forest_mask & fit_mask]
+    ar_rel_transmittance_clipped = ar_rel_transmittance[effective_mask]
     ar_z = ar_wavelength_clipped / lya_center - 1
     assert ar_z.size == ar_rel_transmittance_clipped.size
     assert not np.isnan(ar_rel_transmittance_clipped.sum())
-    return [ar_rel_transmittance_clipped, ar_z, continuum_ivar]
+
+    # calculate the weight of each point as a delta_t (without the mean transmittance part)
+    ar_delta_t_ivar = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_clipped)
+
+    return [ar_rel_transmittance_clipped, ar_z, ar_delta_t_ivar]
 
 
 def qso_transmittance_binned(qso_spec_obj):
-    [ar_rel_transmittance_clipped, ar_z, continuum_ivar] = qso_transmittance(qso_spec_obj)
+    [ar_rel_transmittance_clipped, ar_z, ar_delta_t_ivar] = qso_transmittance(qso_spec_obj)
     if ar_rel_transmittance_clipped.size == 0:
         # no samples found, no need to interpolate, just return the empty result
-        return [ar_rel_transmittance_clipped, ar_z, continuum_ivar]
+        return [ar_rel_transmittance_clipped, ar_z, ar_delta_t_ivar]
 
     ar_rel_transmittance_binned = np.interp(ar_z_range, ar_z, ar_rel_transmittance_clipped, left=np.nan,
                                             right=np.nan)
+    ar_ivar_binned = np.interp(ar_z_range, ar_z, ar_delta_t_ivar, left=np.nan, right=np.nan)
     ar_z_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
-    return [ar_rel_transmittance_binned, ar_z_mask_binned, continuum_ivar]
+    return [ar_rel_transmittance_binned, ar_z_mask_binned, ar_ivar_binned]
 
 
 def mean_transmittance_chunk(qso_record_table_numbered):
@@ -128,9 +124,9 @@ def mean_transmittance_chunk(qso_record_table_numbered):
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     m = mean_flux.MeanFlux(np.arange(*z_range))
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
-    for flux, mask, continuum_ivar in result_enum:
+    for flux, mask, ar_delta_t_ivar in result_enum:
         if flux.size:
-            m.add_flux_pre_binned(flux, mask)
+            m.add_flux_pre_binned(flux, mask, ar_delta_t_ivar)
             mean_transmittance_chunk.num_spec += 1
 
     print "finished chunk", mean_transmittance_chunk.num_spec
@@ -148,10 +144,9 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     delta_t.zero()
     result_enum = itertools.imap(qso_transmittance, spec_iter)
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
-    m_mean = m.get_mean()
-    ar_continuum_ivar = np.zeros(num_spectra)
+    m_mean = m.get_weighted_mean()
     n = 0
-    for flux, z, continuum_ivar in result_enum:
+    for flux, z, ar_delta_t_ivar in result_enum:
         if z.size:
             # Note: using wavelength field to store redshift
             m_mean_current = np.interp(z, m.ar_z, m_mean)
@@ -161,11 +156,11 @@ def delta_transmittance_chunk(qso_record_table_numbered):
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
             delta_t.set_wavelength(n, z[np.isfinite(ar_delta_t)])
             delta_t.set_flux(n, ar_delta_t[np.isfinite(ar_delta_t)])
-            # save the continuum inverse variance in a separate numpy array
-            ar_continuum_ivar[n] = continuum_ivar
+            # apply last factor to the ar_delta_t_ivar and save it
+            delta_t.set_ivar(n, ar_delta_t_ivar)
         n += 1
 
-    return [delta_t, ar_continuum_ivar]
+    return delta_t
 
 
 mean_transmittance_chunk.num_spec = 0
