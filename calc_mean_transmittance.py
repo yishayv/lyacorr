@@ -78,30 +78,30 @@ def qso_transmittance(qso_spec_obj):
                                  ar_wavelength < 1200 * (1 + z))
     fit_mask = ~np.isnan(fit_spectrum)
     effective_mask = forest_mask & fit_mask
-    ar_wavelength_clipped = ar_wavelength[effective_mask]
-    ar_fit_spectrum_clipped = fit_spectrum[effective_mask]
+    ar_wavelength_masked = ar_wavelength[effective_mask]
+    ar_fit_spectrum_masked = fit_spectrum[effective_mask]
 
-    fit_min_value = ar_fit_spectrum_clipped.min()
+    fit_min_value = ar_fit_spectrum_masked.min()
     if fit_min_value < min_continuum_threshold:
         print "skipped QSO (low continuum) :", qso_rec
         return empty_result
 
-    if ar_wavelength_clipped.size < 50:
+    if ar_wavelength_masked.size < 50:
         print "skipped QSO (low pixel count): ", qso_rec
         return empty_result
 
     print "accepted QSO", qso_rec
 
     ar_rel_transmittance = ar_flux / fit_spectrum
-    ar_rel_transmittance_clipped = ar_rel_transmittance[effective_mask]
-    ar_z = ar_wavelength_clipped / lya_center - 1
-    assert ar_z.size == ar_rel_transmittance_clipped.size
-    assert not np.isnan(ar_rel_transmittance_clipped.sum())
+    ar_rel_transmittance_masked = ar_rel_transmittance[effective_mask]
+    ar_z_masked = ar_wavelength_masked / lya_center - 1
+    assert ar_z_masked.size == ar_rel_transmittance_masked.size
+    assert not np.isnan(ar_rel_transmittance_masked.sum())
 
     # calculate the weight of each point as a delta_t (without the mean transmittance part)
-    ar_delta_t_ivar = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_clipped)
+    ar_delta_t_ivar_masked = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_masked)
 
-    return [ar_rel_transmittance_clipped, ar_z, ar_delta_t_ivar]
+    return [ar_rel_transmittance_masked, ar_z_masked, ar_delta_t_ivar_masked]
 
 
 def qso_transmittance_binned(qso_spec_obj):

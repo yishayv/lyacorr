@@ -4,6 +4,7 @@ import common_settings
 import bins_2d
 from pixel_weight_coefficients import SigmaSquaredLSS, WeightEta
 from flux_accumulator import AccumulatorBase
+from read_spectrum_numpy import NpSpectrumContainer
 
 
 NUM_BINS_X = 50
@@ -101,8 +102,8 @@ class PixelPairs:
         spec2_distances = self.cd.fast_comoving_distance(spec2_z)
 
         # get continuum inverse variance for each QSO for weight calculation
-        qso1_ivar = self.weight_continuum_ivar[spec1_index]
-        qso2_ivar = self.weight_continuum_ivar[spec2_index]
+        qso1_ivar = delta_t_file.get_ivar(spec1_index)
+        qso2_ivar = delta_t_file.get_ivar(spec2_index)
 
         # if the parallel distance between forests is too large, they will not form pairs.
         if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
