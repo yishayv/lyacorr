@@ -41,10 +41,13 @@ def r_print(*args):
 
 
 def l_print(*args):
-    print comm.rank, ':',
-    for i in args:
-        print i,
-    print
+    for rank in range(0, comm.size):
+        if rank == comm.rank:
+            print comm.rank, ':',
+            for i in args:
+                print i,
+            print
+        comm.Barrier()
 
 
 # divide items into n=num_steps chunks
