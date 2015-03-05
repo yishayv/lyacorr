@@ -73,9 +73,12 @@ class SubChunkHelper:
             shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
         pair_separation_bins_weights = np.zeros(
             shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
+        comm.Barrier()
+        r_print("BEGIN GATHER")
         comm.Gatherv(local_pair_separation_bins.ar_count, pair_separation_bins_count)
         comm.Gatherv(local_pair_separation_bins.ar_flux, pair_separation_bins_flux)
         comm.Gatherv(local_pair_separation_bins.ar_weights, pair_separation_bins_weights)
+        r_print("END_GATHER")
         if comm.rank == 0:
             # TODO: rewrite!
             list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux, weights, radius, radius)
