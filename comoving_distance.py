@@ -13,5 +13,5 @@ class ComovingDistance:
         return Planck13.comoving_distance(ar_z).to(u.Mpc).value
 
     def fast_comoving_distance(self, ar_z):
-        return self.lookup_table.evaluate(ar_z)
+        return self.lookup_table.eval(ar_z)
 

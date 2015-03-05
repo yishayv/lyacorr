@@ -26,7 +26,7 @@ class LinearInterpTable:
         self.x_end = x_end
         self.x_step = x_step
 
-    def evaluate(self, ar_x):
+    def eval(self, ar_x):
         """
 
         :type ar_x: np.array

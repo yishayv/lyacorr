@@ -47,6 +47,14 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
+    def get_x_range(self):
+        return
+
+    @abstractmethod
+    def get_y_range(self):
+        return
+
+    @abstractmethod
     def get_x_bin_size(self):
         return
 

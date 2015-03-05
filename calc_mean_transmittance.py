@@ -12,6 +12,7 @@ import common_settings
 from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from qso_data import QSOData
 import comoving_distance
+import pixel_weight_coefficients
 
 
 lya_center = 1215.67
@@ -99,9 +100,11 @@ def qso_transmittance(qso_spec_obj):
     assert not np.isnan(ar_rel_transmittance_masked.sum())
 
     # calculate the weight of each point as a delta_t (without the mean transmittance part)
-    ar_delta_t_ivar_masked = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_masked)
+    ar_pipeline_ivar_masked = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_masked)
 
-    return [ar_rel_transmittance_masked, ar_z_masked, ar_delta_t_ivar_masked]
+    print "mean flux:", (ar_flux[effective_mask] / ar_fit_spectrum_masked).mean()
+
+    return [ar_rel_transmittance_masked, ar_z_masked, ar_pipeline_ivar_masked]
 
 
 def qso_transmittance_binned(qso_spec_obj):
@@ -144,20 +147,23 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     delta_t.zero()
     result_enum = itertools.imap(qso_transmittance, spec_iter)
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
-    m_mean = m.get_weighted_mean()
+    ar_mean_flux = m.get_weighted_mean()
+    pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     n = 0
-    for flux, z, ar_delta_t_ivar in result_enum:
+    for flux, z, ar_pipeline_ivar in result_enum:
         if z.size:
-            # Note: using wavelength field to store redshift
-            m_mean_current = np.interp(z, m.ar_z, m_mean)
+            # prepare the mean flux for the z range of this QSO
+            ar_mean_flux_for_z_range = np.interp(z, m.ar_z, ar_mean_flux)
             # delta transmittance is the change in relative transmittance vs the mean
             # therefore, subtract 1.
-            ar_delta_t = flux / m_mean_current - 1
+            ar_delta_t = flux / ar_mean_flux_for_z_range - 1
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
+            # Note: using wavelength field to store redshift
             delta_t.set_wavelength(n, z[np.isfinite(ar_delta_t)])
             delta_t.set_flux(n, ar_delta_t[np.isfinite(ar_delta_t)])
-            # apply last factor to the ar_delta_t_ivar and save it
-            delta_t.set_ivar(n, ar_delta_t_ivar)
+            # finish the error estimation, and save it
+            ar_delta_t_ivar = pixel_weight.eval(ar_pipeline_ivar, ar_mean_flux_for_z_range, z)
+            delta_t.set_ivar(n, ar_delta_t_ivar[np.isfinite(ar_delta_t_ivar)])
         n += 1
 
     return delta_t

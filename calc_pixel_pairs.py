@@ -30,11 +30,13 @@ class PreAllocMatrices:
         self.v5 = np.zeros(z_res, dtype='float32')
         self.v6 = np.zeros(z_res, dtype='float32')
         self.mask1 = np.zeros([z_res, z_res], dtype=bool)
+        self.mask2 = np.zeros([z_res, z_res], dtype=bool)
 
     def zero(self):
         self.m1.fill(0)
         self.m2.fill(0)
         self.mask1.fill(0)
+        self.mask2.fill(0)
         self.m4.fill(0)
         self.m5.fill(0)
         self.m6.fill(0)
@@ -47,23 +49,17 @@ class PreAllocMatrices:
 
 
 class PixelPairs:
-    def __init__(self, cd, radius, weight_eta=None, weight_sigma_lss=None, weight_continuum_ivar=None):
+    def __init__(self, cd, radius, partial_results_every):
         """
         initialize persistent objects
         :type cd: comoving_distance.ComovingDistance
-        :type weight_eta: WeightEta
-        :type weight_sigma_lss: SigmaSquaredLSS
+        :type radius: float
+        :type partial_results_every: int
         """
         self.cd = cd
-        self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
-        default_weight_z_range = (1.9, 3.6, 0.01)
-        self.weight_eta = weight_eta if weight_eta else \
-            WeightEta(*default_weight_z_range)
-        self.weight_sigma_lss = weight_sigma_lss if weight_sigma_lss else \
-            SigmaSquaredLSS(*default_weight_z_range)
-        self.weight_continuum_ivar = weight_continuum_ivar if weight_continuum_ivar else \
-            np.load(settings.get_continuum_ivar())
         self.radius = radius
+        self.partial_results_every = partial_results_every
+        self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
 
     def find_nearby_pixels(self, accumulator, qso_angle,
                            spec1_index, spec2_index, delta_t_file):
@@ -79,11 +75,10 @@ class PixelPairs:
 
         # Note: not using pre_alloc_matrices.zero()
 
-        # use law of cosines to find the distance between pairs of pixels
-        qso_angle_cosine = np.cos(qso_angle)
         # the maximum distance that can be stored in the accumulator
-        r = accumulator.get_max_range()
-        r_sq = np.square(r)
+        r = np.float32(accumulator.get_max_range())
+        range_parallel = np.float32(accumulator.get_x_range())
+        range_transverse = np.float32(accumulator.get_y_range())
 
         spec1_z = delta_t_file.get_wavelength(spec1_index)
         spec2_z = delta_t_file.get_wavelength(spec2_index)
@@ -101,9 +96,9 @@ class PixelPairs:
         # print spec2_flux
         spec2_distances = self.cd.fast_comoving_distance(spec2_z)
 
-        # get continuum inverse variance for each QSO for weight calculation
-        qso1_ivar = delta_t_file.get_ivar(spec1_index)
-        qso2_ivar = delta_t_file.get_ivar(spec2_index)
+        # get pre-calculated weights for each QSO
+        qso1_weights = delta_t_file.get_ivar(spec1_index)
+        qso2_weights = delta_t_file.get_ivar(spec2_index)
 
         # if the parallel distance between forests is too large, they will not form pairs.
         if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
@@ -115,38 +110,21 @@ class PixelPairs:
         x = spec2_distances.size
 
         # assign variables to pre-allocated memory
-        m1 = self.pre_alloc_matrices.m1[:y, :x]
         flux_products = self.pre_alloc_matrices.m2[:y, :x]
-        mask_matrix = self.pre_alloc_matrices.mask1[:y, :x]
+        mask_matrix_parallel = self.pre_alloc_matrices.mask1[:y, :x]
+        mask_matrix_final = self.pre_alloc_matrices.mask2[:y, :x]
         r_parallel = self.pre_alloc_matrices.m4[:y, :x]
         r_transverse = self.pre_alloc_matrices.m5[:y, :x]
         spec1_distances_sq = self.pre_alloc_matrices.v1[:y]
         spec2_distances_sq = self.pre_alloc_matrices.v2[:x]
-        z_plus_1_1 = self.pre_alloc_matrices.v3[:y]
-        z_plus_1_2 = self.pre_alloc_matrices.v4[:x]
-        z_plus_1_power_1 = self.pre_alloc_matrices.v5[:y]
-        z_plus_1_power_2 = self.pre_alloc_matrices.v6[:x]
         z_weights = self.pre_alloc_matrices.m6[:y, :x]
-        weighted_flux_products = self.pre_alloc_matrices.m7[:y, :x]
 
         np.square(spec1_distances, out=spec1_distances_sq)
         np.square(spec2_distances, out=spec2_distances_sq)
 
-        # calculate all mutual distances
-        # d^2 = r1^2 + r2^2 - 2*r1*r2*cos(a)
-        np.outer(spec1_distances, spec2_distances, out=m1)
-        np.multiply(m1, - 2 * qso_angle_cosine, out=m1)
-        np.add(m1, spec1_distances_sq[:, None], out=m1)
-        np.add(m1, spec2_distances_sq[None, :], out=m1)
-
-        spec1_spec2_dist_sq = m1
-
         # a matrix of flux products
         # TODO: add weights for a proper calculation of "xi(i,j)"
         np.outer(spec1_flux, spec2_flux, out=flux_products)
-
-        # mask all elements that are close enough
-        np.less(spec1_spec2_dist_sq, r_sq, out=mask_matrix)
 
         # r|| = abs(r1 - r2)
         np.subtract(spec1_distances[:, None], spec2_distances, out=r_parallel)
@@ -157,30 +135,20 @@ class PixelPairs:
         np.add(spec1_distances[:, None], spec2_distances, out=r_transverse)
         np.multiply(r_transverse, qso_angle / 2. / accumulator.get_y_bin_size(), out=r_transverse)
 
-        # calculate z-based weights
-        half_gamma = 3.8 / 2
-        np.add(spec1_z, 1, out=z_plus_1_1)
-        np.add(spec2_z, 1, out=z_plus_1_2)
-        np.power(z_plus_1_1, half_gamma, out=z_plus_1_power_1)
-        np.power(z_plus_1_2, half_gamma, out=z_plus_1_power_2)
+        # mask all elements that too far apart
+        np.less(r_parallel, range_parallel, out=mask_matrix_parallel)
+        np.less(r_transverse, range_transverse, out=mask_matrix_final)
+        np.logical_and(mask_matrix_parallel, mask_matrix_final, mask_matrix_final)
 
-        # xi_11  = sigma_pipeline^2 / eta + sigma_LSS^2
-        xi_11 = qso1_ivar / self.weight_eta.evaluate(spec1_z) + self.weight_sigma_lss.evaluate(spec1_z)
-        xi_22 = qso2_ivar / self.weight_eta.evaluate(spec2_z) + self.weight_sigma_lss.evaluate(spec2_z)
+        np.outer(qso1_weights, qso2_weights, out=z_weights)
 
-        # w12 = wz1 * wz2 / (xi_11 * xi_22)
-        z_plus_1_power_1 /= xi_11
-        z_plus_1_power_2 /= xi_22
-        np.outer(z_plus_1_power_1, z_plus_1_power_2, out=z_weights)
-
-        # np.multiply(flux_products, z_weights, weighted_flux_products)
-        assert not np.isnan(flux_products.sum())
-        assert not np.isnan(z_weights.sum())
+        assert not np.isnan(flux_products).any()
+        assert not np.isnan(z_weights).any()
 
         return accumulator.add_array_with_mask(flux_products,
                                                r_parallel,
                                                r_transverse,
-                                               mask_matrix,
+                                               mask_matrix_final,
                                                z_weights)
 
     def apply_to_flux_pairs(self, pairs, pairs_angles, delta_t_file, accumulator):
@@ -205,7 +173,7 @@ class PixelPairs:
 
             self.find_nearby_pixels(accumulator, qso_angle,
                                     spec1_index, spec2_index, delta_t_file)
-            if n % 1000 == 0:
+            if n % self.partial_results_every == 0:
                 print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
                     n, accumulator.ar_count.sum().astype(int))
                 accumulator.flush()

@@ -132,6 +132,12 @@ class Bins2D(AccumulatorBase):
     def get_max_range(self):
         return self.max_range
 
+    def get_x_range(self):
+        return self.x_range
+
+    def get_y_range(self):
+        return self.y_range
+
     def get_x_bin_size(self):
         return self.x_bin_size
 

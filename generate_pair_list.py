@@ -120,7 +120,7 @@ def profile_main():
     l_print('number of QSO pairs:', pairs.shape[0])
     # l_print('angle vector:', x[2])
 
-    pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius)
+    pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius, partial_results_every=1000 * comm.size)
     local_pair_separation_bins = \
         pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
     # l_print(local_qso1 + local_start_index)
