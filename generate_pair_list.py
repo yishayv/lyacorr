@@ -138,7 +138,7 @@ def profile_main():
     l_print('matching objects in range:', local_start_index, 'to', local_end_index)
     # each node matches a range of objects against the full list.
     count = matching.search_around_sky(coord_set[local_start_index:local_end_index],
-                                       coord_set[:20],
+                                       coord_set,
                                        max_angular_separation)
 
     # search around sky returns indices in the input lists.
