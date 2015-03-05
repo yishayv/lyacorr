@@ -49,16 +49,14 @@ class PreAllocMatrices:
 
 
 class PixelPairs:
-    def __init__(self, cd, radius, partial_results_every):
+    def __init__(self, cd, radius):
         """
         initialize persistent objects
         :type cd: comoving_distance.ComovingDistance
         :type radius: float
-        :type partial_results_every: int
         """
         self.cd = cd
         self.radius = radius
-        self.partial_results_every = partial_results_every
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
 
     def find_nearby_pixels(self, accumulator, qso_angle,
@@ -173,10 +171,6 @@ class PixelPairs:
 
             self.find_nearby_pixels(accumulator, qso_angle,
                                     spec1_index, spec2_index, delta_t_file)
-            if n % self.partial_results_every == 0:
-                print 'intermediate number of pixel pairs in bins (qso pair count = %d) :%d' % (
-                    n, accumulator.ar_count.sum().astype(int))
-                accumulator.flush()
             n += 1
         return accumulator
 

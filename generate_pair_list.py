@@ -47,15 +47,56 @@ def l_print(*args):
     print
 
 
-def get_chunks(num_items, comm_size):
-    chunk_sizes = np.zeros(comm_size, dtype=int)
-    chunk_offsets = np.zeros(comm_size, dtype=int)
+# divide items into n=num_steps chunks
+def get_chunks(num_items, num_steps):
+    chunk_sizes = np.zeros(num_steps, dtype=int)
+    chunk_sizes[:] = num_items // num_steps
+    chunk_sizes[:num_items % num_steps] += 1
 
-    chunk_sizes[:] = num_items // comm_size
-    chunk_sizes[:num_items % comm_size] += 1
     chunk_offsets = np.roll(np.cumsum(chunk_sizes), 1)
     chunk_offsets[0] = 0
     return chunk_sizes, chunk_offsets
+
+
+class SubChunkHelper:
+    def __init__(self):
+        self.pair_separation_bins = None
+
+    def add_pairs_in_sub_chunk(self, delta_t_file, local_pair_angles, pairs, pixel_pairs, radius):
+        local_pair_separation_bins = \
+            pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
+        # l_print(local_qso1 + local_start_index)
+        l_print('local pair count:', local_pair_separation_bins.ar_count.sum())
+        pair_separation_bins_count = np.zeros(
+            shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
+        pair_separation_bins_flux = np.zeros(
+            shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
+        pair_separation_bins_weights = np.zeros(
+            shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
+        comm.Gatherv(local_pair_separation_bins.ar_count, pair_separation_bins_count)
+        comm.Gatherv(local_pair_separation_bins.ar_flux, pair_separation_bins_flux)
+        comm.Gatherv(local_pair_separation_bins.ar_weights, pair_separation_bins_weights)
+        if comm.rank == 0:
+            # TODO: rewrite!
+            list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux, weights, radius, radius)
+                                         for count, flux, weights in
+                                         itertools.izip(pair_separation_bins_count, pair_separation_bins_flux,
+                                                        pair_separation_bins_weights)]
+            # initialize bins only if this is the first time we get here
+            # for now use a function level static variable
+            if not self.pair_separation_bins:
+                self.pair_separation_bins = bins_2d.Bins2D.init_as(list_pair_separation_bins[0])
+
+            # add new results to existing bins
+            if list_pair_separation_bins:
+                self.pair_separation_bins = reduce(lambda x, y: x + y, list_pair_separation_bins,
+                                                   self.pair_separation_bins)
+
+                r_print('total number of pixel pairs in bins:',
+                        self.pair_separation_bins.ar_count.sum().astype(int))
+                self.pair_separation_bins.save(settings.get_estimator_bins())
+            else:
+                print('no results received.')
 
 
 def profile_main():
@@ -90,8 +131,6 @@ def profile_main():
     # print coord_set
 
     # find all QSO pairs
-    # for now, limit to a small set of the pairs, for a reasonable runtime
-
     chunk_sizes, chunk_offsets = get_chunks(len(coord_set), comm.size)
 
     local_start_index = chunk_offsets[comm.rank]
@@ -99,54 +138,41 @@ def profile_main():
     l_print('matching objects in range:', local_start_index, 'to', local_end_index)
     # each node matches a range of objects against the full list.
     count = matching.search_around_sky(coord_set[local_start_index:local_end_index],
-                                       coord_set,
+                                       coord_set[:20],
                                        max_angular_separation)
 
     # search around sky returns indices in the input lists.
     # each node should add its offset to get the QSO index in the original list (only for x[0]).
     # qso2 which contains the unmodified index to the full list of QSOs.
     # the third vector is a count so we can keep a reference to the angles vector.
-    local_pairs_with_unity = np.vstack((count[0] + local_start_index,
-                                        count[1],
-                                        np.arange(count[0].size)))
+    local_qso_pairs_with_unity = np.vstack((count[0] + local_start_index,
+                                            count[1],
+                                            np.arange(count[0].size)))
 
-    local_pair_angles = count[2].to(u.rad).value
+    local_qso_pair_angles = count[2].to(u.rad).value
     l_print('number of QSO pairs (including identity pairs):', count[0].size)
-    l_print('angle vector size:', local_pair_angles.size)
+    l_print('angle vector size:', local_qso_pair_angles.size)
 
     # remove pairs of the same QSO.
-    pairs = local_pairs_with_unity.T[local_pairs_with_unity[1] != local_pairs_with_unity[0]]
+    qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[1] != local_qso_pairs_with_unity[0]]
     # l_print(pairs)
-    l_print('number of QSO pairs:', pairs.shape[0])
+    l_print('number of QSO pairs:', qso_pairs.shape[0])
     # l_print('angle vector:', x[2])
 
-    pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius, partial_results_every=1000 * comm.size)
-    local_pair_separation_bins = \
-        pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
-    # l_print(local_qso1 + local_start_index)
-    l_print('local pair count:', local_pair_separation_bins.ar_count.sum())
-
-    pair_separation_bins_count = np.zeros(shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
-    pair_separation_bins_flux = np.zeros(shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
-    pair_separation_bins_weights = np.zeros(shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
-    comm.Gatherv(local_pair_separation_bins.ar_count, pair_separation_bins_count)
-    comm.Gatherv(local_pair_separation_bins.ar_flux, pair_separation_bins_flux)
-    comm.Gatherv(local_pair_separation_bins.ar_weights, pair_separation_bins_weights)
-
-    if comm.rank == 0:
-        # TODO: rewrite!
-        list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux, weights, radius, radius)
-                                     for count, flux, weights in
-                                     itertools.izip(pair_separation_bins_count, pair_separation_bins_flux,
-                                                    pair_separation_bins_weights)]
-        if list_pair_separation_bins:
-            pair_separation_bins = reduce(lambda x, y: x + y, list_pair_separation_bins,
-                                          bins_2d.Bins2D.init_as(list_pair_separation_bins[0]))
-
-            r_print('total number of pixel pairs in bins:', pair_separation_bins.ar_count.sum().astype(int))
-            pair_separation_bins.save(settings.get_estimator_bins())
-        else:
-            print('no results received.')
+    pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius)
+    # divide the work into sub chunks
+    # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
+    # divide by comm.size to make sub chunk size independent of number of nodes.
+    num_chunks_per_node = settings.get_mpi_num_sub_chunks() // comm.size
+    pixel_pair_sub_chunks = get_chunks(qso_pairs.size, num_chunks_per_node)
+    sub_chunk_helper = SubChunkHelper()
+    for i, j, k in zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1], range(num_chunks_per_node)):
+        sub_chunk_start = j
+        sub_chunk_end = j + i
+        l_print("sub_chunk: size", i, ", starting at", j, ",", k, "out of", num_chunks_per_node)
+        sub_chunk_helper.add_pairs_in_sub_chunk(delta_t_file, local_qso_pair_angles,
+                                                qso_pairs[sub_chunk_start:sub_chunk_end],
+                                                pixel_pairs_object, radius)
 
 
 if settings.get_profile():

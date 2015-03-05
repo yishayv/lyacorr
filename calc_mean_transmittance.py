@@ -187,7 +187,7 @@ def accumulate_over_spectra(func, accumulator, sample_fraction):
 
     if force_single_process:
         result_enum = itertools.imap(func,
-                                     split_seq(settings.get_chunk_size(),
+                                     split_seq(settings.get_file_chunk_size(),
                                                itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                  qso_record_table_numbered)))
         acc_result = acc.accumulate(result_enum)
@@ -196,7 +196,7 @@ def accumulate_over_spectra(func, accumulator, sample_fraction):
         pool = multiprocessing.Pool(4)
         # TODO: is ordered imap efficient enough?
         result_enum = pool.imap(func,
-                                split_seq(settings.get_chunk_size(),
+                                split_seq(settings.get_file_chunk_size(),
                                           itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                             qso_record_table_numbered)))
         # "reduce" results

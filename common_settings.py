@@ -41,7 +41,9 @@ class Settings():
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
-    opt_chunk_size = 'Chunk_Size'
+    opt_file_chunk_size = 'Chunk_Size'
+    # divide MPI tasks to sub-chunks
+    opt_mpi_num_sub_chunks = 'MPI_Num_Sub_Chunks'
     # don't use multiprocessing for easier profiling and debugging
     opt_single_process = 'Single_Process'
     # enable/disable cProfile
@@ -69,7 +71,8 @@ class Settings():
         value_weight_eta = '../../data/Weight_eta_func.txt'
         value_continuum_ivar = '../../data/continuum_ivar.npy'
 
-        value_chunk_size = 10000
+        value_file_chunk_size = 10000
+        value_mpi_num_sub_chunks = 1440
         value_single_process = False
         value_profile = False
 
@@ -92,7 +95,8 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_continuum_ivar, value_continuum_ivar)
 
         self.config_parser.add_section(self.section_performance)
-        self.config_parser.set(self.section_performance, self.opt_chunk_size, str(value_chunk_size))
+        self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
+        self.config_parser.set(self.section_performance, self.opt_mpi_num_sub_chunks, str(value_mpi_num_sub_chunks))
         self.config_parser.set(self.section_performance, self.opt_single_process, str(value_single_process))
         self.config_parser.set(self.section_performance, self.opt_profile, str(value_profile))
 
@@ -139,8 +143,11 @@ class Settings():
     def get_continuum_ivar(self):
         return self.config_parser.get(self.section_file_paths, self.opt_continuum_ivar)
 
-    def get_chunk_size(self):
-        return self.config_parser.getint(self.section_performance, self.opt_chunk_size)
+    def get_file_chunk_size(self):
+        return self.config_parser.getint(self.section_performance, self.opt_file_chunk_size)
+
+    def get_mpi_num_sub_chunks(self):
+        return self.config_parser.getint(self.section_performance, self.opt_mpi_num_sub_chunks)
 
     def get_single_process(self):
         return self.config_parser.getboolean(self.section_performance, self.opt_single_process)
