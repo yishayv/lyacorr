@@ -41,7 +41,7 @@ class Settings():
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
-    opt_file_chunk_size = 'Chunk_Size'
+    opt_file_chunk_size = 'File_Chunk_Size'
     # divide MPI tasks to sub-chunks
     opt_mpi_num_sub_chunks = 'MPI_Num_Sub_Chunks'
     # don't use multiprocessing for easier profiling and debugging

@@ -102,6 +102,9 @@ def qso_transmittance(qso_spec_obj):
     # calculate the weight of each point as a delta_t (without the mean transmittance part)
     ar_pipeline_ivar_masked = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_masked)
 
+    # effectively remove the points with very high positive or negative transmittance
+    ar_pipeline_ivar_masked[np.logical_or(ar_rel_transmittance_masked > 2, ar_rel_transmittance_masked < 0)] = 0
+
     print "mean flux:", (ar_flux[effective_mask] / ar_fit_spectrum_masked).mean()
 
     return [ar_rel_transmittance_masked, ar_z_masked, ar_pipeline_ivar_masked]
@@ -115,7 +118,9 @@ def qso_transmittance_binned(qso_spec_obj):
 
     ar_rel_transmittance_binned = np.interp(ar_z_range, ar_z, ar_rel_transmittance_clipped, left=np.nan,
                                             right=np.nan)
-    ar_ivar_binned = np.interp(ar_z_range, ar_z, ar_delta_t_ivar, left=np.nan, right=np.nan)
+    # temporary hack to prevent interpolation from leaking bad values
+    ar_ivar_binned = np.power(
+        np.interp(ar_z_range, ar_z, np.power(ar_delta_t_ivar, float(1)/10), left=np.nan, right=np.nan), 10)
     ar_z_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
     return [ar_rel_transmittance_binned, ar_z_mask_binned, ar_ivar_binned]
 
