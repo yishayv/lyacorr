@@ -3,6 +3,8 @@
 /* this is a slightly modified version of: 
  * https://scipy-lectures.github.io/advanced/interfacing_with_c/interfacing_with_c.html */
 
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include <math.h>
@@ -13,78 +15,58 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args)
 
     PyArrayObject *in_array1;
     PyArrayObject *in_array2;
-    PyObject      *out_array;
-    NpyIter *in_iter1;
-    NpyIter *in_iter2;
-    NpyIter *out_iter;
-    NpyIter_IterNextFunc *in_iternext1;
-    NpyIter_IterNextFunc *in_iternext2;
-    NpyIter_IterNextFunc *out_iternext;
+    PyArrayObject *out_array;
+    double z1, z2;
+    int z1_size, z2_size;
+    int i,j;
+    int bin_x, bin_y;
+    npy_intp out_dim[2] = {25,25};
+    double* p_current_bin;
 
-    /*  parse single numpy array argument */
+    /*  parse numpy array arguments */
     if (!PyArg_ParseTuple(args, "O!O!:bin_pixel_pairs", &PyArray_Type, &in_array1, &PyArray_Type, &in_array2))
         return NULL;
 
-    /*  construct the output array, like the input array */
-    out_array = PyArray_NewLikeArray(in_array1, NPY_ANYORDER, NULL, 0);
+    /*  construct the output array, 25x25 */
+    out_array = (PyArrayObject*) PyArray_SimpleNew(2, out_dim, NPY_DOUBLE);
     if (out_array == NULL)
         return NULL;
 
-    /*  create the iterators */
-    in_iter1 = NpyIter_New(in_array1, NPY_ITER_READONLY, NPY_KEEPORDER,
-                             NPY_NO_CASTING, NULL);
-    if (in_iter1 == NULL)
-        goto fail;
-    
-    in_iter2 = NpyIter_New(in_array2, NPY_ITER_READONLY, NPY_KEEPORDER,
-                             NPY_NO_CASTING, NULL);
-    if (in_iter2 == NULL)
-        goto fail;
-
-    out_iter = NpyIter_New((PyArrayObject *)out_array, NPY_ITER_READWRITE,
-                          NPY_KEEPORDER, NPY_NO_CASTING, NULL);
-    if (out_iter == NULL) {
-        NpyIter_Deallocate(in_iter1);
-        goto fail;
-    }
-
-    in_iternext1 = NpyIter_GetIterNext(in_iter1, NULL);
-    in_iternext2 = NpyIter_GetIterNext(in_iter2, NULL);
-    out_iternext = NpyIter_GetIterNext(out_iter, NULL);
-    if (in_iternext1 == NULL || in_iternext2 == NULL || out_iternext == NULL) {
-        NpyIter_Deallocate(in_iter1);
-        NpyIter_Deallocate(in_iter2);
-        NpyIter_Deallocate(out_iter);
-        goto fail;
-    }
-    double ** in_dataptr1 = (double **) NpyIter_GetDataPtrArray(in_iter1);
-    double ** in_dataptr2 = (double **) NpyIter_GetDataPtrArray(in_iter2);
-    double ** out_dataptr = (double **) NpyIter_GetDataPtrArray(out_iter);
-
-    double* p_value5 = (double*) PyArray_GETPTR1(in_array1, 5);
+    /* double* p_value5 = (double*) PyArray_GETPTR1(in_array1, 5); */
     /* *p_value5 = 5; */
     /*  iterate over the arrays */
-    do {
-        **out_dataptr = cos(**in_dataptr1)*(**in_dataptr2);
-    } while(in_iternext1(in_iter1) && in_iternext2(in_iter2) && out_iternext(out_iter));
+    z1_size = PyArray_DIM(in_array1, 0);
+    z2_size = PyArray_DIM(in_array2, 0);
+   
+    for (i=0;i<z1_size;i++)
+    {
+	z1 = *((double*) PyArray_GETPTR1(in_array1, i));
+	for(j=0;j<z2_size;j++)
+	{
+	    z2 = *((double*) PyArray_GETPTR1(in_array2, j));
+	    bin_x = z1;
+	    bin_y = z2;
+	    if ((bin_x > 0 && bin_x < 25) &&
+	      (bin_y > 0 && bin_y < 25))
+	    {
+		p_current_bin = (double*) PyArray_GETPTR2(out_array, i, j);
+		(*p_current_bin) = (double)(z1*z2);
+	    }
+	}
+    }
 
-    /*  clean up and return the result */
-    NpyIter_Deallocate(in_iter1);
-    NpyIter_Deallocate(in_iter2);
-    NpyIter_Deallocate(out_iter);
     Py_INCREF(out_array);
-    return out_array;
+    return (PyObject*) out_array;
 
     /*  in case bad things happen */
-    fail:
+    /*fail:
         Py_XDECREF(out_array);
-        return NULL;
+        return NULL;*/
 }
 
-static void pre_allocate_memory()
+static void pre_allocate_memory(void)
 {
     ;
-    /* TODO */
 }
 
 /*  define functions in module */
