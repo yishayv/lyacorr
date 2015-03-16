@@ -26,8 +26,8 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
     int i,j;
     int z1_size, z2_size;
     int bin_x, bin_y;
-    int last_z2_start, first_pair_z2;
-    double z1, z2, dist1, dist2, flux1, flux2, weight1, weight2;
+    int last_dist2_start, first_pair_dist2;
+    double /*z1, z2,*/ dist1, dist2, flux1, flux2, weight1, weight2;
     double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
     
     /*  iterate over the arrays */
@@ -36,24 +36,24 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
    
     MY_DEBUG_PRINT(":::::Before loop\n");
 
-    z1 = 1;
-    last_z2_start = 0;
-    for (i=0;i<z1_size && z1;i++)
+    dist1 = 1;
+    last_dist2_start = 0;
+    for (i=0;i<z1_size && dist1;i++)
     {
 	/* MY_DEBUG_PRINT(":::::Outside iter, i=%d\n", i);*/
 	  
-	z1 = *((double*) PyArray_GETPTR1(in_array_z1, i));
+	/*z1 = *((double*) PyArray_GETPTR1(in_array_z1, i));*/
 	dist1 = *((double*) PyArray_GETPTR1(in_array_dist1, i));
 	flux1 = *((double*) PyArray_GETPTR1(in_array_flux1, i));
 	weight1 = *((double*) PyArray_GETPTR1(in_array_weights1, i));
 
-	z2 = 1;
-	/* z values are ordered, so if any z2 was too low to be close enough to the previous z1,
-	 * the same should hold for the current z1. */
-	first_pair_z2 = 0;
-	for(j=last_z2_start;j<z2_size && z2;j++)
+	dist2 = 1;
+	/* distance values are ordered, so if any dist2 was too low to be close enough to the previous dist1,
+	 * the same should hold for the current dist1. */
+	first_pair_dist2 = 0;
+	for(j=last_dist2_start;j<z2_size && dist2;j++)
 	{
-	    z2 = *((double*) PyArray_GETPTR1(in_array_z2, j));
+	    /*z2 = *((double*) PyArray_GETPTR1(in_array_z2, j));*/
 	    dist2 = *((double*) PyArray_GETPTR1(in_array_dist2, j));
 	    flux2 = *((double*) PyArray_GETPTR1(in_array_flux2, j));
 	    weight2 = *((double*) PyArray_GETPTR1(in_array_weights2, j));
@@ -67,8 +67,8 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 	      (bin_y >= 0 && bin_y < y_bin_count))
 	    {
 	        /* pixel is in range */
-		if (!first_pair_z2)
-		    first_pair_z2 = j;
+		if (!first_pair_dist2)
+		    first_pair_dist2 = j;
 		
 		p_current_bin_flux = (double*) PyArray_GETPTR3(out_array, bin_x, bin_y, 0);
 		(*p_current_bin_flux) += flux1*flux2;
@@ -80,12 +80,12 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 	    else
 	    {
 		/* in flat geometry we cannot move in and out of range more than once. */
-		if (first_pair_z2)
+		if (first_pair_dist2)
 		    break;
 	    }
 	}
-	if (first_pair_z2)
-	    last_z2_start = first_pair_z2;
+	if (first_pair_dist2)
+	    last_dist2_start = first_pair_dist2;
     }
 }
 
@@ -176,5 +176,5 @@ initbin_pixel_pairs(void)
      import_array();
      
      pre_allocate_memory();
-     return(0);
+     return;
 }
