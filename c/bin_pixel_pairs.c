@@ -12,6 +12,7 @@
 static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_array_z2, 
 				 PyArrayObject* in_array_dist1, PyArrayObject* in_array_dist2, 
 				 PyArrayObject* in_array_flux1, PyArrayObject* in_array_flux2, 
+				 PyArrayObject* in_array_weights1, PyArrayObject* in_array_weights2, 
 				 PyArrayObject* out_array)
 {
     int i,j;
@@ -70,18 +71,22 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args, PyObject* kw)
     PyArrayObject *in_array_dist2;
     PyArrayObject *in_array_flux1;
     PyArrayObject *in_array_flux2;
+    PyArrayObject *in_array_weights1;
+    PyArrayObject *in_array_weights2;
     PyArrayObject *out_array;
     npy_intp out_dim[2] = {25,25};
         
-    static char *kwlist[] = {"ar_z1", "ar_z2", "ar_dist1", "ar_dist2", "ar_flux1", "ar_flux2", NULL};
+    static char *kwlist[] = {"ar_z1", "ar_z2", "ar_dist1", "ar_dist2", 
+	"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2", NULL};
 
     PySys_WriteStdout(":::::Function Start\n");
     
     /*  parse numpy array arguments */
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O!O!O!O!O!:bin_pixel_pairs", kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O!O!O!O!O!O!O!:bin_pixel_pairs", kwlist, 
 	&PyArray_Type, &in_array_z1, &PyArray_Type, &in_array_z2,
 	&PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
-	&PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2))
+	&PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
+	&PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2))
     {
         return NULL;
     }
@@ -98,6 +103,7 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args, PyObject* kw)
     bin_pixel_pairs_loop(in_array_z1, in_array_z2, 
 			 in_array_dist1, in_array_dist2, 
 			 in_array_flux1, in_array_flux2, 
+			 in_array_weights1, in_array_weights2, 
 			 out_array);
 
     Py_INCREF(out_array);
