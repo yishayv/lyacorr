@@ -145,13 +145,13 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args, PyObject* kw)
 			 x_bin_count, y_bin_count
 			);
 
-    Py_INCREF(out_array);
+    /*Py_INCREF(out_array);*/
     return (PyObject*) out_array;
 
     /*  in case bad things happen */
-    fail:
+    /*fail:
         Py_XDECREF(out_array);
-        return NULL;
+        return NULL;*/
 }
 
 static void pre_allocate_memory(void)
@@ -176,4 +176,5 @@ initbin_pixel_pairs(void)
      import_array();
      
      pre_allocate_memory();
+     return(0);
 }
