@@ -13,7 +13,9 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 				 PyArrayObject* in_array_dist1, PyArrayObject* in_array_dist2, 
 				 PyArrayObject* in_array_flux1, PyArrayObject* in_array_flux2, 
 				 PyArrayObject* in_array_weights1, PyArrayObject* in_array_weights2, 
-				 PyArrayObject* out_array)
+				 PyArrayObject* out_array, double qso_angle,
+				 double x_bin_size, double y_bin_size,
+				 double x_bin_count, double y_bin_count)
 {
     int i,j;
     int z1_size, z2_size;
@@ -21,9 +23,6 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
     int last_z2_start, first_pair_z2;
     double z1, z2, dist1, dist2, flux1, flux2, weight1, weight2;
     double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
-    double qso_angle = 0.3;
-    double x_bin_size = 4;
-    double y_bin_size = 4;
     
     /*  iterate over the arrays */
     z1_size = PyArray_DIM(in_array_z1, 0);
@@ -58,8 +57,8 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 	    /* r_ =  (r1 + r2)/2 * qso_angle */
 	    bin_y = (dist1 + dist2) * qso_angle / (2. * y_bin_size);
 
-	    if ((bin_x > 0 && bin_x < 25) &&
-	      (bin_y > 0 && bin_y < 25))
+	    if ((bin_x > 0 && bin_x < x_bin_count) &&
+	      (bin_y > 0 && bin_y < y_bin_count))
 	    {
 	        /* pixel is in range */
 		if (!first_pair_z2)
@@ -71,6 +70,12 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 		(*p_current_bin_weight) += weight1*weight2;
 		p_current_bin_count = (double*) PyArray_GETPTR3(out_array, bin_x, bin_y, 2);
 		(*p_current_bin_count) += 1;
+	    }
+	    else
+	    {
+		/* in flat geometry we cannot move in and out of range more than once. */
+		if (first_pair_z2)
+		    break;
 	    }
 	}
 	if (first_pair_z2)
@@ -91,26 +96,34 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args, PyObject* kw)
     PyArrayObject *in_array_weights1;
     PyArrayObject *in_array_weights2;
     PyArrayObject *out_array;
-    npy_intp out_dim[3] = {25,25,3};
+    double qso_angle;
+    double x_bin_size, y_bin_size;
+    double x_bin_count, y_bin_count;
+    npy_intp out_dim[3] = {0};
         
     static char *kwlist[] = {"ar_z1", "ar_z2", "ar_dist1", "ar_dist2", 
-	"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2", NULL};
+	"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
+	"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count", NULL};
 
     PySys_WriteStdout(":::::Function Start\n");
     
     /*  parse numpy array arguments */
-    if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O!O!O!O!O!O!O!:bin_pixel_pairs", kwlist, 
+    if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O!O!O!O!O!O!O!ddddd:bin_pixel_pairs", kwlist, 
 	&PyArray_Type, &in_array_z1, &PyArray_Type, &in_array_z2,
 	&PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 	&PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
-	&PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2))
+	&PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2, 
+	&qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
     {
         return NULL;
     }
 
     PySys_WriteStdout(":::::After arg parse\n");
 
-    /*  construct the output array, 25x25 */
+    /*  construct a 3D output array, (x_bin_count) by (y_bin_count) by (flux, weights, counts) */
+    out_dim[0] = x_bin_count;
+    out_dim[1] = y_bin_count;
+    out_dim[2] = 3;
     out_array = (PyArrayObject*) PyArray_ZEROS(3, out_dim, NPY_DOUBLE, 0);
     if (out_array == NULL)
         return NULL;
@@ -121,7 +134,10 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args, PyObject* kw)
 			 in_array_dist1, in_array_dist2, 
 			 in_array_flux1, in_array_flux2, 
 			 in_array_weights1, in_array_weights2, 
-			 out_array);
+			 out_array, qso_angle, 
+			 x_bin_size, y_bin_size, 
+			 x_bin_count, y_bin_count
+			);
 
     Py_INCREF(out_array);
     return (PyObject*) out_array;
