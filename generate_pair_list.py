@@ -112,7 +112,7 @@ def profile_main():
     # print 'minimum distance', min_distance, 'Mpc/rad'
 
     # initialize data sources
-    qso_record_table = table.Table(np.load('../../data/QSO_table.npy'))
+    qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
     spectra_with_metadata = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table)
     delta_t_file = NpSpectrumContainer(True, len(qso_record_table), settings.get_delta_t_npy(),
                                        max_wavelength_count=1000)
