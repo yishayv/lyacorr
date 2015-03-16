@@ -42,6 +42,7 @@ def r_print(*args):
 
 def l_print(*args):
     for rank in range(0, comm.size):
+        comm.Barrier()
         if rank == comm.rank:
             print comm.rank, ':',
             for i in args:

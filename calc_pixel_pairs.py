@@ -2,10 +2,9 @@ import numpy as np
 
 import common_settings
 import bins_2d
-from pixel_weight_coefficients import SigmaSquaredLSS, WeightEta
 from flux_accumulator import AccumulatorBase
 from read_spectrum_numpy import NpSpectrumContainer
-
+import bin_pixel_pairs
 
 NUM_BINS_X = 50
 NUM_BINS_Y = 50
@@ -59,8 +58,8 @@ class PixelPairs:
         self.radius = radius
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
 
-    def find_nearby_pixels(self, accumulator, qso_angle,
-                           spec1_index, spec2_index, delta_t_file):
+    def find_nearby_pixels2(self, accumulator, qso_angle,
+                            spec1_index, spec2_index, delta_t_file):
         """
         Find all pixel pairs in QSO1,QSO2 that are closer than radius r
         :type accumulator: AccumulatorBase
@@ -148,6 +147,65 @@ class PixelPairs:
                                                r_transverse,
                                                mask_matrix_final,
                                                z_weights)
+
+    def find_nearby_pixels(self, accumulator, qso_angle,
+                           spec1_index, spec2_index, delta_t_file):
+        """
+        Find all pixel pairs in QSO1,QSO2 that are closer than radius r
+        :type accumulator: AccumulatorBase
+        :type qso_angle: float64
+        :type spec1_index: int
+        :type spec2_index: int
+        :type delta_t_file: NpSpectrumContainer
+        :return:
+        """
+
+        # Note: not using pre_alloc_matrices.zero()
+
+        # the maximum distance that can be stored in the accumulator
+        r = np.float32(accumulator.get_max_range())
+        range_parallel = np.float32(accumulator.get_x_range())
+        range_transverse = np.float32(accumulator.get_y_range())
+
+        spec1_z = delta_t_file.get_wavelength(spec1_index)
+        spec2_z = delta_t_file.get_wavelength(spec2_index)
+        if not (spec1_z.size and spec2_z.size):
+            return
+
+        assert spec1_z.min() > 0, "z out of range: {0}, spec index {1}".format(spec1_z.min(), spec1_index)
+        assert spec2_z.min() > 0, "z out of range: {0}, spec index {1}".format(spec2_z.min(), spec2_index)
+
+        # Note: throughout this method, "flux" means delta_f
+        spec1_flux = delta_t_file.get_flux(spec1_index)
+        spec1_distances = self.cd.fast_comoving_distance(spec1_z)
+
+        spec2_flux = delta_t_file.get_flux(spec2_index)
+        # print spec2_flux
+        spec2_distances = self.cd.fast_comoving_distance(spec2_z)
+
+        # get pre-calculated weights for each QSO
+        qso1_weights = delta_t_file.get_ivar(spec1_index)
+        qso2_weights = delta_t_file.get_ivar(spec2_index)
+
+        # if the parallel distance between forests is too large, they will not form pairs.
+        if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
+            return
+
+        ar = bin_pixel_pairs.bin_pixel_pairs(ar_z1=spec1_z, ar_z2=spec2_z,
+                                             ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                                             ar_flux1=spec1_flux, ar_flux2=spec2_flux,
+                                             ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+                                             qso_angle=qso_angle,
+                                             x_bin_size=accumulator.get_x_bin_size(),
+                                             y_bin_size=accumulator.get_y_bin_size(),
+                                             x_bin_count=accumulator.get_x_count(),
+                                             y_bin_count=accumulator.get_y_count())
+
+        # print ar[:,:,0].max()
+        local_bins = bins_2d.Bins2D.from_np_arrays(ar[:, :, 1], ar[:, :, 0], ar[:, :, 2],
+                                                   accumulator.get_x_range(), accumulator.get_y_range())
+        accumulator += local_bins
+        # print accumulator.ar_count.max()
 
     def apply_to_flux_pairs(self, pairs, pairs_angles, delta_t_file, accumulator):
         """

@@ -74,9 +74,7 @@ class Bins2D(AccumulatorBase):
         self.filename = filename
         self.flush()
 
-    def load(self, filename):
-        # TODO: to static
-        stacked_array = np.load(filename)
+    def from_3d_array(self, stacked_array):
         self.ar_flux = stacked_array[:, :, 0]
         self.ar_count = stacked_array[:, :, 1]
         self.ar_weights = stacked_array[:, :, 2]
@@ -84,15 +82,20 @@ class Bins2D(AccumulatorBase):
         self.y_count = self.ar_count.shape[1]
         self.update_index_type()
 
+    def load(self, filename):
+        # TODO: to static
+        stacked_array = np.load(filename)
+        self.from_3d_array(stacked_array)
+
     def update_index_type(self):
         # choose integer type according to number of bins
         self.index_type = 'int32' if self.x_count * self.y_count > 32767 else 'int16'
 
     def __radd__(self, other):
-        return self.init_as(self).merge(self).merge(other)
+        return self.merge(other)
 
     def __add__(self, other):
-        return self.init_as(self).merge(self).merge(other)
+        return self.merge(other)
 
     @classmethod
     def init_as(cls, other):
@@ -126,8 +129,11 @@ class Bins2D(AccumulatorBase):
     def set_filename(self, filename):
         self.filename = filename
 
+    def to_3d_array(self):
+        return np.dstack((self.ar_flux, self.ar_count, self.ar_weights))
+
     def flush(self):
-        np.save(self.filename, np.dstack((self.ar_flux, self.ar_count, self.ar_weights)))
+        np.save(self.filename, self.to_3d_array())
 
     def get_max_range(self):
         return self.max_range
@@ -143,6 +149,12 @@ class Bins2D(AccumulatorBase):
 
     def get_y_bin_size(self):
         return self.y_bin_size
+
+    def get_x_count(self):
+        return self.x_count
+
+    def get_y_count(self):
+        return self.y_count
 
 
 class Expandable1DArray(object):

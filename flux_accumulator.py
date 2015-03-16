@@ -61,3 +61,11 @@ class AccumulatorBase(object):
     @abstractmethod
     def get_y_bin_size(self):
         return
+
+    @abstractmethod
+    def get_x_count(self):
+        return
+
+    @abstractmethod
+    def get_y_count(self):
+        return
