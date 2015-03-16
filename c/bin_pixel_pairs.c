@@ -19,8 +19,11 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
     int z1_size, z2_size;
     int bin_x, bin_y;
     int last_z2_start, first_pair_z2;
-    double z1, z2;
-    double* p_current_bin;
+    double z1, z2, dist1, dist2, flux1, flux2, weight1, weight2;
+    double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
+    double qso_angle = 0.3;
+    double x_bin_size = 4;
+    double y_bin_size = 4;
     
     /*  iterate over the arrays */
     z1_size = PyArray_DIM(in_array_z1, 0);
@@ -35,16 +38,26 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 	/* PySys_WriteStdout(":::::Outside iter, i=%d\n", i);*/
 	  
 	z1 = *((double*) PyArray_GETPTR1(in_array_z1, i));
+	dist1 = *((double*) PyArray_GETPTR1(in_array_dist1, i));
+	flux1 = *((double*) PyArray_GETPTR1(in_array_flux1, i));
+	weight1 = *((double*) PyArray_GETPTR1(in_array_weights1, i));
+
 	z2 = 1;
-	
 	/* z values are ordered, so if any z2 was too low to be close enough to the previous z1,
 	 * the same should hold for the current z1. */
 	first_pair_z2 = 0;
 	for(j=last_z2_start;j<z2_size && z2;j++)
 	{
 	    z2 = *((double*) PyArray_GETPTR1(in_array_z2, j));
-	    bin_x = i;
-	    bin_y = j;
+	    dist2 = *((double*) PyArray_GETPTR1(in_array_dist2, j));
+	    flux2 = *((double*) PyArray_GETPTR1(in_array_flux2, j));
+	    weight2 = *((double*) PyArray_GETPTR1(in_array_weights2, j));
+	    
+	    /* r|| = abs(r1 - r2) */
+	    bin_x = abs(dist1 - dist2) / x_bin_size;
+	    /* r_ =  (r1 + r2)/2 * qso_angle */
+	    bin_y = (dist1 + dist2) * qso_angle / (2. * y_bin_size);
+
 	    if ((bin_x > 0 && bin_x < 25) &&
 	      (bin_y > 0 && bin_y < 25))
 	    {
@@ -52,8 +65,12 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 		if (!first_pair_z2)
 		    first_pair_z2 = j;
 		
-		p_current_bin = (double*) PyArray_GETPTR2(out_array, bin_x, bin_y);
-		(*p_current_bin) += (double)(z1*z2);
+		p_current_bin_flux = (double*) PyArray_GETPTR3(out_array, bin_x, bin_y, 0);
+		(*p_current_bin_flux) += flux1*flux2;
+		p_current_bin_weight = (double*) PyArray_GETPTR3(out_array, bin_x, bin_y, 1);
+		(*p_current_bin_weight) += weight1*weight2;
+		p_current_bin_count = (double*) PyArray_GETPTR3(out_array, bin_x, bin_y, 2);
+		(*p_current_bin_count) += 1;
 	    }
 	}
 	if (first_pair_z2)
@@ -74,7 +91,7 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args, PyObject* kw)
     PyArrayObject *in_array_weights1;
     PyArrayObject *in_array_weights2;
     PyArrayObject *out_array;
-    npy_intp out_dim[2] = {25,25};
+    npy_intp out_dim[3] = {25,25,3};
         
     static char *kwlist[] = {"ar_z1", "ar_z2", "ar_dist1", "ar_dist2", 
 	"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2", NULL};
@@ -94,7 +111,7 @@ static PyObject* bin_pixel_pairs(PyObject* self, PyObject* args, PyObject* kw)
     PySys_WriteStdout(":::::After arg parse\n");
 
     /*  construct the output array, 25x25 */
-    out_array = (PyArrayObject*) PyArray_ZEROS(2, out_dim, NPY_DOUBLE, 0);
+    out_array = (PyArrayObject*) PyArray_ZEROS(3, out_dim, NPY_DOUBLE, 0);
     if (out_array == NULL)
         return NULL;
     
