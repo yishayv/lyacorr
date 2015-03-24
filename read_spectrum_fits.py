@@ -67,7 +67,7 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
         qso_rec = QSORecord.from_row(i)
         fits_partial_path = get_fits_partial_path(qso_rec)
 
-        # skip reading headers and getting a data object if the filename hasn't changed
+        # skip reading headers and getting data objects if the filename hasn't changed
         if fits_partial_path != last_fits_partial_path:
             fits_full_path = find_fits_file(plate_dir_list, fits_partial_path)
             if not fits_full_path:
@@ -92,16 +92,21 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
             counter = np.arange(0, l)
             o_grid = 10 ** (c0 + c1 * counter)
 
-            # get data
-            data = hdu_list[0].data
-            data1 = hdu_list[1].data
+            # get flux_data
+            flux_data = hdu_list[0].data
+            ivar_data = hdu_list[1].data
+            or_mask_data = hdu_list[3].data
 
         # return requested spectrum
-        spec = data[qso_rec.fiberID - 1]
-        ivar = data1[qso_rec.fiberID - 1]
+        ar_flux = flux_data[qso_rec.fiberID - 1]
+        ar_ivar = ivar_data[qso_rec.fiberID - 1]
+        ar_or_mask = or_mask_data[qso_rec.fiberID - 1]
+
+        # temporary: set ivar to 0 for all bad pixels
+        ar_ivar[ar_or_mask != 0] = 0
 
         last_fits_partial_path = fits_partial_path
-        yield QSOData(qso_rec, o_grid, spec, ivar)
+        yield QSOData(qso_rec, o_grid, ar_flux, ar_ivar)
 
 
 
