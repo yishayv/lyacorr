@@ -1,6 +1,5 @@
 import itertools
 import random
-import multiprocessing
 
 import numpy as np
 import astropy.table as table
@@ -195,20 +194,10 @@ def accumulate_over_spectra(func, accumulator, sample_fraction):
                                      split_seq(settings.get_file_chunk_size(),
                                                itertools.ifilter(lambda x: random.random() < sample_fraction,
                                                                  qso_record_table_numbered)))
-        acc_result = acc.accumulate(result_enum)
-    else:
-        # limit to 4 processes since this can become IO bound.
-        pool = multiprocessing.Pool(4)
-        # TODO: is ordered imap efficient enough?
-        result_enum = pool.imap(func,
-                                split_seq(settings.get_file_chunk_size(),
-                                          itertools.ifilter(lambda x: random.random() < sample_fraction,
-                                                            qso_record_table_numbered)))
         # "reduce" results
         acc_result = acc.accumulate(result_enum)
-        # wait for all processes to finish
-        pool.close()
-        pool.join()
+    else:
+        assert False, "Not supported"
 
     return acc_result
 

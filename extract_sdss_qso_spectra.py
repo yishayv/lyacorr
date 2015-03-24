@@ -1,4 +1,3 @@
-import multiprocessing
 import itertools
 import random
 import cProfile
@@ -50,19 +49,13 @@ def profile_main():
         result_enum = itertools.imap(save_spectrum,
                                      itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample))
     else:
-        pool = multiprocessing.Pool()
-        result_enum = pool.imap(save_spectrum,
-                                itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample), 100)
+        assert False, "Not supported"
 
     for i in result_enum:
         output_spectra.set_wavelength(index, i[0])
         output_spectra.set_flux(index, i[1])
         output_spectra.set_ivar(index, i[2])
         index += 1
-
-    if not settings.get_single_process():
-        pool.close()
-        pool.join()
 
 
 if settings.get_profile():
