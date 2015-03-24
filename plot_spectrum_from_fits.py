@@ -11,6 +11,7 @@ import continuum_fit
 import calc_mean_transmittance
 
 
+i = 213
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -35,7 +36,7 @@ def plot_v_mark(wavelength):
 settings = common_settings.Settings()
 
 qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
-spec_sample = read_spectrum_fits.return_spectra_2([qso_record_table[243]])
+spec_sample = read_spectrum_fits.return_spectra_2([qso_record_table[i]])
 
 for qso_data_ in spec_sample:
     qso_z = qso_data_.qso_rec.z
@@ -88,6 +89,7 @@ for qso_data_ in spec_sample:
     # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
     plt.plot(ar_wavelength,
              fit_spectrum, color='orange')
+
     plt.axvspan(3817, redshift_to_lya_center(qso_z),
                 alpha=0.3, facecolor='yellow', edgecolor='red')
 
@@ -111,13 +113,30 @@ for qso_data_ in spec_sample:
     # plt.plot(ar_wavelength,
     # power_law_array(ar_wavelength, amp=amp, index=index), color='r')
 
+    # draw vertical fill for masked values
+    ar_flux_mask = np.isnan(ar_flux_err) | ~np.isfinite(ar_flux_err)
+    axes = plt.gca()
+    y_min, y_max = axes.get_ylim()
+    plt.fill_between(ar_wavelength, y_min, y_max, where=ar_flux_mask,
+                     linewidth=.5, color='red', alpha=0.1)
+
     plt.subplot(2, 1, 2)
 
     ar_transmittance_err = np.reciprocal(np.sqrt(ar_transmittance_ivar))
-    ar_transmittance_err[np.isnan(ar_transmittance_err) | ~np.isfinite(ar_transmittance_err)] = 5
-    plt.fill_between(ar_transmittance_wavelength, ar_transmittance - ar_transmittance_err,
-                     ar_transmittance + ar_transmittance_err, linewidth=.5, color='lightgray')
+    ar_transmittance_mask = np.isnan(ar_transmittance_err) | ~np.isfinite(ar_transmittance_err)
+    ar_transmittance_lower = ar_transmittance - ar_transmittance_err
+    ar_transmittance_higher = ar_transmittance + ar_transmittance_err
+    plt.fill_between(ar_transmittance_wavelength, ar_transmittance_lower,
+                     ar_transmittance_higher, linewidth=.5, color='lightgray')
+
     plt.plot(ar_transmittance_wavelength, ar_transmittance, linewidth=.5)
+
+    # draw vertical fill for masked values
+    axes = plt.gca()
+    y_min, y_max = axes.get_ylim()
+    plt.fill_between(ar_transmittance_wavelength, y_min, y_max, where=ar_transmittance_mask,
+                     linewidth=.5, color='red', alpha=0.1)
+
     plt.xlabel(r"$z$")
     # F(lambda)/Cq(lambda) is the same as F(z)/Cq(z)
     plt.ylabel(r"$f_q(z)/C_q(z)$")

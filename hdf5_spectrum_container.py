@@ -54,8 +54,8 @@ class Hdf5SpectrumContainer(object):
     def _get_array(self, n, i):
         assert n < self.data_set.shape[0]
         ar = self.data_set[n][i]
-        # trim zeros
-        return ar[ar != 0]
+        # trim zeros, according to wavelength
+        return ar[self.data_set[n][0] != 0]
 
 
 class Hdf5SpectrumIterator(object):

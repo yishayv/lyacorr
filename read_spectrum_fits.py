@@ -100,6 +100,7 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
         # return requested spectrum
         ar_flux = flux_data[qso_rec.fiberID - 1]
         ar_ivar = ivar_data[qso_rec.fiberID - 1]
+        assert ar_flux.size == ar_ivar.size
         ar_or_mask = or_mask_data[qso_rec.fiberID - 1]
 
         # temporary: set ivar to 0 for all bad pixels
