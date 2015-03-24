@@ -1,15 +1,16 @@
-
-
-import read_spectrum_fits
 import matplotlib.pyplot as plt
-import common_settings
 import astropy.table as table
 import numpy as np
+
+import read_spectrum_fits
+import common_settings
 import continuum_fit_pca
-from qso_data import QSOData
 import spectrum
 import qso_line_mask
 import continuum_fit
+import calc_mean_transmittance
+
+
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -51,6 +52,9 @@ for qso_data_ in spec_sample:
     # we assume the wavelength range in the input file is correct
     assert ar_wavelength.size == ar_flux.size
 
+    ar_transmittance, ar_transmittance_wavelength, ar_transmittance_ivar = \
+        calc_mean_transmittance.qso_transmittance(qso_data_)
+
     # begin PCA fit:
     ar_wavelength_rest = ar_wavelength / (1 + qso_z)
     fit_spectrum, fit_normalization_factor = \
@@ -76,13 +80,14 @@ for qso_data_ in spec_sample:
     power_law = lambda x, amp, index: amp * (x ** index)
 
     plt.subplot(2, 1, 1)
-    plt.fill_between(ar_wavelength, ar_flux - np.reciprocal(np.sqrt(ar_ivar)),
-                     ar_flux + np.reciprocal(np.sqrt(ar_ivar)), color='gray', linewidth=.3)
+    ar_flux_err = np.reciprocal(np.sqrt(ar_ivar))
+    plt.fill_between(ar_wavelength, ar_flux - ar_flux_err,
+                     ar_flux + ar_flux_err, color='lightgray', linewidth=.3)
     plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3)
     # plt.loglog(spec.ma_wavelength.compressed(),
-    #           spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
+    # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
     plt.plot(ar_wavelength,
-               fit_spectrum, color='orange')
+             fit_spectrum, color='orange')
     plt.axvspan(3817, redshift_to_lya_center(qso_z),
                 alpha=0.3, facecolor='yellow', edgecolor='red')
 
@@ -104,17 +109,15 @@ for qso_data_ in spec_sample:
     # plt.loglog(ar_wavelength,
     # ar_flux/power_law_array(ar_wavelength,amp,index),'.',ms=2)
     # plt.plot(ar_wavelength,
-    #            power_law_array(ar_wavelength, amp=amp, index=index), color='r')
+    # power_law_array(ar_wavelength, amp=amp, index=index), color='r')
 
     plt.subplot(2, 1, 2)
 
-    forest_indexes = np.logical_and(ar_wavelength < lya_center * (1 + qso_z),
-                                    ar_wavelength > fit_pca.BLUE_START * (1 + qso_z))
-    forest_wavelength = ar_wavelength[forest_indexes]
-    forest_z = forest_wavelength / lya_center - 1
-    forest_flux = ar_flux[forest_indexes]
-    forest_continuum = fit_spectrum[forest_indexes]
-    plt.plot(forest_z, forest_flux / forest_continuum, linewidth=.5)
+    ar_transmittance_err = np.reciprocal(np.sqrt(ar_transmittance_ivar))
+    ar_transmittance_err[np.isnan(ar_transmittance_err) | ~np.isfinite(ar_transmittance_err)] = 5
+    plt.fill_between(ar_transmittance_wavelength, ar_transmittance - ar_transmittance_err,
+                     ar_transmittance + ar_transmittance_err, linewidth=.5, color='lightgray')
+    plt.plot(ar_transmittance_wavelength, ar_transmittance, linewidth=.5)
     plt.xlabel(r"$z$")
     # F(lambda)/Cq(lambda) is the same as F(z)/Cq(z)
     plt.ylabel(r"$f_q(z)/C_q(z)$")

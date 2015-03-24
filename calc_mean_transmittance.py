@@ -67,7 +67,7 @@ def qso_transmittance(qso_spec_obj):
     ar_wavelength = qso_spec_obj.ar_wavelength
     ar_flux = qso_spec_obj.ar_flux
     ar_ivar = qso_spec_obj.ar_ivar
-    empty_result = (np.array([]), np.array([]), np.nan)
+    empty_result = (np.array([]), np.array([]), np.array([]))
 
     fit_spectrum, fit_normalization_factor = \
         fit_pca.fit(ar_wavelength / (1 + z), ar_flux, normalized=False, boundary_value=np.nan)
