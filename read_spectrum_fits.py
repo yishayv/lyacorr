@@ -56,7 +56,7 @@ def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sor
     """
     function returns a QSO object from the fits files based on the meta_file
     :type qso_record_table: table.Table
-    :rtype : QSOData
+    :rtype: list[QSOData]
     """
     last_fits_partial_path = None
     # sort by plate to avoid reopening files too many times
