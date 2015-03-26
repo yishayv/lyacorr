@@ -2,7 +2,7 @@ import cProfile
 
 import calc_mean_transmittance
 import common_settings
-
+import numpy as np
 
 settings = common_settings.Settings()
 
@@ -10,7 +10,10 @@ settings = common_settings.Settings()
 def profile_main():
     m = calc_mean_transmittance.mean_transmittance(sample_fraction=1)
     m.save(settings.get_mean_transmittance_npy())
-    calc_mean_transmittance.delta_transmittance(sample_fraction=1)
+    n, total_weight, total_weighted_flux = calc_mean_transmittance.delta_transmittance(sample_fraction=1)
+    np.save(settings.get_total_delta_t(), np.array([total_weight, total_weighted_flux]))
+    print 'Total weight:', total_weight, 'Total weighted flux:', total_weighted_flux
+    print 'Mean flux', total_weighted_flux/total_weight
 
     d['m'] = m
 

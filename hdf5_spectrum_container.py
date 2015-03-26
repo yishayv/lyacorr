@@ -9,19 +9,21 @@ NUM_FIELDS = 3
 
 
 class Hdf5SpectrumContainer(object):
-    def __init__(self, filename, readonly, num_spectra=-1):
+    def __init__(self, filename, readonly, create_new, num_spectra=-1):
         self.filename = filename
         self.readonly = readonly
         mode = 'r' if readonly else 'w'
         self.f = h5py.File(filename, mode=mode)
-        if readonly:
-            self.data_set = self.f['spectra']
-        else:
+        if num_spectra != -1:
+            assert num_spectra < MAX_SPECTRA
+        if create_new and not readonly:
             self.data_set = self.f.create_dataset('spectra',
                                                   shape=(INITIAL_SPECTRA, NUM_FIELDS, MAX_WAVELENGTH_COUNT),
                                                   maxshape=(MAX_SPECTRA, NUM_FIELDS, MAX_WAVELENGTH_COUNT),
                                                   dtype='f8',
                                                   chunks=(CHUNK_COUNT, NUM_FIELDS, MAX_WAVELENGTH_COUNT))
+        else:
+            self.data_set = self.f['spectra']
 
     def __del(self):
         self.f.flush()

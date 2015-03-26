@@ -8,7 +8,7 @@ MAX_WAVELENGTH_COUNT = 4992
 
 
 def return_spectra_2(qso_record_table, spectra_file=FILENAME):
-    spectra = Hdf5SpectrumContainer(spectra_file, True)
+    spectra = Hdf5SpectrumContainer(spectra_file, readonly=True, create_new=False)
 
     # we assume that the order of spectra is the same as in the QSO list
     for i, j in itertools.izip(Hdf5SpectrumIterator(spectra), qso_record_table):
@@ -23,7 +23,7 @@ def return_spectra_2(qso_record_table, spectra_file=FILENAME):
 # TODO: refactor this or remove completely
 class SpectraWithMetadata:
     def __init__(self, qso_record_table, spectra_file=FILENAME, table_offset=0):
-        self.spectra = Hdf5SpectrumContainer(spectra_file, True)
+        self.spectra = Hdf5SpectrumContainer(spectra_file, readonly=True, create_new=False)
         self.qso_record_table = qso_record_table
         self.table_offset = table_offset
 

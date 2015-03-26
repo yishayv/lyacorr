@@ -3,6 +3,7 @@ import random
 
 import numpy as np
 import astropy.table as table
+from scipy import interpolate
 
 import mean_flux
 import continuum_fit_pca
@@ -37,13 +38,17 @@ class DeltaTransmittanceAccumulator:
         # initialize file
         self.delta_t_file.zero()
         n = 0
-        for delta_t in result_enum:
+        total_weight = 0
+        total_weighted_delta_t = 0
+        for delta_t, chunk_weight, chunk_weighted_delta_t in result_enum:
             for j in NpSpectrumIterator(delta_t):
                 self.delta_t_file.set_wavelength(n, j.get_wavelength())
                 self.delta_t_file.set_flux(n, j.get_flux())
                 self.delta_t_file.set_ivar(n, j.get_ivar())
                 n += 1
-        return n
+            total_weight += chunk_weight
+            total_weighted_delta_t += chunk_weighted_delta_t
+        return n, total_weight, total_weighted_delta_t
 
 
 class MeanTransmittanceAccumulator:
@@ -116,11 +121,13 @@ def qso_transmittance_binned(qso_spec_obj):
         # no samples found, no need to interpolate, just return the empty result
         return [ar_rel_transmittance_clipped, ar_z, ar_delta_t_ivar]
 
-    ar_rel_transmittance_binned = np.interp(ar_z_range, ar_z, ar_rel_transmittance_clipped, left=np.nan,
-                                            right=np.nan)
-    # temporary hack to prevent interpolation from leaking bad values
-    ar_ivar_binned = np.power(
-        np.interp(ar_z_range, ar_z, np.power(ar_delta_t_ivar, float(1)/10), left=np.nan, right=np.nan), 10)
+    # use nearest neighbor to prevent contamination of high accuracy flux, by nearby pixels with low ivar values,
+    # with very high (or low) flux.
+
+    f_flux = interpolate.interp1d(ar_z, ar_rel_transmittance_clipped, bounds_error=False, assume_sorted=True)
+    ar_rel_transmittance_binned = f_flux(ar_z_range)
+    f_ivar = interpolate.interp1d(ar_z, ar_delta_t_ivar, bounds_error=False, assume_sorted=True)
+    ar_ivar_binned = f_ivar(ar_z_range)
     ar_z_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
     return [ar_rel_transmittance_binned, ar_z_mask_binned, ar_ivar_binned]
 
@@ -155,23 +162,36 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     ar_mean_flux = m.get_weighted_mean()
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     n = 0
+    chunk_weighted_delta_t = 0
+    chunk_weight = 0
     for flux, z, ar_pipeline_ivar in result_enum:
         if z.size:
             # prepare the mean flux for the z range of this QSO
             ar_mean_flux_for_z_range = np.interp(z, m.ar_z, ar_mean_flux)
+
             # delta transmittance is the change in relative transmittance vs the mean
             # therefore, subtract 1.
             ar_delta_t = flux / ar_mean_flux_for_z_range - 1
-            # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
-            # Note: using wavelength field to store redshift
-            delta_t.set_wavelength(n, z[np.isfinite(ar_delta_t)])
-            delta_t.set_flux(n, ar_delta_t[np.isfinite(ar_delta_t)])
+
             # finish the error estimation, and save it
             ar_delta_t_ivar = pixel_weight.eval(ar_pipeline_ivar, ar_mean_flux_for_z_range, z)
-            delta_t.set_ivar(n, ar_delta_t_ivar[np.isfinite(ar_delta_t_ivar)])
+
+            # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
+            # Note: using wavelength field to store redshift
+            finite_z = z[np.isfinite(ar_delta_t)]
+            finite_delta_t = ar_delta_t[np.isfinite(ar_delta_t)]
+            finite_ivar = ar_delta_t_ivar[np.isfinite(ar_delta_t_ivar)]
+
+            delta_t.set_wavelength(n, finite_z)
+            delta_t.set_flux(n, finite_delta_t)
+            delta_t.set_ivar(n, finite_ivar)
+
+            # accumulate the total weight so that we can zero out the weight mean of delta_t.
+            chunk_weight += finite_ivar.sum()
+            chunk_weighted_delta_t += (finite_delta_t*finite_ivar).sum()
         n += 1
 
-    return delta_t
+    return delta_t, chunk_weight, chunk_weighted_delta_t
 
 
 mean_transmittance_chunk.num_spec = 0
