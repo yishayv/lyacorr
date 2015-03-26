@@ -12,8 +12,8 @@ def profile_main():
     m.save(settings.get_mean_transmittance_npy())
     n, total_weight, total_weighted_flux = calc_mean_transmittance.delta_transmittance(sample_fraction=1)
     np.save(settings.get_total_delta_t(), np.array([total_weight, total_weighted_flux]))
-    print 'Total weight:', total_weight, 'Total weighted flux:', total_weighted_flux
-    print 'Mean flux', total_weighted_flux/total_weight
+    print 'Total weight:', total_weight, 'Total weighted delta_t:', total_weighted_flux
+    print 'Mean delta_t', total_weighted_flux/total_weight
 
     d['m'] = m
 
