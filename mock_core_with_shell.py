@@ -38,10 +38,19 @@ class CoreWithShell:
 class MockForest:
     def __init__(self):
         self.size = 300
-        self.core_with_shell = CoreWithShell([self.size, self.size, self.size])
+        self.shell_min = (1./2 * 0.5) * 0.95
+        self.shell_max = (1./2 * 0.5) * 1.05
+        # scale of the entire grid.
+        # set it so that the mean shell radius is 150Mpc
+        self.scale = 150. * 2 / (self.shell_max + self.shell_min)
+        self.inv_pixel_size = self.size / self.scale
+        self.core_with_shell = CoreWithShell([self.size, self.size, self.size],
+                                             core_radius=0.05, shell_min=self.shell_min, shell_max=self.shell_max)
+        # remove the positive bias of the correlation
+        # self.core_with_shell.array -= self.core_with_shell.array.mean()
 
     def get_forest(self, x, y, z):
-        x_indexes = (x % self.size).astype(int)
-        y_indexes = (y % self.size).astype(int)
-        z_indexes = (z % self.size).astype(int)
+        x_indexes = ((x * self.inv_pixel_size) % self.size).astype(int)
+        y_indexes = ((y * self.inv_pixel_size) % self.size).astype(int)
+        z_indexes = ((z * self.inv_pixel_size) % self.size).astype(int)
         return self.core_with_shell.array[x_indexes, y_indexes, z_indexes]
