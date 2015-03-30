@@ -167,9 +167,9 @@ class PixelPairs:
         # Note: not using pre_alloc_matrices.zero()
 
         # the maximum distance that can be stored in the accumulator
-        r = np.float32(accumulator.get_max_range())
-        range_parallel = np.float32(accumulator.get_x_range())
-        range_transverse = np.float32(accumulator.get_y_range())
+        r = np.float64(accumulator.get_max_range())
+        range_parallel = np.float64(accumulator.get_x_range())
+        range_transverse = np.float64(accumulator.get_y_range())
 
         spec1_z = delta_t_file.get_wavelength(spec1_index)
         spec2_z = delta_t_file.get_wavelength(spec2_index)

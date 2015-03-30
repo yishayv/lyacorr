@@ -52,7 +52,7 @@ class MockForest:
         # self.core_with_shell.array -= self.core_with_shell.array.mean()
 
     def get_forest(self, x, y, z):
-        x_indexes = ((x * self.inv_pixel_size * 0. + self.size / 2) % self.size).astype(int)
+        x_indexes = ((x * self.inv_pixel_size) % self.size).astype(int)
         y_indexes = ((y * self.inv_pixel_size) % self.size).astype(int)
         z_indexes = ((z * self.inv_pixel_size) % self.size).astype(int)
         return self.core_with_shell.array[x_indexes, y_indexes, z_indexes]
