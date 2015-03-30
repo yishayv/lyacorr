@@ -72,7 +72,7 @@ class NpSpectrumIterator(object):
 
         :type np_spectrum_container: NpSpectrumContainer
         """
-        self._n = 0
+        self._n = -1
         self._np_spectrum_container = np_spectrum_container
 
     def __iter__(self):
