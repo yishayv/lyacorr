@@ -26,7 +26,9 @@ z_step = 0.001
 lya_center = 1215.67
 
 cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
-mock_forest = mock_core_with_shell.MockForest()
+mock_forest = mock_core_with_shell.MockForest(settings.get_mock_resolution(), settings.get_mock_fractional_width(),
+                                              settings.get_mock_relative_length(), settings.get_mock_core_size(),
+                                              settings.get_mock_shell_scale())
 
 
 def profile_main():

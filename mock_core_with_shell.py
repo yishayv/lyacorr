@@ -36,21 +36,23 @@ class CoreWithShell:
 
 
 class MockForest:
-    def __init__(self):
-        self.size = 300
-        self.shell_min = (1./2 * 0.5) * 0.95
-        self.shell_max = (1./2 * 0.5) * 1.05
+    def __init__(self, resolution, shell_fractional_width, sphere_relative_length, core_size, shell_scale):
+        self.size = resolution
+        self.shell_min = (sphere_relative_length * 0.5) * (1 - shell_fractional_width)
+        self.shell_max = (sphere_relative_length * 0.5) * (1 + shell_fractional_width)
+        self.core_radius = sphere_relative_length * 0.5 * core_size
         # scale of the entire grid.
-        # set it so that the mean shell radius is 150Mpc
-        self.scale = 150. * 2 / (self.shell_max + self.shell_min)
+        # set it so that the mean shell radius is shell_scale
+        self.scale = shell_scale * 2 / (self.shell_max + self.shell_min)
         self.inv_pixel_size = self.size / self.scale
         self.core_with_shell = CoreWithShell([self.size, self.size, self.size],
-                                             core_radius=0.05, shell_min=self.shell_min, shell_max=self.shell_max)
+                                             core_radius=self.core_radius, shell_min=self.shell_min,
+                                             shell_max=self.shell_max)
         # remove the positive bias of the correlation
         # self.core_with_shell.array -= self.core_with_shell.array.mean()
 
     def get_forest(self, x, y, z):
-        x_indexes = ((x * self.inv_pixel_size) % self.size).astype(int)
+        x_indexes = ((x * self.inv_pixel_size * 0. + self.size / 2) % self.size).astype(int)
         y_indexes = ((y * self.inv_pixel_size) % self.size).astype(int)
         z_indexes = ((z * self.inv_pixel_size) % self.size).astype(int)
         return self.core_with_shell.array[x_indexes, y_indexes, z_indexes]

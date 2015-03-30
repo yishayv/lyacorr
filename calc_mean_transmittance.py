@@ -178,9 +178,10 @@ def delta_transmittance_chunk(qso_record_table_numbered):
 
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
             # Note: using wavelength field to store redshift
-            finite_z = z[np.isfinite(ar_delta_t)]
-            finite_delta_t = ar_delta_t[np.isfinite(ar_delta_t)]
-            finite_ivar = ar_delta_t_ivar[np.isfinite(ar_delta_t_ivar)]
+            finite_mask = np.logical_and(np.isfinite(ar_delta_t), np.isfinite(ar_delta_t_ivar))
+            finite_z = z[finite_mask]
+            finite_delta_t = ar_delta_t[finite_mask]
+            finite_ivar = ar_delta_t_ivar[finite_mask]
 
             delta_t.set_wavelength(n, finite_z)
             delta_t.set_flux(n, finite_delta_t)
