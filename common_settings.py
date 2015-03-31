@@ -57,13 +57,13 @@ class Settings():
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
-    opt_mock_shell_scale = 'Shell_Scale'
+    opt_mock_shell_radius = 'Shell_Radius'
     # fractional width of the shell
     opt_mock_shell_fractional_width = 'Shell_Fractional_Width'
-    # relative (average) length of the sphere (as part of the bounding box)
-    opt_mock_sphere_relative_length = 'Sphere_Relative_Length'
-    # core size relative to average shell radius
-    opt_mock_core_size = 'Core_Size'
+    # separation from the outermost shell element in Mpc
+    opt_mock_shell_separation = 'Shell_Separation'
+    # core size in Mpc
+    opt_mock_core_radius = 'Core_Radius'
     # resolution of the 3d grid
     opt_mock_resolution = 'Resolution'
 
@@ -92,10 +92,10 @@ class Settings():
 
         value_min_continuum_threshold = 0.5
 
-        value_mock_shell_scale = 150
+        value_mock_shell_radius = 150
         value_mock_shell_fractional_width = 0.005
-        value_mock_sphere_relative_length = 1. / 2
-        value_mock_core_size = 0.15
+        value_mock_shell_separation = 200
+        value_mock_core_radius = 15
         value_mock_resolution = 300
 
         # replace config parser with an empty one
@@ -126,12 +126,12 @@ class Settings():
                                str(value_min_continuum_threshold))
 
         self.config_parser.add_section(self.section_mock_parameters)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_scale, value_mock_shell_scale)
+        self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_fractional_width,
                                value_mock_shell_fractional_width)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_sphere_relative_length,
-                               value_mock_sphere_relative_length)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_core_size, value_mock_core_size)
+        self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_separation,
+                               value_mock_shell_separation)
+        self.config_parser.set(self.section_mock_parameters, self.opt_mock_core_radius, value_mock_core_radius)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_resolution, value_mock_resolution)
 
         with open(self.settings_file_name, 'wb') as configfile:
@@ -191,17 +191,17 @@ class Settings():
     def get_min_continuum_threshold(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)
 
-    def get_mock_shell_scale(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_scale)
+    def get_mock_shell_radius(self):
+        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_radius)
 
     def get_mock_fractional_width(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_fractional_width)
 
-    def get_mock_relative_length(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_sphere_relative_length)
+    def get_mock_shell_separation(self):
+        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_separation)
 
-    def get_mock_core_size(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_core_size)
+    def get_mock_core_radius(self):
+        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_core_radius)
 
     def get_mock_resolution(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_resolution)

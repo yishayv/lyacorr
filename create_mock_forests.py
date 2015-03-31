@@ -27,8 +27,8 @@ lya_center = 1215.67
 
 cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
 mock_forest = mock_core_with_shell.MockForest(settings.get_mock_resolution(), settings.get_mock_fractional_width(),
-                                              settings.get_mock_relative_length(), settings.get_mock_core_size(),
-                                              settings.get_mock_shell_scale())
+                                              settings.get_mock_shell_separation(), settings.get_mock_core_radius(),
+                                              settings.get_mock_shell_radius())
 
 
 def profile_main():
@@ -39,10 +39,10 @@ def profile_main():
     output_spectra = Hdf5SpectrumContainer(qso_spectra_hdf5, readonly=False, create_new=False,
                                            num_spectra=MAX_SPECTRA)
 
-    total_ar_x = np.array([0])
-    total_ar_y = np.array([0])
-    total_ar_z = np.array([0])
-    total_ar_c = np.array([0])
+    total_ar_x = np.array([])
+    total_ar_y = np.array([])
+    total_ar_z = np.array([])
+    total_ar_c = np.array([])
 
     for n in xrange(len(qso_record_list)):
         qso_rec = qso_record_list[n]
