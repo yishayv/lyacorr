@@ -70,7 +70,7 @@ class Hdf5SpectrumIterator(object):
 
         :type spectrum_container: Hdf5SpectrumContainer
         """
-        self._n = 0
+        self._n = -1
         self.spectrum_container = spectrum_container
 
     def __iter__(self):

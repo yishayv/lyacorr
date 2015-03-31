@@ -41,8 +41,8 @@ def profile_main():
 
     spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
 
-    mean_qso_spectra_hdf5 = settings.get_mean_qso_spectra_hdf5()
-    output_spectra = Hdf5SpectrumContainer(mean_qso_spectra_hdf5, readonly=False, create_new=True,
+    qso_spectra_hdf5 = settings.get_qso_spectra_hdf5()
+    output_spectra = Hdf5SpectrumContainer(qso_spectra_hdf5, readonly=False, create_new=True,
                                            num_spectra=MAX_SPECTRA)
 
     if settings.get_single_process():

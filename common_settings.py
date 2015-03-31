@@ -143,7 +143,7 @@ class Settings():
     def get_pca_continuum_tables(self):
         return self.config_parser.get(self.section_file_paths, self.opt_pca_continuum_tables).split(_SEP)
 
-    def get_mean_qso_spectra_hdf5(self):
+    def get_qso_spectra_hdf5(self):
         return self.config_parser.get(self.section_file_paths, self.opt_qso_spectra_hdf5)
 
     def get_mean_transmittance_npy(self):

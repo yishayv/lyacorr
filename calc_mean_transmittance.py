@@ -135,7 +135,8 @@ def qso_transmittance_binned(qso_spec_obj):
 def mean_transmittance_chunk(qso_record_table_numbered):
     qso_record_table = [a for a, b in qso_record_table_numbered]
     qso_record_count = [b for a, b in qso_record_table_numbered]
-    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, table_offset=qso_record_count[0])
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5(),
+                                                     table_offset=qso_record_count[0])
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     m = mean_flux.MeanFlux(np.arange(*z_range))
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
@@ -151,7 +152,8 @@ def mean_transmittance_chunk(qso_record_table_numbered):
 def delta_transmittance_chunk(qso_record_table_numbered):
     qso_record_table = [a for a, b in qso_record_table_numbered]
     qso_record_count = [b for a, b in qso_record_table_numbered]
-    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, table_offset=qso_record_count[0])
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5(),
+                                                     table_offset=qso_record_count[0])
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     num_spectra = len(qso_record_count)
     delta_t = NpSpectrumContainer(False, num_spectra)
