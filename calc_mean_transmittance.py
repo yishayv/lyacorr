@@ -48,6 +48,7 @@ class DeltaTransmittanceAccumulator:
                 n += 1
             total_weight += chunk_weight
             total_weighted_delta_t += chunk_weighted_delta_t
+        print "n =", n
         return n, total_weight, total_weighted_delta_t
 
 
@@ -194,6 +195,7 @@ def delta_transmittance_chunk(qso_record_table_numbered):
             chunk_weighted_delta_t += (finite_delta_t*finite_ivar).sum()
         n += 1
 
+    print "chunk n =", n, "offset =", qso_record_count[0]
     return delta_t, chunk_weight, chunk_weighted_delta_t
 
 
