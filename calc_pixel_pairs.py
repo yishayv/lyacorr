@@ -57,7 +57,7 @@ class PixelPairs:
         self.cd = cd
         self.radius = radius
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
-        if settings.opt_enable_mean_correction():
+        if settings.get_enable_mean_correction():
             weighted_delta_t = np.load(settings.get_total_delta_t())
             total_weight = weighted_delta_t[0]
             total_weighted_delta_t = weighted_delta_t[1]

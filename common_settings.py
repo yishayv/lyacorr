@@ -196,7 +196,7 @@ class Settings():
     def get_min_continuum_threshold(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)
 
-    def get_mean_correction(self):
+    def get_enable_mean_correction(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mean_correction)
 
     def get_mock_shell_radius(self):
