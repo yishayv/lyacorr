@@ -5,6 +5,11 @@ comm = MPI.COMM_WORLD
 
 
 def r_print(*args):
+    """
+    print message on the root node (rank 0)
+    :param args:
+    :return:
+    """
     if comm.rank == 0:
         print 'ROOT:',
         for i in args:
@@ -13,6 +18,11 @@ def r_print(*args):
 
 
 def l_print(*args):
+    """
+    print message on each node
+    :param args:
+    :return:
+    """
     for rank in range(0, comm.size):
         comm.Barrier()
         if rank == comm.rank:
@@ -23,8 +33,13 @@ def l_print(*args):
         comm.Barrier()
 
 
-# divide items into n=num_steps chunks
 def get_chunks(num_items, num_steps):
+    """
+    divide items into n=num_steps chunks
+    :param num_items:
+    :param num_steps:
+    :return: chunk sizes, chunk offsets
+    """
     chunk_sizes = np.zeros(num_steps, dtype=int)
     chunk_sizes[:] = num_items // num_steps
     chunk_sizes[:num_items % num_steps] += 1

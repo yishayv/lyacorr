@@ -6,7 +6,7 @@ from qso_data import QSORecord, QSOData
 MAX_WAVELENGTH_COUNT = 4992
 
 
-def return_spectra_2(qso_record_table, spectra_file):
+def enum_spectra(qso_record_table, spectra_file):
     spectra = Hdf5SpectrumContainer(spectra_file, readonly=True, create_new=False)
 
     # we assume that the order of spectra is the same as in the QSO list
