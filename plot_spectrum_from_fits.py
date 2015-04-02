@@ -36,7 +36,7 @@ def plot_v_mark(wavelength):
 settings = common_settings.Settings()
 
 qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
-spec_sample = read_spectrum_fits.return_spectra_2([qso_record_table[i]])
+spec_sample = read_spectrum_fits.enum_spectra([qso_record_table[i]])
 
 for qso_data_ in spec_sample:
     qso_z = qso_data_.qso_rec.z

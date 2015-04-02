@@ -39,7 +39,7 @@ def profile_main():
 
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 
-    spec_sample = read_spectrum_fits.return_spectra_2(qso_record_table)
+    spec_sample = read_spectrum_fits.enum_spectra(qso_record_table)
 
     qso_spectra_hdf5 = settings.get_qso_spectra_hdf5()
     output_spectra = Hdf5SpectrumContainer(qso_spectra_hdf5, readonly=False, create_new=True,

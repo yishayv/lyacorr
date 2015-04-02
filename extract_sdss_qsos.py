@@ -67,6 +67,7 @@ def fill_qso_table(t):
 def profile_main():
     t_ = create_qso_table()
     fill_qso_table(t_)
+    t_.sort(['plate'])
     np.save(settings.get_qso_metadata_npy(), t_)
 
 

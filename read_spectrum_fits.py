@@ -52,9 +52,9 @@ def find_fits_file(plate_dir_list, fits_partial_path):
     return None
 
 
-def return_spectra_2(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True):
+def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True):
     """
-    function returns a QSO object from the fits files based on the meta_file
+    yields a QSO object from the fits files corresponding to the appropriate qso_record
     :type qso_record_table: table.Table
     :rtype: list[QSOData]
     """
