@@ -54,6 +54,8 @@ class Settings():
     section_data_processing = 'DataProcessing'
     # low continuum flux cutoff
     opt_min_continuum_threshold = 'Min_Continuum_Threshold'
+    # enable or disable a 2nd-pass mean flux correction
+    opt_enable_mean_correction = 'Enable_Mean_Correction'
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
@@ -91,6 +93,7 @@ class Settings():
         value_profile = False
 
         value_min_continuum_threshold = 0.5
+        value_mean_correction = False
 
         value_mock_shell_radius = 150
         value_mock_shell_fractional_width = 0.005
@@ -124,6 +127,8 @@ class Settings():
         self.config_parser.add_section(self.section_data_processing)
         self.config_parser.set(self.section_data_processing, self.opt_min_continuum_threshold,
                                str(value_min_continuum_threshold))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_mean_correction,
+                               bool(value_mean_correction))
 
         self.config_parser.add_section(self.section_mock_parameters)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
@@ -190,6 +195,9 @@ class Settings():
 
     def get_min_continuum_threshold(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)
+
+    def get_mean_correction(self):
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mean_correction)
 
     def get_mock_shell_radius(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_radius)

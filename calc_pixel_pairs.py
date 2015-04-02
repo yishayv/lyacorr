@@ -57,10 +57,13 @@ class PixelPairs:
         self.cd = cd
         self.radius = radius
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
-        weighted_delta_t = np.load(settings.get_total_delta_t())
-        total_weight = weighted_delta_t[0]
-        total_weighted_delta_t = weighted_delta_t[1]
-        self.mean_delta_t = total_weighted_delta_t / total_weight
+        if settings.opt_enable_mean_correction():
+            weighted_delta_t = np.load(settings.get_total_delta_t())
+            total_weight = weighted_delta_t[0]
+            total_weighted_delta_t = weighted_delta_t[1]
+            self.mean_delta_t = total_weighted_delta_t / total_weight
+        else:
+            self.mean_delta_t = 0
 
     def find_nearby_pixels2(self, accumulator, qso_angle,
                             spec1_index, spec2_index, delta_t_file):
