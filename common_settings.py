@@ -15,61 +15,61 @@ class Settings():
 
     section_file_paths = 'FilePaths'
     # list of paths, separated by comma
-    opt_plate_dir_list = 'Plate_Dir'
+    opt_plate_dir_list = 'plate_dir'
     # list of 3 required tables (in order)
-    opt_pca_continuum_tables = 'Pca_Continuum_Tables'
+    opt_pca_continuum_tables = 'pca_continuum_tables'
     # spectra for only QSOs (hdf5 format):
-    opt_qso_spectra_hdf5 = 'QSO_Spectra_HDF5'
+    opt_qso_spectra_hdf5 = 'qso_spectra_hdf5'
     # mean transmittance (npy)
-    opt_mean_transmittance_npy = 'Mean_Transmittance_Npy'
+    opt_mean_transmittance_npy = 'mean_transmittance_npy'
     # table of QSO metadata (fits)
-    opt_qso_metadata_fits = 'QSO_Metadata_fits'
+    opt_qso_metadata_fits = 'qso_metadata_fits'
     # fields for the table of QSO metadata (fits)
-    opt_qso_metadata_fields = 'QSO_Metadata_fields'
+    opt_qso_metadata_fields = 'qso_metadata_fields'
     # table of QSO metadata (npy)
-    opt_qso_metadata_npy = 'QSO_Metadata_npy'
+    opt_qso_metadata_npy = 'qso_metadata_npy'
     # delta_t array (npy)
-    opt_delta_t_npy = 'Delta_Transmittance_npy'
+    opt_delta_t_npy = 'delta_transmittance_npy'
     # correlation estimator bins
-    opt_estimator_bins = 'Estimator_Bins_npy'
+    opt_estimator_bins = 'estimator_bins_npy'
     # sigma squared LSS
-    opt_sigma_sq_lss = 'Sigma_Squared_LSS_txt'
+    opt_sigma_sq_lss = 'sigma_squared_lss_txt'
     # eta correction function for weights
-    opt_weight_eta = 'Weight_Eta_Function_txt'
+    opt_weight_eta = 'weight_eta_function_txt'
     # inverse variance of the continuum
-    opt_continuum_ivar = 'Continuum_Inverse_Variance_npy'
+    opt_continuum_ivar = 'continuum_inverse_variance_npy'
     # total weight and weighted delta_t values
-    opt_total_delta_t = 'Total_Delta_t_npy'
+    opt_total_delta_t = 'total_delta_t_npy'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
-    opt_file_chunk_size = 'File_Chunk_Size'
+    opt_file_chunk_size = 'file_chunk_size'
     # divide MPI tasks to sub-chunks
-    opt_mpi_num_sub_chunks = 'MPI_Num_Sub_Chunks'
+    opt_mpi_num_sub_chunks = 'mpi_num_sub_chunks'
     # don't use multiprocessing for easier profiling and debugging
-    opt_single_process = 'Single_Process'
+    opt_single_process = 'single_process'
     # enable/disable cProfile
-    opt_profile = 'Profile'
+    opt_profile = 'profile'
 
     section_data_processing = 'DataProcessing'
     # low continuum flux cutoff
-    opt_min_continuum_threshold = 'Min_Continuum_Threshold'
+    opt_min_continuum_threshold = 'min_continuum_threshold'
     # enable or disable a 2nd-pass mean flux correction
-    opt_enable_mean_correction = 'Enable_Mean_Correction'
+    opt_enable_mean_correction = 'enable_mean_correction'
     # maximum forest redshift to use
-    opt_max_forest_redshift = 'Max_Forest_Redshift'
+    opt_max_forest_redshift = 'max_forest_redshift'
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
-    opt_mock_shell_radius = 'Shell_Radius'
+    opt_mock_shell_radius = 'shell_radius'
     # fractional width of the shell
-    opt_mock_shell_fractional_width = 'Shell_Fractional_Width'
+    opt_mock_shell_fractional_width = 'shell_fractional_width'
     # separation from the outermost shell element in Mpc
-    opt_mock_shell_separation = 'Shell_Separation'
+    opt_mock_shell_separation = 'shell_separation'
     # core size in Mpc
-    opt_mock_core_radius = 'Core_Radius'
+    opt_mock_core_radius = 'core_radius'
     # resolution of the 3d grid
-    opt_mock_resolution = 'Resolution'
+    opt_mock_resolution = 'resolution'
 
     def write_default_settings(self):
         value_plate_dir_list = _SEP.join(['/mnt/gastro/sdss/spectro/redux/v5_7_0',
