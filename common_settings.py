@@ -56,6 +56,8 @@ class Settings():
     opt_min_continuum_threshold = 'Min_Continuum_Threshold'
     # enable or disable a 2nd-pass mean flux correction
     opt_enable_mean_correction = 'Enable_Mean_Correction'
+    # maximum forest redshift to use
+    opt_max_forest_redshift = 'Max_Forest_Redshift'
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
@@ -94,6 +96,7 @@ class Settings():
 
         value_min_continuum_threshold = 0.5
         value_mean_correction = False
+        value_max_forest_redshift = 3.2
 
         value_mock_shell_radius = 150
         value_mock_shell_fractional_width = 0.005
@@ -129,6 +132,8 @@ class Settings():
                                str(value_min_continuum_threshold))
         self.config_parser.set(self.section_data_processing, self.opt_enable_mean_correction,
                                bool(value_mean_correction))
+        self.config_parser.set(self.section_data_processing, self.opt_max_forest_redshift,
+                               float(value_max_forest_redshift))
 
         self.config_parser.add_section(self.section_mock_parameters)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
@@ -198,6 +203,9 @@ class Settings():
 
     def get_enable_mean_correction(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mean_correction)
+
+    def get_max_forest_redshift(self):
+        return self.config_parser.getfloat((self.section_data_processing, self.opt_max_forest_redshift))
 
     def get_mock_shell_radius(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_radius)
