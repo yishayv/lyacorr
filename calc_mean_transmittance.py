@@ -13,6 +13,7 @@ from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from qso_data import QSOData
 import comoving_distance
 import pixel_weight_coefficients
+from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 
 
 lya_center = 1215.67
@@ -74,7 +75,7 @@ def qso_transmittance(qso_spec_obj):
     ar_flux = qso_spec_obj.ar_flux
     ar_ivar = qso_spec_obj.ar_ivar
     assert ar_flux.size == ar_ivar.size
-    empty_result = (np.array([]), np.array([]), np.array([]))
+    empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]))
 
     fit_spectrum, fit_normalization_factor = \
         fit_pca.fit(ar_wavelength / (1 + z), ar_flux, normalized=False, boundary_value=np.nan)
@@ -116,25 +117,29 @@ def qso_transmittance(qso_spec_obj):
 
     print "mean flux:", (ar_flux[effective_mask] / ar_fit_spectrum_masked).mean()
 
-    return [ar_rel_transmittance_masked, ar_z_masked, ar_pipeline_ivar_masked]
+    return LyaForestTransmittance(ar_z_masked, ar_rel_transmittance_masked, ar_pipeline_ivar_masked)
 
 
 def qso_transmittance_binned(qso_spec_obj):
     ar_z = ar_z_range
-    [ar_rel_transmittance_clipped, ar_z_original, ar_pipeline_ivar] = qso_transmittance(qso_spec_obj)
-    if ar_rel_transmittance_clipped.size == 0:
+    lya_forest_transmittance = qso_transmittance(qso_spec_obj)
+    if lya_forest_transmittance.ar_transmittance.size == 0:
         # no samples found, no need to interpolate, just return the empty result
-        return [ar_rel_transmittance_clipped, ar_z_original, ar_pipeline_ivar]
+        return LyaForestTransmittanceBinned(lya_forest_transmittance.ar_z,
+                                            lya_forest_transmittance.ar_transmittance,
+                                            lya_forest_transmittance.ar_ivar)
 
     # use nearest neighbor to prevent contamination of high accuracy flux, by nearby pixels with low ivar values,
     # with very high (or low) flux.
 
-    f_flux = interpolate.interp1d(ar_z_original, ar_rel_transmittance_clipped, bounds_error=False, assume_sorted=True)
+    f_flux = interpolate.interp1d(lya_forest_transmittance.ar_z, lya_forest_transmittance.ar_transmittance,
+                                  bounds_error=False, assume_sorted=True)
     ar_rel_transmittance_binned = f_flux(ar_z)
-    f_ivar = interpolate.interp1d(ar_z_original, ar_pipeline_ivar, bounds_error=False, assume_sorted=True)
+    f_ivar = interpolate.interp1d(lya_forest_transmittance.ar_z, lya_forest_transmittance.ar_ivar, bounds_error=False,
+                                  assume_sorted=True)
     ar_ivar_binned = f_ivar(ar_z)
     ar_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
-    return [ar_rel_transmittance_binned, ar_mask_binned, ar_ivar_binned]
+    return LyaForestTransmittanceBinned(ar_mask_binned, ar_rel_transmittance_binned, ar_ivar_binned)
 
 
 def mean_transmittance_chunk(qso_record_table_numbered):
@@ -145,9 +150,11 @@ def mean_transmittance_chunk(qso_record_table_numbered):
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     m = mean_flux.MeanFlux(np.arange(*z_range))
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
-    for ar_rel_transmittance, ar_mask, ar_pipeline_ivar in result_enum:
-        if ar_rel_transmittance.size:
-            m.add_flux_pre_binned(ar_rel_transmittance, ar_mask, ar_pipeline_ivar)
+    for lya_forest_transmittance_binned in result_enum:
+        if lya_forest_transmittance_binned.ar_transmittance.size:
+            m.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
+                                  lya_forest_transmittance_binned.ar_mask,
+                                  lya_forest_transmittance_binned.ar_ivar)
             mean_transmittance_chunk.num_spec += 1
 
     print "finished chunk", mean_transmittance_chunk.num_spec
@@ -172,17 +179,19 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     n = 0
     chunk_weighted_delta_t = 0
     chunk_weight = 0
-    for ar_flux, ar_z, ar_pipeline_ivar in result_enum:
-        if ar_z.size:
+    for lya_forest_transmittance in result_enum:
+        ar_z = lya_forest_transmittance.ar_z
+        if lya_forest_transmittance.ar_z.size:
             # prepare the mean flux for the z range of this QSO
             ar_mean_flux_for_z_range = np.interp(ar_z, ar_z_mean_flux, ar_mean_flux)
 
             # delta transmittance is the change in relative transmittance vs the mean
             # therefore, subtract 1.
-            ar_delta_t = ar_flux / ar_mean_flux_for_z_range - 1
+            ar_delta_t = lya_forest_transmittance.ar_transmittance / ar_mean_flux_for_z_range - 1
 
             # finish the error estimation, and save it
-            ar_delta_t_ivar = pixel_weight.eval(ar_pipeline_ivar, ar_mean_flux_for_z_range, ar_z)
+            ar_delta_t_ivar = pixel_weight.eval(lya_forest_transmittance.ar_ivar, ar_mean_flux_for_z_range,
+                                                ar_z)
 
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
             # Note: using wavelength field to store redshift
@@ -197,7 +206,7 @@ def delta_transmittance_chunk(qso_record_table_numbered):
 
             # accumulate the total weight so that we can zero out the weight mean of delta_t.
             chunk_weight += finite_ivar.sum()
-            chunk_weighted_delta_t += (finite_delta_t*finite_ivar).sum()
+            chunk_weighted_delta_t += (finite_delta_t * finite_ivar).sum()
         else:
             # empty record
             pass
