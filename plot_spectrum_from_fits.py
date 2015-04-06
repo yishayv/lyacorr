@@ -146,7 +146,7 @@ for qso_data_ in spec_sample:
     plt.fill_between(lya_forest_transmittance.ar_z, y_min, y_max, where=ar_transmittance_mask,
                      linewidth=.5, color='red', alpha=0.1)
 
-    plt.hlines(1, lya_forest_transmittance.ar_z[0], lya_forest_transmittance.ar_z[-1])
+    plt.plot(ar_z[ar_z < qso_z], ar_mean_flux_for_z_range[ar_z < qso_z], color='red')
 
     plt.xlabel(r"$z$")
     # F(lambda)/Cq(lambda) is the same as F(z)/Cq(z)

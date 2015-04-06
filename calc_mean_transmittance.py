@@ -11,7 +11,6 @@ import read_spectrum_hdf5
 import common_settings
 from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from qso_data import QSOData
-import comoving_distance
 import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 
@@ -22,9 +21,8 @@ settings = common_settings.Settings()
 force_single_process = settings.get_single_process()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
-z_range = (2.1, 3.5, 0.0001)
+z_range = (1.9, 3.5, 0.0001)
 ar_z_range = np.arange(*z_range)
-cd = comoving_distance.ComovingDistance(2.0, 3.6, 0.001)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 
 
