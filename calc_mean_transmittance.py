@@ -120,20 +120,21 @@ def qso_transmittance(qso_spec_obj):
 
 
 def qso_transmittance_binned(qso_spec_obj):
-    [ar_rel_transmittance_clipped, ar_z, ar_delta_t_ivar] = qso_transmittance(qso_spec_obj)
+    ar_z = ar_z_range
+    [ar_rel_transmittance_clipped, ar_z_original, ar_pipeline_ivar] = qso_transmittance(qso_spec_obj)
     if ar_rel_transmittance_clipped.size == 0:
         # no samples found, no need to interpolate, just return the empty result
-        return [ar_rel_transmittance_clipped, ar_z, ar_delta_t_ivar]
+        return [ar_rel_transmittance_clipped, ar_z_original, ar_pipeline_ivar]
 
     # use nearest neighbor to prevent contamination of high accuracy flux, by nearby pixels with low ivar values,
     # with very high (or low) flux.
 
-    f_flux = interpolate.interp1d(ar_z, ar_rel_transmittance_clipped, bounds_error=False, assume_sorted=True)
-    ar_rel_transmittance_binned = f_flux(ar_z_range)
-    f_ivar = interpolate.interp1d(ar_z, ar_delta_t_ivar, bounds_error=False, assume_sorted=True)
-    ar_ivar_binned = f_ivar(ar_z_range)
-    ar_z_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
-    return [ar_rel_transmittance_binned, ar_z_mask_binned, ar_ivar_binned]
+    f_flux = interpolate.interp1d(ar_z_original, ar_rel_transmittance_clipped, bounds_error=False, assume_sorted=True)
+    ar_rel_transmittance_binned = f_flux(ar_z)
+    f_ivar = interpolate.interp1d(ar_z_original, ar_pipeline_ivar, bounds_error=False, assume_sorted=True)
+    ar_ivar_binned = f_ivar(ar_z)
+    ar_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
+    return [ar_rel_transmittance_binned, ar_mask_binned, ar_ivar_binned]
 
 
 def mean_transmittance_chunk(qso_record_table_numbered):
@@ -144,9 +145,9 @@ def mean_transmittance_chunk(qso_record_table_numbered):
     spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
     m = mean_flux.MeanFlux(np.arange(*z_range))
     result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
-    for flux, mask, ar_delta_t_ivar in result_enum:
-        if flux.size:
-            m.add_flux_pre_binned(flux, mask, ar_delta_t_ivar)
+    for ar_rel_transmittance, ar_mask, ar_pipeline_ivar in result_enum:
+        if ar_rel_transmittance.size:
+            m.add_flux_pre_binned(ar_rel_transmittance, ar_mask, ar_pipeline_ivar)
             mean_transmittance_chunk.num_spec += 1
 
     print "finished chunk", mean_transmittance_chunk.num_spec
