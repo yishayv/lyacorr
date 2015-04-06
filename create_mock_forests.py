@@ -2,7 +2,6 @@ import cProfile
 
 import numpy as np
 import astropy.table as table
-# from mayavi import mlab
 
 from hdf5_spectrum_container import Hdf5SpectrumContainer
 import common_settings
@@ -10,6 +9,11 @@ from qso_data import QSORecord
 import comoving_distance
 import mock_core_with_shell
 import continuum_fit_pca
+
+draw_graph = False
+
+if draw_graph:
+    from mayavi import mlab
 
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992
@@ -38,11 +42,11 @@ def profile_main():
     qso_spectra_hdf5 = settings.get_qso_spectra_hdf5()
     output_spectra = Hdf5SpectrumContainer(qso_spectra_hdf5, readonly=False, create_new=False,
                                            num_spectra=MAX_SPECTRA)
-
-    total_ar_x = np.array([])
-    total_ar_y = np.array([])
-    total_ar_z = np.array([])
-    total_ar_c = np.array([])
+    if draw_graph:
+        total_ar_x = np.array([])
+        total_ar_y = np.array([])
+        total_ar_z = np.array([])
+        total_ar_c = np.array([])
 
     for n in xrange(len(qso_record_list)):
         qso_rec = qso_record_list[n]
@@ -51,6 +55,7 @@ def profile_main():
         # load data
         ar_wavelength = output_spectra.get_wavelength(n)
         ar_flux = output_spectra.get_flux(n)
+        ar_ivar = output_spectra.get_ivar(n)
 
         # convert wavelength to redshift
         ar_redshift = ar_wavelength / lya_center - 1
@@ -92,22 +97,24 @@ def profile_main():
 
         # set the forest part of the spectrum to the mock forest
         ar_flux[effective_mask] = ar_rel_transmittance * fit_spectrum[effective_mask]
-        # plt.plot(ar_dist, ar_flux[effective_mask])
-        # plt.plot(ar_dist, np.sin(ar_dist/150.*2*np.pi)/2+0.5)
-        # plt.show()
-        total_ar_x = np.append(total_ar_x, ar_x)
-        total_ar_y = np.append(total_ar_y, ar_y)
-        total_ar_z = np.append(total_ar_z, ar_z)
-        total_ar_c = np.append(total_ar_c, ar_mock_forest_array)
+
+        if draw_graph:
+            display_mask = ar_mock_forest_array > 0.
+            total_ar_x = np.append(total_ar_x, ar_x[display_mask])
+            total_ar_y = np.append(total_ar_y, ar_y[display_mask])
+            total_ar_z = np.append(total_ar_z, ar_z[display_mask])
+            total_ar_c = np.append(total_ar_c, ar_mock_forest_array[display_mask])
 
         # overwrite the existing forest
         output_spectra.set_flux(n, ar_flux)
         if n % 1000 == 0:
             print n
 
-    # mlab.points3d(total_ar_x, total_ar_y, total_ar_z, total_ar_c, mode='point', scale_mode='none', transparent=True,
-    #               opacity=0.3)
-    mlab.show()
+    if draw_graph:
+        mlab.points3d(total_ar_x, total_ar_y, total_ar_z, total_ar_c,
+                      mode='sphere', scale_mode='vector',
+                      scale_factor=20, transparent=True, vmin=0, vmax=1, opacity=0.03)
+        mlab.show()
 
 
 if settings.get_profile():
