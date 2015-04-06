@@ -56,8 +56,7 @@ for qso_data_ in spec_sample:
     # we assume the wavelength range in the input file is correct
     assert ar_wavelength.size == ar_flux.size
 
-    ar_transmittance, ar_transmittance_wavelength, ar_transmittance_ivar = \
-        calc_mean_transmittance.qso_transmittance(qso_data_)
+    lya_forest_transmittance = calc_mean_transmittance.qso_transmittance(qso_data_)
 
     # begin PCA fit:
     ar_wavelength_rest = ar_wavelength / (1 + qso_z)
@@ -132,20 +131,22 @@ for qso_data_ in spec_sample:
 
     plt.subplot(2, 1, 2)
 
-    ar_transmittance_err = np.reciprocal(np.sqrt(ar_transmittance_ivar))
+    ar_transmittance_err = np.reciprocal(np.sqrt(lya_forest_transmittance.ar_ivar))
     ar_transmittance_mask = np.isnan(ar_transmittance_err) | ~np.isfinite(ar_transmittance_err)
-    ar_transmittance_lower = ar_transmittance - ar_transmittance_err
-    ar_transmittance_higher = ar_transmittance + ar_transmittance_err
-    plt.fill_between(ar_transmittance_wavelength, ar_transmittance_lower,
+    ar_transmittance_lower = lya_forest_transmittance.ar_transmittance - ar_transmittance_err
+    ar_transmittance_higher = lya_forest_transmittance.ar_transmittance + ar_transmittance_err
+    plt.fill_between(lya_forest_transmittance.ar_z, ar_transmittance_lower,
                      ar_transmittance_higher, linewidth=.5, color='lightgray')
 
-    plt.plot(ar_transmittance_wavelength, ar_transmittance, linewidth=.5)
+    plt.plot(lya_forest_transmittance.ar_z, lya_forest_transmittance.ar_transmittance, linewidth=.5)
 
     # draw vertical fill for masked values
     axes = plt.gca()
     y_min, y_max = axes.get_ylim()
-    plt.fill_between(ar_transmittance_wavelength, y_min, y_max, where=ar_transmittance_mask,
+    plt.fill_between(lya_forest_transmittance.ar_z, y_min, y_max, where=ar_transmittance_mask,
                      linewidth=.5, color='red', alpha=0.1)
+
+    plt.hlines(1, lya_forest_transmittance.ar_z[0], lya_forest_transmittance.ar_z[-1])
 
     plt.xlabel(r"$z$")
     # F(lambda)/Cq(lambda) is the same as F(z)/Cq(z)
