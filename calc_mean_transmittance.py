@@ -112,7 +112,7 @@ def qso_transmittance(qso_spec_obj):
     ar_pipeline_ivar_masked = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_masked)
 
     # effectively remove the points with very high positive or negative transmittance
-    ar_pipeline_ivar_masked[np.logical_or(ar_rel_transmittance_masked > 2, ar_rel_transmittance_masked < 0)] = 0
+    ar_pipeline_ivar_masked[np.logical_or(ar_rel_transmittance_masked > 5, ar_rel_transmittance_masked < -3)] = 0
 
     print "mean flux:", (ar_flux[effective_mask] / ar_fit_spectrum_masked).mean()
 
