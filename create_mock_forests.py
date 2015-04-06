@@ -96,7 +96,10 @@ def profile_main():
         ar_rel_transmittance = ar_delta_t + 1
 
         # set the forest part of the spectrum to the mock forest
-        ar_flux[effective_mask] = ar_rel_transmittance * fit_spectrum[effective_mask]
+        mock_fraction = 0.5
+        ar_flux[effective_mask] = \
+            ar_flux[effective_mask] * (1 - mock_fraction) + \
+            ar_rel_transmittance * fit_spectrum[effective_mask] * mock_fraction
 
         if draw_graph:
             display_mask = ar_mock_forest_array > 0.
