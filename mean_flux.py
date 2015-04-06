@@ -23,9 +23,15 @@ class MeanFlux:
         self.ar_weights += mean_flux2.ar_weights
 
     def get_weighted_mean(self):
-        ar_weights_no_zero = self.ar_weights
+        ar_weights_no_zero = np.copy(self.ar_weights)
         ar_weights_no_zero[self.ar_weights == 0] = np.nan
         return self.ar_total_flux / ar_weights_no_zero
+
+    def get_weighted_mean_with_minimum_count(self, n):
+        return self.get_weighted_mean()[self.ar_count >= n]
+
+    def get_z_with_minimum_count(self, n):
+        return self.ar_z[self.ar_count >= n]
 
     def save(self, filename):
         np.save(filename, np.vstack((self.ar_z,

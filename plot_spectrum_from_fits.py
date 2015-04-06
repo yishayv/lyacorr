@@ -1,3 +1,5 @@
+import os.path
+
 import matplotlib.pyplot as plt
 import astropy.table as table
 import numpy as np
@@ -9,9 +11,10 @@ import spectrum
 import qso_line_mask
 import continuum_fit
 import calc_mean_transmittance
+import mean_flux
 
 
-i = 213
+i = 597
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -87,8 +90,15 @@ for qso_data_ in spec_sample:
     plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3)
     # plt.loglog(spec.ma_wavelength.compressed(),
     # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
-    plt.plot(ar_wavelength,
-             fit_spectrum, color='orange')
+    plt.plot(ar_wavelength, fit_spectrum, color='orange')
+
+    if os.path.exists(settings.get_mean_transmittance_npy()):
+        m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
+        ar_mean_flux_lookup = m.get_weighted_mean()
+        ar_z = ar_wavelength / lya_center - 1
+        ar_mean_flux_for_z_range = np.interp(ar_z, m.ar_z, ar_mean_flux_lookup)
+        fitted_mean = (fit_spectrum * ar_mean_flux_for_z_range)[ar_z < qso_z]
+        plt.plot(ar_wavelength[ar_z < qso_z], fitted_mean, color='red')
 
     plt.axvspan(3817, redshift_to_lya_center(qso_z),
                 alpha=0.3, facecolor='yellow', edgecolor='red')

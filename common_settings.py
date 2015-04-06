@@ -205,7 +205,7 @@ class Settings():
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mean_correction)
 
     def get_max_forest_redshift(self):
-        return self.config_parser.getfloat((self.section_data_processing, self.opt_max_forest_redshift))
+        return self.config_parser.getfloat(self.section_data_processing, self.opt_max_forest_redshift)
 
     def get_mock_shell_radius(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_radius)

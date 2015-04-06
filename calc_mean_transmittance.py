@@ -165,27 +165,28 @@ def delta_transmittance_chunk(qso_record_table_numbered):
     delta_t.zero()
     result_enum = itertools.imap(qso_transmittance, spec_iter)
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
-    ar_mean_flux = m.get_weighted_mean()
+    ar_mean_flux = m.get_weighted_mean_with_minimum_count(20)
+    ar_z_mean_flux = m.get_z_with_minimum_count(20)
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     n = 0
     chunk_weighted_delta_t = 0
     chunk_weight = 0
-    for flux, z, ar_pipeline_ivar in result_enum:
-        if z.size:
+    for ar_flux, ar_z, ar_pipeline_ivar in result_enum:
+        if ar_z.size:
             # prepare the mean flux for the z range of this QSO
-            ar_mean_flux_for_z_range = np.interp(z, m.ar_z, ar_mean_flux)
+            ar_mean_flux_for_z_range = np.interp(ar_z, ar_z_mean_flux, ar_mean_flux)
 
             # delta transmittance is the change in relative transmittance vs the mean
             # therefore, subtract 1.
-            ar_delta_t = flux / ar_mean_flux_for_z_range - 1
+            ar_delta_t = ar_flux / ar_mean_flux_for_z_range - 1
 
             # finish the error estimation, and save it
-            ar_delta_t_ivar = pixel_weight.eval(ar_pipeline_ivar, ar_mean_flux_for_z_range, z)
+            ar_delta_t_ivar = pixel_weight.eval(ar_pipeline_ivar, ar_mean_flux_for_z_range, ar_z)
 
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
             # Note: using wavelength field to store redshift
             finite_mask = np.logical_and(np.isfinite(ar_delta_t), np.isfinite(ar_delta_t_ivar))
-            finite_z = z[finite_mask]
+            finite_z = ar_z[finite_mask]
             finite_delta_t = ar_delta_t[finite_mask]
             finite_ivar = ar_delta_t_ivar[finite_mask]
 
@@ -196,6 +197,9 @@ def delta_transmittance_chunk(qso_record_table_numbered):
             # accumulate the total weight so that we can zero out the weight mean of delta_t.
             chunk_weight += finite_ivar.sum()
             chunk_weighted_delta_t += (finite_delta_t*finite_ivar).sum()
+        else:
+            # empty record
+            pass
         n += 1
 
     print "chunk n =", n, "offset =", qso_record_count[0]
