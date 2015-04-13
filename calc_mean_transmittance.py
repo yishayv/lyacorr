@@ -76,7 +76,7 @@ def qso_transmittance(qso_spec_obj):
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]))
 
     fit_spectrum, fit_normalization_factor = \
-        fit_pca.fit(ar_wavelength / (1 + z), ar_flux, normalized=False, boundary_value=np.nan)
+        fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, normalized=False, boundary_value=np.nan)
 
     # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
     # use the same range as in 1404.1801 (2014)
@@ -131,10 +131,10 @@ def qso_transmittance_binned(qso_spec_obj):
     # with very high (or low) flux.
 
     f_flux = interpolate.interp1d(lya_forest_transmittance.ar_z, lya_forest_transmittance.ar_transmittance,
-                                  bounds_error=False, assume_sorted=True)
+                                  kind='nearest', bounds_error=False, assume_sorted=True)
     ar_rel_transmittance_binned = f_flux(ar_z)
     f_ivar = interpolate.interp1d(lya_forest_transmittance.ar_z, lya_forest_transmittance.ar_ivar, bounds_error=False,
-                                  assume_sorted=True)
+                                  kind='nearest', assume_sorted=True)
     ar_ivar_binned = f_ivar(ar_z)
     ar_mask_binned = ~np.isnan(ar_rel_transmittance_binned)
     return LyaForestTransmittanceBinned(ar_mask_binned, ar_rel_transmittance_binned, ar_ivar_binned)
