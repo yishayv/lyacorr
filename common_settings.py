@@ -58,6 +58,10 @@ class Settings():
     opt_enable_mean_correction = 'enable_mean_correction'
     # maximum forest redshift to use
     opt_max_forest_redshift = 'max_forest_redshift'
+    # continuum fit method
+    opt_continuum_fit_method = 'continuum_fit_method'
+    # cosmology (Planck or WMAP[579])
+    opt_cosmology = 'cosmology'
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
@@ -97,6 +101,8 @@ class Settings():
         value_min_continuum_threshold = 0.5
         value_mean_correction = False
         value_max_forest_redshift = 3.2
+        value_continuum_fit_method = 'dot_product'
+        value_cosmology = 'Planck13'
 
         value_mock_shell_radius = 150
         value_mock_shell_fractional_width = 0.005
@@ -134,6 +140,10 @@ class Settings():
                                bool(value_mean_correction))
         self.config_parser.set(self.section_data_processing, self.opt_max_forest_redshift,
                                float(value_max_forest_redshift))
+        self.config_parser.set(self.section_data_processing, self.opt_continuum_fit_method,
+                               str(value_continuum_fit_method))
+        self.config_parser.set(self.section_data_processing, self.opt_cosmology,
+                               str(value_cosmology))
 
         self.config_parser.add_section(self.section_mock_parameters)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
@@ -206,6 +216,12 @@ class Settings():
 
     def get_max_forest_redshift(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_max_forest_redshift)
+
+    def get_continuum_fit_method(self):
+        return self.config_parser.get(self.section_data_processing, self.opt_continuum_fit_method)
+
+    def get_cosmology(self):
+        return self.config_parser.get(self.section_data_processing, self.opt_cosmology)
 
     def get_mock_shell_radius(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_radius)

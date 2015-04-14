@@ -1,11 +1,16 @@
 from astropy.cosmology import Planck13, WMAP5, WMAP7, WMAP9
 from astropy import units as u
+import common_settings
+
+settings = common_settings.Settings()
 
 import lookup_table
 
 
 class ComovingDistance:
-    def __init__(self, z_start, z_end, z_step, cosmology='WMAP9'):
+    def __init__(self, z_start, z_end, z_step, cosmology='from_config_file'):
+        if cosmology == 'from_config_file':
+            cosmology = settings.get_cosmology()
         self.cosmology = \
             {'Planck13': Planck13,
              'WMAP5': WMAP5,
