@@ -6,13 +6,11 @@ import itertools
 import numpy as np
 from astropy import coordinates as coord
 from astropy import units as u
-from astropy.cosmology import Planck13
 from astropy.coordinates import matching as matching
 from astropy.coordinates import Angle
 from astropy import table
 from mpi4py import MPI
 
-import read_spectrum_hdf5
 import common_settings
 from read_spectrum_fits import QSORecord
 import comoving_distance
@@ -98,8 +96,8 @@ def profile_main():
     # TODO: find a more precise value instead of z=1.9
     # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
     # the article assumes h=100km/s/mpc
-    radius = (200. * (100. * u.km / (u.Mpc * u.s)) / Planck13.H0).value
-    max_angular_separation = radius * u.Mpc / (Planck13.comoving_transverse_distance(1.9) / u.radian)
+    radius = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0).value
+    max_angular_separation = radius / (cd.comoving_distance(1.9) / u.radian)
     mpi_helper.r_print('maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree))
 
     # print ar_list
