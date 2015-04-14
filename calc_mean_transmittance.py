@@ -90,13 +90,14 @@ def qso_transmittance(qso_spec_obj):
     ar_wavelength_masked = ar_wavelength[effective_mask]
     ar_fit_spectrum_masked = fit_spectrum[effective_mask]
 
+    # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
+    if ar_wavelength_masked.size < 50:
+        print "skipped QSO (low pixel count): ", qso_rec
+        return empty_result
+
     fit_min_value = ar_fit_spectrum_masked.min()
     if fit_min_value < min_continuum_threshold:
         print "skipped QSO (low continuum) :", qso_rec
-        return empty_result
-
-    if ar_wavelength_masked.size < 50:
-        print "skipped QSO (low pixel count): ", qso_rec
         return empty_result
 
     print "accepted QSO", qso_rec
