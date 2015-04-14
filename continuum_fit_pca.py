@@ -12,7 +12,8 @@ class ContinuumFitPCA:
     LY_A_PEAK_INDEX = (LY_A_PEAK_BINNED - BLUE_START) / 0.5
     NUM_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
 
-    def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file):
+    def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
+                 fit_function='dot_product'):
         self.red_pc_table = np.genfromtxt(red_pc_text_file, skip_header=23)
         self.full_pc_table = np.genfromtxt(full_pc_text_file, skip_header=23)
         self.projection_matrix = np.genfromtxt(projection_matrix_file, delimiter=',')
@@ -20,12 +21,15 @@ class ContinuumFitPCA:
         self.full_pc = self.full_pc_table[:, 3:13]
         self.red_mean = self.red_pc_table[:, 1]
         self.full_mean = self.full_pc_table[:, 1]
+        self.fit_function = {'dot_product': self.project_red_spectrum,
+                             'weighted_ls': self.least_squares_red_spectrum}[fit_function]
 
     def red_to_full(self, red_pc_coefficients):
         return np.dot(self.projection_matrix.T, red_pc_coefficients)
 
-    def project_red_spectrum(self, red_spectrum):
-        return np.dot(red_spectrum - self.red_mean, self.red_pc)
+    def project_red_spectrum(self, ar_red_flux, ar_red_ivar):
+        del ar_red_ivar  # suppress unused variable
+        return np.dot(ar_red_flux - self.red_mean, self.red_pc)
 
     def least_squares_red_spectrum(self, ar_red_flux, ar_red_ivar):
         ar_red_flux_diff = ar_red_flux - self.red_mean
@@ -68,8 +72,8 @@ class ContinuumFitPCA:
         ar_red_flux_rebinned_normalized = ar_red_flux_rebinned / float(normalization_factor)
 
         # find the PCA coefficients for the red part of the spectrum.
-        red_spectrum_coefficients = self.least_squares_red_spectrum(ar_red_flux_rebinned_normalized,
-                                                                    ar_red_ivar_rebinned)
+        red_spectrum_coefficients = self.fit_function(ar_red_flux_rebinned_normalized,
+                                                      ar_red_ivar_rebinned)
 
         # map red PCs to full spectrum PCs
         full_spectrum_coefficients = self.red_to_full(red_spectrum_coefficients)
