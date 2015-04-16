@@ -14,7 +14,7 @@ from qso_data import QSOData
 import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 import mpi_helper
-from mpi_helper import l_print, l_print_no_barrier
+from mpi_helper import l_print_no_barrier
 
 
 comm = MPI.COMM_WORLD
@@ -40,13 +40,15 @@ class DeltaTransmittanceAccumulator:
         # initialize file
         self.delta_t_file.zero()
 
-    def accumulate(self, result_enum):
-        for ar_delta_t in result_enum:
+    def accumulate(self, result_enum, ar_qso_indices_list):
+        for ar_delta_t, ar_qso_indices in itertools.izip(result_enum, ar_qso_indices_list):
             delta_t = NpSpectrumContainer.from_np_array(ar_delta_t, 1)
-            for j in NpSpectrumIterator(delta_t):
-                self.delta_t_file.set_wavelength(self.n, j.get_wavelength())
-                self.delta_t_file.set_flux(self.n, j.get_flux())
-                self.delta_t_file.set_ivar(self.n, j.get_ivar())
+            for j, n in itertools.izip(NpSpectrumIterator(delta_t), ar_qso_indices):
+                # if self.n >= self.num_spectra:
+                # break
+                self.delta_t_file.set_wavelength(n, j.get_wavelength())
+                self.delta_t_file.set_flux(n, j.get_flux())
+                self.delta_t_file.set_ivar(n, j.get_ivar())
                 self.n += 1
             l_print_no_barrier("n =", self.n)
         l_print_no_barrier("n =", self.n)
@@ -60,7 +62,7 @@ class MeanTransmittanceAccumulator:
     def __init__(self, num_spectra):
         self.m = mean_flux.MeanFlux(np.arange(*z_range))
 
-    def accumulate(self, result_enum):
+    def accumulate(self, result_enum, qso_record_table):
         for ar_m in result_enum:
             l_print_no_barrier("--- mean accumulate ----")
             m = mean_flux.MeanFlux.from_np_array(ar_m)
@@ -245,15 +247,19 @@ def accumulate_over_spectra(func, accumulator):
 
     local_qso_record_table = itertools.islice(qso_record_table, local_start_index, local_end_index)
     l_print_no_barrier("-----", qso_record_count, local_start_index, local_end_index, local_size)
-    for i in split_seq(settings.get_file_chunk_size(), local_qso_record_table):
+    slice_size = settings.get_file_chunk_size()
+    for i, slice_number in itertools.izip(split_seq(slice_size, local_qso_record_table),
+                                          itertools.count()):
         local_result = func(i)
         ar_local_result = local_result.as_np_array()
         ar_all_results = np.zeros(shape=tuple([comm.size] + list(ar_local_result.shape)))
         comm.Gatherv(ar_local_result, ar_all_results, root=0)
+        ar_qso_indices = np.zeros(shape=(comm.size, slice_size), dtype=int)
+        comm.Gather(np.array([x['index'] for x in i]), ar_qso_indices)
 
         # "reduce" results
         if comm.rank == 0:
-            global_acc.accumulate(ar_all_results)
+            global_acc.accumulate(ar_all_results, ar_qso_indices)
 
     l_print_no_barrier("------------------------------")
     if comm.rank == 0:
