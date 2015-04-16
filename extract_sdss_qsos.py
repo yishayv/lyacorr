@@ -36,7 +36,8 @@ def create_rec_2(i):
 
 def create_qso_table():
     t = table.Table()
-    t.add_columns([table.Column(name='specObjID', dtype='i8', unit=None),
+    t.add_columns([table.Column(name='index', dtype='i8', unit=None),
+                   table.Column(name='specObjID', dtype='i8', unit=None),
                    table.Column(name='z', unit=u.dimensionless_unscaled),
                    table.Column(name='ra', unit=u.degree),
                    table.Column(name='dec', unit=u.degree),
@@ -59,6 +60,8 @@ def fill_qso_table(t):
     qso_record_list = [i for i in qso_record_list if i is not None]
 
     for i in qso_record_list:
+        # add a zero value for the index, since we sort the table later and overwrite it anyway.
+        i.insert(0, 0)
         t.add_row(i)
 
     return t
@@ -68,10 +71,14 @@ def profile_main():
     t_ = create_qso_table()
     fill_qso_table(t_)
     t_.sort(['plate'])
+
+    # add indices after sort
+    t_['index'] = xrange(len(t_))
+
     np.save(settings.get_qso_metadata_npy(), t_)
 
 
 if settings.get_profile():
-    cProfile.run('profile_main()', sort=2)
+    cProfile.run('profile_main()', filename='extract_sdss_qsos.prof', sort=2)
 else:
     profile_main()

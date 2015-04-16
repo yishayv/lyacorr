@@ -3,6 +3,7 @@ from qso_data import QSORecord, QSOData
 
 MAX_WAVELENGTH_COUNT = 4992
 
+
 # TODO: refactor this or remove completely
 class SpectraWithMetadata:
     def __init__(self, qso_record_table, spectra_file, table_offset=0):

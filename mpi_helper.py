@@ -19,7 +19,7 @@ def r_print(*args):
 
 def l_print(*args):
     """
-    print message on each node
+    print message on each node, synchronized
     :param args:
     :return:
     """
@@ -31,6 +31,20 @@ def l_print(*args):
                 print i,
             print
         comm.Barrier()
+
+
+def l_print_no_barrier(*args):
+    """
+    print message on each node
+    :param args:
+    :return:
+    """
+    for rank in range(0, comm.size):
+        if rank == comm.rank:
+            print comm.rank, ':',
+            for i in args:
+                print i,
+            print
 
 
 def get_chunks(num_items, num_steps):

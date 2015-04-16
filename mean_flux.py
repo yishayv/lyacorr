@@ -33,18 +33,28 @@ class MeanFlux:
     def get_z_with_minimum_count(self, n):
         return self.ar_z[self.ar_count >= n]
 
-    def save(self, filename):
-        np.save(filename, np.vstack((self.ar_z,
-                                     self.ar_total_flux,
-                                     self.ar_count,
-                                     self.ar_weights)))
+    def as_np_array(self):
+        return np.vstack((self.ar_z,
+                          self.ar_total_flux,
+                          self.ar_count,
+                          self.ar_weights))
 
-    def load(self, filename):
+    @classmethod
+    def from_np_array(cls, np_array):
+        new_obj = cls(np.empty(1))
+        new_obj.ar_z = np_array[0]
+        new_obj.ar_total_flux = np_array[1]
+        new_obj.ar_count = np_array[2]
+        new_obj.ar_weights = np_array[3]
+        return new_obj
+
+    def save(self, filename):
+        np.save(filename, self.as_np_array())
+
+    @classmethod
+    def load(cls, filename):
         stacked_array = np.load(filename)
-        self.ar_z = stacked_array[0]
-        self.ar_total_flux = stacked_array[1]
-        self.ar_count = stacked_array[2]
-        self.ar_weights = stacked_array[3]
+        return cls.from_np_array(stacked_array)
 
     @classmethod
     def from_file(cls, filename):
@@ -52,6 +62,5 @@ class MeanFlux:
 
         :rtype : MeanFlux
         """
-        m = cls(np.empty(1))
-        m.load(filename)
-        return m
+        return cls.load(filename)
+

@@ -1,9 +1,9 @@
 import itertools
-import random
 
 import numpy as np
 import astropy.table as table
 from scipy import interpolate
+from mpi4py import MPI
 
 import mean_flux
 import continuum_fit_pca
@@ -13,7 +13,11 @@ from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from qso_data import QSOData
 import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
+import mpi_helper
+from mpi_helper import l_print, l_print_no_barrier
 
+
+comm = MPI.COMM_WORLD
 
 lya_center = 1215.67
 
@@ -27,37 +31,43 @@ min_continuum_threshold = settings.get_min_continuum_threshold()
 
 
 class DeltaTransmittanceAccumulator:
-    def __init__(self, qso_record_table):
-        self.num_spectra = len(qso_record_table)
+    def __init__(self, num_spectra):
+        self.num_spectra = num_spectra
         self.delta_t_file = NpSpectrumContainer(False, self.num_spectra, settings.get_delta_t_npy(),
                                                 max_wavelength_count=1000)
         self.ar_continuum_ivar = np.zeros(self.num_spectra)
-
-    def accumulate(self, result_enum):
+        self.n = 0
         # initialize file
         self.delta_t_file.zero()
-        n = 0
-        total_weight = 0
-        total_weighted_delta_t = 0
-        for delta_t, chunk_weight, chunk_weighted_delta_t in result_enum:
+
+    def accumulate(self, result_enum):
+        for ar_delta_t in result_enum:
+            delta_t = NpSpectrumContainer.from_np_array(ar_delta_t, 1)
             for j in NpSpectrumIterator(delta_t):
-                self.delta_t_file.set_wavelength(n, j.get_wavelength())
-                self.delta_t_file.set_flux(n, j.get_flux())
-                self.delta_t_file.set_ivar(n, j.get_ivar())
-                n += 1
-            total_weight += chunk_weight
-            total_weighted_delta_t += chunk_weighted_delta_t
-        print "n =", n
-        return n, total_weight, total_weighted_delta_t
+                self.delta_t_file.set_wavelength(self.n, j.get_wavelength())
+                self.delta_t_file.set_flux(self.n, j.get_flux())
+                self.delta_t_file.set_ivar(self.n, j.get_ivar())
+                self.n += 1
+            l_print_no_barrier("n =", self.n)
+        l_print_no_barrier("n =", self.n)
+        return self.return_result()
+
+    def return_result(self):
+        return self.n
 
 
 class MeanTransmittanceAccumulator:
-    def __init__(self, qso_record_table):
+    def __init__(self, num_spectra):
         self.m = mean_flux.MeanFlux(np.arange(*z_range))
 
     def accumulate(self, result_enum):
-        for i in result_enum:
-            self.m.merge(i)
+        for ar_m in result_enum:
+            l_print_no_barrier("--- mean accumulate ----")
+            m = mean_flux.MeanFlux.from_np_array(ar_m)
+            self.m.merge(m)
+        return self.return_result()
+
+    def return_result(self):
         return self.m
 
 
@@ -92,15 +102,15 @@ def qso_transmittance(qso_spec_obj):
 
     # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
     if ar_wavelength_masked.size < 50:
-        print "skipped QSO (low pixel count): ", qso_rec
+        l_print_no_barrier("skipped QSO (low pixel count): ", qso_rec)
         return empty_result
 
     fit_min_value = ar_fit_spectrum_masked.min()
     if fit_min_value < min_continuum_threshold:
-        print "skipped QSO (low continuum) :", qso_rec
+        l_print_no_barrier("skipped QSO (low continuum) :", qso_rec)
         return empty_result
 
-    print "accepted QSO", qso_rec
+    l_print_no_barrier("accepted QSO", qso_rec)
 
     ar_rel_transmittance = ar_flux / fit_spectrum
     ar_rel_transmittance_masked = ar_rel_transmittance[effective_mask]
@@ -114,7 +124,7 @@ def qso_transmittance(qso_spec_obj):
     # effectively remove the points with very high positive or negative transmittance
     ar_pipeline_ivar_masked[np.logical_or(ar_rel_transmittance_masked > 5, ar_rel_transmittance_masked < -3)] = 0
 
-    print "mean flux:", (ar_flux[effective_mask] / ar_fit_spectrum_masked).mean()
+    l_print_no_barrier("mean flux:", (ar_flux[effective_mask] / ar_fit_spectrum_masked).mean())
 
     return LyaForestTransmittance(ar_z_masked, ar_rel_transmittance_masked, ar_pipeline_ivar_masked)
 
@@ -141,46 +151,41 @@ def qso_transmittance_binned(qso_spec_obj):
     return LyaForestTransmittanceBinned(ar_mask_binned, ar_rel_transmittance_binned, ar_ivar_binned)
 
 
-def mean_transmittance_chunk(qso_record_table_numbered):
-    qso_record_table = [a for a, b in qso_record_table_numbered]
-    qso_record_count = [b for a, b in qso_record_table_numbered]
+def mean_transmittance_chunk(qso_record_table):
     spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5(),
-                                                     table_offset=qso_record_count[0])
-    spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
+                                                     table_offset=qso_record_table[0]['index'])
     m = mean_flux.MeanFlux(np.arange(*z_range))
-    result_enum = itertools.imap(qso_transmittance_binned, spec_iter)
-    for lya_forest_transmittance_binned in result_enum:
+    for i in qso_record_table:
+        lya_forest_transmittance_binned = qso_transmittance_binned(spectra.return_spectrum(i['index']))
         if lya_forest_transmittance_binned.ar_transmittance.size:
             m.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
                                   lya_forest_transmittance_binned.ar_mask,
                                   lya_forest_transmittance_binned.ar_ivar)
             mean_transmittance_chunk.num_spec += 1
 
-    print "finished chunk", mean_transmittance_chunk.num_spec
+    l_print_no_barrier("finished chunk", mean_transmittance_chunk.num_spec)
     return m
 
 
-def delta_transmittance_chunk(qso_record_table_numbered):
-    qso_record_table = [a for a, b in qso_record_table_numbered]
-    qso_record_count = [b for a, b in qso_record_table_numbered]
+def delta_transmittance_chunk(qso_record_table):
+    start_offset = qso_record_table[0]['index']
     spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5(),
-                                                     table_offset=qso_record_count[0])
-    spec_iter = itertools.imap(spectra.return_spectrum, qso_record_count)
-    num_spectra = len(qso_record_count)
+                                                     table_offset=start_offset)
+    num_spectra = len(qso_record_table)
     delta_t = NpSpectrumContainer(False, num_spectra)
     # warning: np.ndarray is not initialized by default. zeroing manually.
     delta_t.zero()
-    result_enum = itertools.imap(qso_transmittance, spec_iter)
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
     ar_mean_flux = m.get_weighted_mean_with_minimum_count(20)
     ar_z_mean_flux = m.get_z_with_minimum_count(20)
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
-    n = 0
     chunk_weighted_delta_t = 0
     chunk_weight = 0
-    for lya_forest_transmittance in result_enum:
+    n = 0
+    for i in qso_record_table:
+        lya_forest_transmittance = qso_transmittance(spectra.return_spectrum(i['index']))
         ar_z = lya_forest_transmittance.ar_z
-        if lya_forest_transmittance.ar_z.size:
+        if ar_z.size:
             # prepare the mean flux for the z range of this QSO
             ar_mean_flux_for_z_range = np.interp(ar_z, ar_z_mean_flux, ar_mean_flux)
 
@@ -211,8 +216,8 @@ def delta_transmittance_chunk(qso_record_table_numbered):
             pass
         n += 1
 
-    print "chunk n =", n, "offset =", qso_record_count[0]
-    return delta_t, chunk_weight, chunk_weighted_delta_t
+    l_print_no_barrier("chunk n =", n, "offset =", start_offset)
+    return delta_t
 
 
 mean_transmittance_chunk.num_spec = 0
@@ -226,27 +231,44 @@ def split_seq(size, iterable):
         item = list(itertools.islice(it, size))
 
 
-def accumulate_over_spectra(func, accumulator, sample_fraction):
+def accumulate_over_spectra(func, accumulator):
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
-    qso_record_table_numbered = itertools.izip(qso_record_table, itertools.count())
-    acc = accumulator(qso_record_table)
+    qso_record_count = len(qso_record_table)
 
-    if force_single_process:
-        result_enum = itertools.imap(func,
-                                     split_seq(settings.get_file_chunk_size(),
-                                               itertools.ifilter(lambda x: random.random() < sample_fraction,
-                                                                 qso_record_table_numbered)))
+    chunk_sizes, chunk_offsets = mpi_helper.get_chunks(qso_record_count, comm.size)
+
+    local_start_index = chunk_offsets[comm.rank]
+    local_size = chunk_sizes[comm.rank]
+    local_end_index = local_start_index + local_size
+    if comm.rank == 0:
+        global_acc = accumulator(qso_record_count)
+
+    local_qso_record_table = itertools.islice(qso_record_table, local_start_index, local_end_index)
+    l_print_no_barrier("-----", qso_record_count, local_start_index, local_end_index, local_size)
+    for i in split_seq(settings.get_file_chunk_size(), local_qso_record_table):
+        local_result = func(i)
+        ar_local_result = local_result.as_np_array()
+        ar_all_results = np.zeros(shape=tuple([comm.size] + list(ar_local_result.shape)))
+        comm.Gatherv(ar_local_result, ar_all_results, root=0)
+
         # "reduce" results
-        acc_result = acc.accumulate(result_enum)
+        if comm.rank == 0:
+            global_acc.accumulate(ar_all_results)
+
+    l_print_no_barrier("------------------------------")
+    if comm.rank == 0:
+        return global_acc.return_result()
     else:
-        assert False, "Not supported"
-
-    return acc_result
+        return
 
 
-def mean_transmittance(sample_fraction):
-    return accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator, sample_fraction)
+def mean_transmittance():
+    m = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
+    l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
+    if comm.rank == 0:
+        m.save(settings.get_mean_transmittance_npy())
 
 
-def delta_transmittance(sample_fraction):
-    return accumulate_over_spectra(delta_transmittance_chunk, DeltaTransmittanceAccumulator, sample_fraction)
+def delta_transmittance():
+    accumulate_over_spectra(delta_transmittance_chunk,
+                            DeltaTransmittanceAccumulator)

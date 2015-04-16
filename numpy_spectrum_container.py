@@ -61,6 +61,24 @@ class NpSpectrumContainer(object):
     def zero(self):
         self.np_array[:] = 0
 
+    def as_np_array(self):
+        return self.np_array
+
+    @classmethod
+    def from_np_array(cls, np_array, readonly):
+        assert np_array.ndim == 3 & np_array.shape[1] == NUM_FIELDS
+        num_spectra = np_array.shape[0]
+        max_wavelength_count = np_array.shape[2]
+        # create a similar object with an empty array
+        # this might not be the best way to do that, but it saves adding an argument and extra logic to the initializer.
+        new_obj = cls(readonly, 0)
+        # replace the empty array with the one supplied as an argument.
+        new_obj.np_array = np_array
+        # update instance variables.
+        new_obj.num_spectra = num_spectra
+        new_obj.max_wavelength_count = max_wavelength_count
+        return new_obj
+
 
 class NpSpectrumIterator(object):
     """
