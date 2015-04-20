@@ -13,12 +13,14 @@ class ContinuumFitPCA:
     NUM_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
-                 fit_function='dot_product'):
+                 fit_function='dot_product', num_components=8):
+        assert 0 < num_components <= 10
         self.red_pc_table = np.genfromtxt(red_pc_text_file, skip_header=23)
         self.full_pc_table = np.genfromtxt(full_pc_text_file, skip_header=23)
-        self.projection_matrix = np.genfromtxt(projection_matrix_file, delimiter=',')
-        self.red_pc = self.red_pc_table[:, 3:13]
-        self.full_pc = self.full_pc_table[:, 3:13]
+        self.projection_matrix = np.genfromtxt(projection_matrix_file, delimiter=',')[:num_components, :num_components]
+        self.num_components = num_components
+        self.red_pc = self.red_pc_table[:, 3:3 + num_components]
+        self.full_pc = self.full_pc_table[:, 3:3 + num_components]
         self.red_mean = self.red_pc_table[:, 1]
         self.full_mean = self.full_pc_table[:, 1]
         self.fit_function = {'dot_product': self.project_red_spectrum,
