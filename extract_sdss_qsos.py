@@ -1,6 +1,4 @@
 import multiprocessing
-import itertools
-import random
 import cProfile
 
 import numpy as np
@@ -52,11 +50,9 @@ def fill_qso_table(t):
     pool = multiprocessing.Pool()
 
     if settings.get_single_process():
-        qso_record_list = map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
-                                                              read_spectrum_fits.generate_qso_details()))
+        qso_record_list = map(create_rec_2, read_spectrum_fits.generate_qso_details())
     else:
-        qso_record_list = pool.map(create_rec_2, itertools.ifilter(lambda x: random.random() < 1,
-                                                                   read_spectrum_fits.generate_qso_details()), 200)
+        qso_record_list = pool.map(create_rec_2, read_spectrum_fits.generate_qso_details(), 200)
     # remove None values
     qso_record_list = [i for i in qso_record_list if i is not None]
 
