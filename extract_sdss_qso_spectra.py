@@ -31,9 +31,6 @@ def save_spectrum(qso_spec_obj):
     return [ar_wavelength, ar_flux, ar_ivar]
 
 
-sample_fraction = 1
-
-
 def profile_main():
     index = 0
 
@@ -47,8 +44,7 @@ def profile_main():
                                            num_spectra=MAX_SPECTRA)
 
     if settings.get_single_process():
-        result_enum = itertools.imap(save_spectrum,
-                                     itertools.ifilter(lambda x: random.random() < sample_fraction, spec_sample))
+        result_enum = itertools.imap(save_spectrum, spec_sample)
     else:
         assert False, "Not supported"
 
