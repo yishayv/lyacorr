@@ -31,7 +31,7 @@ def create_rec_2(i):
     return [i[QSO_fields_dict['specObjID']], i[QSO_fields_dict['z']],
             i[QSO_fields_dict['ra']], i[QSO_fields_dict['dec']],
             i[QSO_fields_dict['plate']], i[QSO_fields_dict['mjd']],
-            i[QSO_fields_dict['fiberID']]]
+            i[QSO_fields_dict['fiberID']], i[QSO_fields_dict['extinction_g']]]
 
 
 def create_qso_table():
@@ -43,7 +43,8 @@ def create_qso_table():
                    table.Column(name='dec', unit=u.degree),
                    table.Column(name='plate', dtype='i4', unit=None),
                    table.Column(name='mjd', dtype='i4', unit=None),
-                   table.Column(name='fiberID', dtype='i4', unit=None)])
+                   table.Column(name='fiberID', dtype='i4', unit=None),
+                   table.Column(name='extinction_g', unit=u.dimensionless_unscaled)])
     return t
 
 

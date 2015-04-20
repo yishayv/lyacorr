@@ -15,6 +15,7 @@ import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 import mpi_helper
 from mpi_helper import l_print_no_barrier
+from deredden_func import deredden_spectrum
 
 
 comm = MPI.COMM_WORLD
@@ -83,6 +84,9 @@ def qso_transmittance(qso_spec_obj):
     z = qso_rec.z
     ar_wavelength = qso_spec_obj.ar_wavelength
     ar_flux = qso_spec_obj.ar_flux
+    # extinction correction:
+    ar_flux = deredden_spectrum(ar_wavelength, ar_flux, qso_rec.extinction_g)
+    # TODO: adjust pipeline variance for extinction
     ar_ivar = qso_spec_obj.ar_ivar
     assert ar_flux.size == ar_ivar.size
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]))

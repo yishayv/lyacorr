@@ -2,7 +2,7 @@ import astropy.table as table
 
 
 class QSORecord:
-    def __init__(self, index, spec_obj_id, z, ra, dec, plate, mjd, fiber_id):
+    def __init__(self, index, spec_obj_id, z, ra, dec, plate, mjd, fiber_id, extinction_g):
         self.index = index
         self.specObjID = spec_obj_id
         self.z = z
@@ -11,13 +11,15 @@ class QSORecord:
         self.plate = plate
         self.mjd = mjd
         self.fiberID = fiber_id
+        self.extinction_g = extinction_g
 
     @classmethod
     def from_row(cls, qso_row):
         assert isinstance(qso_row, table.Row)
         return cls(qso_row['index'], qso_row['specObjID'], qso_row['z'],
                    qso_row['ra'], qso_row['dec'],
-                   qso_row['plate'], qso_row['mjd'], qso_row['fiberID'])
+                   qso_row['plate'], qso_row['mjd'], qso_row['fiberID'],
+                   qso_row['extinction_g'])
 
 
     def __str__(self):
