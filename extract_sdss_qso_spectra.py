@@ -24,15 +24,14 @@ def save_spectrum(qso_spec_obj):
     :return:
     """
     qso_rec = qso_spec_obj.qso_rec
-    z = qso_rec.z
+    index = qso_rec.index
     ar_wavelength = qso_spec_obj.ar_wavelength
     ar_flux = qso_spec_obj.ar_flux
     ar_ivar = qso_spec_obj.ar_ivar
-    return [ar_wavelength, ar_flux, ar_ivar]
+    return [index, ar_wavelength, ar_flux, ar_ivar]
 
 
 def profile_main():
-    index = 0
 
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 
@@ -49,10 +48,10 @@ def profile_main():
         assert False, "Not supported"
 
     for i in result_enum:
-        output_spectra.set_wavelength(index, i[0])
-        output_spectra.set_flux(index, i[1])
-        output_spectra.set_ivar(index, i[2])
-        index += 1
+        index = i[0]
+        output_spectra.set_wavelength(index, i[1])
+        output_spectra.set_flux(index, i[2])
+        output_spectra.set_ivar(index, i[3])
 
 
 if settings.get_profile():
