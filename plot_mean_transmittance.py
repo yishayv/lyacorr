@@ -15,7 +15,7 @@ ax2 = ax1.twiny()
 ax1.plot(m.ar_z, m.get_weighted_mean())
 # plt.plot(ar_z_range, np.ones(m.size))
 ax1.set_ylabel(r"$\left< f_q(z)/C_q(z) \right> $")
-plt.ylim(0.5, 1.5)
+plt.ylim(0.0, 1.2)
 # add wavelength tick marks on top
 x_lim2 = tuple([lya_center * (1 + z) for z in ax1.get_xlim()])
 ax2.set_xlim(x_lim2)
