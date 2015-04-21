@@ -252,14 +252,14 @@ def accumulate_over_spectra(func, accumulator):
     local_qso_record_table = itertools.islice(qso_record_table, local_start_index, local_end_index)
     l_print_no_barrier("-----", qso_record_count, local_start_index, local_end_index, local_size)
     slice_size = settings.get_file_chunk_size()
-    for i, slice_number in itertools.izip(split_seq(slice_size, local_qso_record_table),
-                                          itertools.count()):
-        local_result = func(i)
+    for qso_record_table_chunk, slice_number in itertools.izip(split_seq(slice_size, local_qso_record_table),
+                                                               itertools.count()):
+        local_result = func(qso_record_table_chunk)
         ar_local_result = local_result.as_np_array()
         ar_all_results = np.zeros(shape=tuple([comm.size] + list(ar_local_result.shape)))
         comm.Gatherv(ar_local_result, ar_all_results, root=0)
         ar_qso_indices = np.zeros(shape=(comm.size, slice_size), dtype=int)
-        comm.Gather(np.array([x['index'] for x in i]), ar_qso_indices)
+        comm.Gather(np.array([x['index'] for x in qso_record_table_chunk]), ar_qso_indices)
 
         # "reduce" results
         if comm.rank == 0:
