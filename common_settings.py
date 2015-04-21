@@ -56,6 +56,8 @@ class Settings():
     opt_min_continuum_threshold = 'min_continuum_threshold'
     # enable or disable a 2nd-pass mean flux correction
     opt_enable_mean_correction = 'enable_mean_correction'
+    # minimum forest redshift to use
+    opt_min_forest_redshift = 'min_forest_redshift'
     # maximum forest redshift to use
     opt_max_forest_redshift = 'max_forest_redshift'
     # continuum fit method
@@ -100,6 +102,7 @@ class Settings():
 
         value_min_continuum_threshold = 0.5
         value_mean_correction = False
+        value_min_forest_redshift = 1.96
         value_max_forest_redshift = 3.2
         value_continuum_fit_method = 'dot_product'
         value_cosmology = 'Planck13'
@@ -138,6 +141,8 @@ class Settings():
                                str(value_min_continuum_threshold))
         self.config_parser.set(self.section_data_processing, self.opt_enable_mean_correction,
                                bool(value_mean_correction))
+        self.config_parser.set(self.section_data_processing, self.opt_min_forest_redshift,
+                               float(value_min_forest_redshift))
         self.config_parser.set(self.section_data_processing, self.opt_max_forest_redshift,
                                float(value_max_forest_redshift))
         self.config_parser.set(self.section_data_processing, self.opt_continuum_fit_method,
@@ -213,6 +218,9 @@ class Settings():
 
     def get_enable_mean_correction(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mean_correction)
+
+    def get_min_forest_redshift(self):
+        return self.config_parser.getfloat(self.section_data_processing, self.opt_min_forest_redshift)
 
     def get_max_forest_redshift(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_max_forest_redshift)

@@ -100,8 +100,14 @@ def qso_transmittance(qso_spec_obj):
                                  ar_wavelength < 1200 * (1 + z))
     fit_mask = ~np.isnan(fit_spectrum)
     # since at high redshift the sample size becomes smaller,
-    # discard all forest pixels that have a redshift greater than a globally defined value
-    redshift_mask = (ar_wavelength / lya_center - 1) < settings.get_max_forest_redshift()
+    # discard all forest pixels that have a redshift greater/less than a globally defined value
+    min_redshift = settings.get_min_forest_redshift()
+    max_redshift = settings.get_max_forest_redshift()
+    ar_redshift = ar_wavelength / lya_center - 1
+
+    redshift_mask = (min_redshift < ar_redshift) & (ar_redshift < max_redshift)
+
+    # combine all different masks
     effective_mask = forest_mask & fit_mask & redshift_mask
     ar_wavelength_masked = ar_wavelength[effective_mask]
     ar_fit_spectrum_masked = fit_spectrum[effective_mask]
