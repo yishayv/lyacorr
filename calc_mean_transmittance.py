@@ -188,8 +188,10 @@ def delta_transmittance_chunk(qso_record_table):
     # warning: np.ndarray is not initialized by default. zeroing manually.
     delta_t.zero()
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
-    ar_mean_flux = m.get_weighted_mean_with_minimum_count(20)
-    ar_z_mean_flux = m.get_z_with_minimum_count(20)
+    # for debugging with a small data set:
+    # ignore values with less than 20 sample points
+    ar_z_mean_flux, ar_mean_flux = m.get_low_pass_mean(20)
+
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     chunk_weighted_delta_t = 0
     chunk_weight = 0
@@ -281,6 +283,7 @@ def accumulate_over_spectra(func, accumulator):
 def mean_transmittance():
     m = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
     l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
+
     if comm.rank == 0:
         m.save(settings.get_mean_transmittance_npy())
 
