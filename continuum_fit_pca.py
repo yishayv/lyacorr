@@ -91,6 +91,9 @@ class ContinuumFitPCA:
         binned_spectrum, ar_wavelength_rest_binned, normalization_factor = \
             self.fit_rebin(ar_wavelength_rest, ar_flux, ar_ivar, normalized)
 
+        linear_slope = ar_wavelength_rest / self.LY_A_PEAK_BINNED - 1
+        linear_slope[ar_wavelength_rest > self.LY_A_PEAK_BINNED] = 0
+        slope = - linear_slope ** 2 + 1
         spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
-                             boundary_value, boundary_value)
+                             boundary_value, boundary_value) * slope + 0.2
         return spectrum, normalization_factor
