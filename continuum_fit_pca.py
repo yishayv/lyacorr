@@ -3,14 +3,16 @@ __author__ = 'yishay'
 import numpy as np
 import scipy.linalg
 import scipy.interpolate
+from scipy import signal
 
+# based on [Suzuki 2005] and [Lee, Suzuki, & Spergel 2012]
 
 class ContinuumFitPCA:
     BLUE_START = 1020
     RED_END = 1600
     LY_A_PEAK_BINNED = 1216
     LY_A_PEAK_INDEX = (LY_A_PEAK_BINNED - BLUE_START) / 0.5
-    NUM_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
+    NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
                  fit_function='dot_product', num_components=8):
@@ -25,6 +27,9 @@ class ContinuumFitPCA:
         self.full_mean = self.full_pc_table[:, 1]
         self.fit_function = {'dot_product': self.project_red_spectrum,
                              'weighted_ls': self.least_squares_red_spectrum}[fit_function]
+        # create wavelength bins
+        self.ar_wavelength_bins = np.arange(self.BLUE_START, self.RED_END + .1, 0.5)
+        self.ar_red_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, 0.5)
 
     def red_to_full(self, red_pc_coefficients):
         return np.dot(self.projection_matrix.T, red_pc_coefficients)
@@ -41,11 +46,10 @@ class ContinuumFitPCA:
         coefficients = scipy.linalg.lstsq(x, y)
         return coefficients[0]
 
-
     def full_spectrum(self, full_pc_coefficients):
         return np.dot(self.full_pc, full_pc_coefficients) + self.full_mean
 
-    def fit_rebin(self, ar_wavelength_rest, ar_flux, ar_ivar, normalized):
+    def rebin_red_spectrum(self, ar_flux, ar_ivar, ar_wavelength_rest):
         # mask ROUGHLY at the useful spectrum range.
         # include some extra data from the edges for the nearest neighbor interpolation.
         red_spectrum_mask = [(self.LY_A_PEAK_BINNED - 1 <= ar_wavelength_rest) &
@@ -53,21 +57,17 @@ class ContinuumFitPCA:
         ar_red_wavelength_rest = ar_wavelength_rest[red_spectrum_mask]
         ar_red_flux = ar_flux[red_spectrum_mask]
         ar_red_ivar = ar_ivar[red_spectrum_mask]
-
-        # create wavelength bins (consider moving this elsewhere)
-        ar_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, 0.5)
-        # ar_wavelength_bins = np.arange(self.NUM_BINS) / float(self.NUM_BINS) * \
-        # (self.RED_END - self.LY_A_PEAK_BINNED) + self.LY_A_PEAK_BINNED
-
         # interpolate red spectrum into predefined bins:
         # (use nearest neighbor to avoid leaking bad data)
         f_flux = scipy.interpolate.interp1d(ar_red_wavelength_rest, ar_red_flux,
                                             kind='nearest', bounds_error=False, assume_sorted=True)
-        ar_red_flux_rebinned = f_flux(ar_wavelength_bins)
+        ar_red_flux_rebinned = f_flux(self.ar_red_wavelength_bins)
         f_ivar = scipy.interpolate.interp1d(ar_red_wavelength_rest, ar_red_ivar,
                                             kind='nearest', bounds_error=False, assume_sorted=True)
-        ar_red_ivar_rebinned = f_ivar(ar_wavelength_bins)
+        ar_red_ivar_rebinned = f_ivar(self.ar_red_wavelength_bins)
+        return ar_red_flux_rebinned, ar_red_ivar_rebinned
 
+    def fit_binned(self, ar_red_flux_rebinned, ar_red_ivar_rebinned, normalized):
         # Suzuki 2004 normalizes flux according to 21 pixels around 1216
         normalization_factor = \
             ar_red_flux_rebinned[self.LY_A_PEAK_INDEX - 10:self.LY_A_PEAK_INDEX + 11].mean()
@@ -82,18 +82,41 @@ class ContinuumFitPCA:
 
         # convert from PCs to an actual spectrum
         ar_full_spectrum = self.full_spectrum(full_spectrum_coefficients)
-        ar_full_wavelength_rest_binned = np.arange(self.BLUE_START, self.RED_END + .1, 0.5)
         if ~normalized:
             ar_full_spectrum = ar_full_spectrum * normalization_factor
-        return ar_full_spectrum, ar_full_wavelength_rest_binned, normalization_factor
+        return ar_full_spectrum, self.ar_wavelength_bins, normalization_factor
 
     def fit(self, ar_wavelength_rest, ar_flux, ar_ivar, normalized, boundary_value=None):
+        ar_red_flux_rebinned, ar_red_ivar_rebinned = self.rebin_red_spectrum(ar_flux, ar_ivar, ar_wavelength_rest)
+
         binned_spectrum, ar_wavelength_rest_binned, normalization_factor = \
-            self.fit_rebin(ar_wavelength_rest, ar_flux, ar_ivar, normalized)
+            self.fit_binned(ar_red_flux_rebinned, ar_red_ivar_rebinned, normalized)
 
         linear_slope = ar_wavelength_rest / self.LY_A_PEAK_BINNED - 1
         linear_slope[ar_wavelength_rest > self.LY_A_PEAK_BINNED] = 0
         slope = - linear_slope ** 2 + 1
         spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
                              boundary_value, boundary_value) * slope + 0.2
+        is_good_fit = self.is_good_fit(ar_wavelength_rest_binned, ar_flux)
         return spectrum, normalization_factor
+
+    @classmethod
+    def get_goodness_of_fit(cls, ar_flux, ar_flux_fit):
+        # note: we assume standard bins (self.ar_wavelength_bins)
+        # get the red part of the spectrum
+        ar_red_flux = ar_flux[cls.LY_A_PEAK_INDEX:]
+        ar_red_flux_fit = ar_flux_fit[cls.LY_A_PEAK_INDEX:]
+        # smooth the observed flux
+        box_size = 15
+        boxcar15 = signal.boxcar(box_size)
+        # convolve and divide by box_size to keep the same scale
+        ar_red_flux_smoothed = signal.convolve(ar_red_flux, boxcar15) / box_size
+        ar_diff = np.abs(ar_red_flux_fit - ar_red_flux_smoothed) / ar_red_flux_smoothed
+        # since delta wavelength is known, (eq 4) in the 2012 paper simplifies to:
+        delta_f = ar_diff.sum() / cls.NUM_RED_BINS
+        return delta_f
+
+    @classmethod
+    def is_good_fit(cls, ar_flux, ar_flux_fit):
+        # TODO: threshold should be based on signal to noise.
+        return cls.get_goodness_of_fit(ar_flux, ar_flux_fit) > 0.2
