@@ -67,6 +67,17 @@ class ContinuumFitPCA:
         ar_red_ivar_rebinned = f_ivar(self.ar_red_wavelength_bins)
         return ar_red_flux_rebinned, ar_red_ivar_rebinned
 
+    def rebin_full_spectrum(self, ar_flux, ar_ivar, ar_wavelength_rest):
+        # interpolate spectrum into predefined bins:
+        # (use nearest neighbor to avoid leaking bad data)
+        f_flux = scipy.interpolate.interp1d(ar_wavelength_rest, ar_flux,
+                                            kind='nearest', bounds_error=False, assume_sorted=True)
+        ar_flux_rebinned = f_flux(self.ar_wavelength_bins)
+        f_ivar = scipy.interpolate.interp1d(ar_wavelength_rest, ar_ivar,
+                                            kind='nearest', bounds_error=False, assume_sorted=True)
+        ar_ivar_rebinned = f_ivar(self.ar_wavelength_bins)
+        return ar_flux_rebinned, ar_ivar_rebinned
+
     def fit_binned(self, ar_red_flux_rebinned, ar_red_ivar_rebinned, normalized):
         # Suzuki 2004 normalizes flux according to 21 pixels around 1216
         normalization_factor = \
@@ -97,8 +108,10 @@ class ContinuumFitPCA:
         slope = - linear_slope ** 2 + 1
         spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
                              boundary_value, boundary_value) * slope + 0.2
-        is_good_fit = self.is_good_fit(ar_wavelength_rest_binned, ar_flux)
-        return spectrum, normalization_factor
+
+        ar_flux_rebinned = self.rebin_full_spectrum(ar_flux, ar_ivar, ar_wavelength_rest)[0]
+        is_good_fit = self.is_good_fit(ar_flux_rebinned, binned_spectrum)
+        return spectrum, normalization_factor, is_good_fit
 
     @classmethod
     def get_goodness_of_fit(cls, ar_flux, ar_flux_fit):
@@ -110,7 +123,7 @@ class ContinuumFitPCA:
         box_size = 15
         boxcar15 = signal.boxcar(box_size)
         # convolve and divide by box_size to keep the same scale
-        ar_red_flux_smoothed = signal.convolve(ar_red_flux, boxcar15) / box_size
+        ar_red_flux_smoothed = signal.convolve(ar_red_flux, boxcar15, mode='same') / box_size
         ar_diff = np.abs(ar_red_flux_fit - ar_red_flux_smoothed) / ar_red_flux_smoothed
         # since delta wavelength is known, (eq 4) in the 2012 paper simplifies to:
         delta_f = ar_diff.sum() / cls.NUM_RED_BINS
@@ -119,4 +132,4 @@ class ContinuumFitPCA:
     @classmethod
     def is_good_fit(cls, ar_flux, ar_flux_fit):
         # TODO: threshold should be based on signal to noise.
-        return cls.get_goodness_of_fit(ar_flux, ar_flux_fit) > 0.2
+        return cls.get_goodness_of_fit(ar_flux, ar_flux_fit) < 0.2

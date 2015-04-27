@@ -91,8 +91,12 @@ def qso_transmittance(qso_spec_obj):
     assert ar_flux.size == ar_ivar.size
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]))
 
-    fit_spectrum, fit_normalization_factor = \
+    fit_spectrum, fit_normalization_factor, is_good_fit = \
         fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, normalized=False, boundary_value=np.nan)
+
+    if not is_good_fit:
+        l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
+        return empty_result
 
     # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
     # use the same range as in 1404.1801 (2014)
