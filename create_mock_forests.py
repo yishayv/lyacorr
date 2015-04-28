@@ -62,7 +62,7 @@ def profile_main():
 
         # fit continuum
         ar_rest_wavelength = ar_wavelength / (1 + redshift)
-        fit_spectrum, fit_normalization_factor = \
+        fit_spectrum, fit_normalization_factor, is_good_fit = \
             fit_pca.fit(ar_rest_wavelength, ar_flux, ar_ivar, normalized=False, boundary_value=np.nan)
 
         # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
