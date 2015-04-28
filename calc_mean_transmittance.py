@@ -92,7 +92,7 @@ def qso_transmittance(qso_spec_obj):
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]))
 
     fit_spectrum, fit_normalization_factor, is_good_fit = \
-        fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, normalized=False, boundary_value=np.nan)
+        fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan)
 
     if not is_good_fit:
         l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)

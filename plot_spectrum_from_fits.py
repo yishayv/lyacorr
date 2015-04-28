@@ -61,7 +61,7 @@ for qso_data_ in spec_sample:
     # begin PCA fit:
     ar_wavelength_rest = ar_wavelength / (1 + qso_z)
     fit_spectrum, fit_normalization_factor, is_good_fit = \
-        fit_pca.fit(ar_wavelength_rest, ar_flux, ar_ivar, normalized=False)
+        fit_pca.fit(ar_wavelength_rest, ar_flux, ar_ivar, qso_z)
     print "good fit:", is_good_fit
 
     # begin power-law fit:

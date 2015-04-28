@@ -31,7 +31,7 @@ class ContinuumFitPCA:
         # create wavelength bins
         self.ar_wavelength_bins = np.arange(self.BLUE_START, self.RED_END + .1, 0.5)
         self.ar_red_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, 0.5)
-        self.ar_blue_wavelength_bins = np.arange(self.BLUE_START, self.LY_A_PEAK_BINNED + .1, 0.5)
+        self.ar_blue_wavelength_bins = np.arange(self.BLUE_START, self.LY_A_PEAK_BINNED, 0.5)
 
         # pre-calculated values for mean flux regulation
         self.pivot_wavelength = 1280
@@ -85,7 +85,8 @@ class ContinuumFitPCA:
         ar_ivar_rebinned = f_ivar(self.ar_wavelength_bins)
         return ar_flux_rebinned, ar_ivar_rebinned
 
-    def fit_binned(self, ar_flux_rebinned, ar_ivar_rebinned, normalized, regulate_mean_flux=True):
+    def fit_binned(self, ar_flux_rebinned, ar_ivar_rebinned,
+                   ar_mean_flux_constraint):
         ar_red_flux_rebinned = ar_flux_rebinned[self.LY_A_PEAK_INDEX:]
         ar_red_ivar_rebinned = ar_ivar_rebinned[self.LY_A_PEAK_INDEX:]
 
@@ -104,28 +105,46 @@ class ContinuumFitPCA:
         # convert from PCs to an actual spectrum
         ar_full_fit = self.full_spectrum(full_spectrum_coefficients)
 
+        # restore the original flux scale
+        ar_full_fit = ar_full_fit * normalization_factor
+
         ar_blue_fit = ar_full_fit[:self.LY_A_PEAK_INDEX]
         ar_blue_flux_rebinned = ar_flux_rebinned[:self.LY_A_PEAK_INDEX]
+        ar_blue_fit_mean_flux_rebinned = ar_mean_flux_constraint[:self.LY_A_PEAK_INDEX] * ar_blue_fit
+        ar_blue_data_mask = [np.isfinite(ar_blue_flux_rebinned)]
 
-        if regulate_mean_flux:
-            lmfit.minimize()
-            pass
+        if np.array(ar_blue_data_mask).sum() > 50:
+            # find the optimal mean flux regulation:
+            params = lmfit.Parameters()
+            params.add('a_mf', value=0, min=-100, max=100)
+            params.add('b_mf', value=0, min=-1000, max=1000)
+            result = lmfit.minimize(fcn=self.regulate_mean_flux_2nd_order_residual,
+                                    params=params, args=(ar_blue_flux_rebinned,
+                                                         ar_blue_fit_mean_flux_rebinned,
+                                                         ar_blue_data_mask))
+            # print result.params
 
-        if ~normalized:
-            ar_full_fit = ar_full_fit * normalization_factor
+            # apply the 2nd order mean flux regulation to the continuum fit:
+            ar_regulated_blue_flux = self.mean_flux_2nd_order_correction(
+                result.params, ar_blue_fit, self.delta_wavelength, self.delta_wavelength_sq)
+
+            # overwrite the original blue fit with the regulated fit.
+            ar_full_fit[:self.LY_A_PEAK_INDEX] = ar_regulated_blue_flux
+
         return ar_full_fit, self.ar_wavelength_bins, normalization_factor
 
-    def fit(self, ar_wavelength_rest, ar_flux, ar_ivar, normalized, boundary_value=None):
+    def fit(self, ar_wavelength_rest, ar_flux, ar_ivar, qso_redshift, boundary_value=None):
         ar_flux_rebinned, ar_ivar_rebinned = self.rebin_full_spectrum(ar_flux, ar_ivar, ar_wavelength_rest)
 
-        binned_spectrum, ar_wavelength_rest_binned, normalization_factor = \
-            self.fit_binned(ar_flux_rebinned, ar_ivar_rebinned, normalized)
+        # find the theoretical mean flux
+        ar_z_rebinned = self.ar_wavelength_bins * (1 + qso_redshift) / self.LY_A_PEAK_BINNED - 1
+        ar_mean_flux_constraint = self.mean_flux_constraint(ar_z_rebinned)
 
-        linear_slope = ar_wavelength_rest / self.LY_A_PEAK_BINNED - 1
-        linear_slope[ar_wavelength_rest > self.LY_A_PEAK_BINNED] = 0
-        slope = - linear_slope ** 2 + 1
+        binned_spectrum, ar_wavelength_rest_binned, normalization_factor = \
+            self.fit_binned(ar_flux_rebinned, ar_ivar_rebinned, ar_mean_flux_constraint)
+
         spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
-                             boundary_value, boundary_value) * slope + 0.2
+                             boundary_value, boundary_value)
 
         is_good_fit = self.is_good_fit(ar_flux_rebinned, binned_spectrum)
         return spectrum, normalization_factor, is_good_fit
@@ -151,8 +170,24 @@ class ContinuumFitPCA:
         # TODO: threshold should be based on signal to noise.
         return cls.get_goodness_of_fit(ar_flux, ar_flux_fit) < 0.15
 
-    def regulate_mean_flux_2nd_order(self, ar_flux, a_mf, b_mf):
-        return ar_flux * (1 + a_mf * self.delta_wavelength + b_mf * self.delta_wavelength_sq)
+    def regulate_mean_flux_2nd_order_residual(self, params, ar_flux, ar_fit, ar_data_mask):
+        ar_regulated_fit = self.mean_flux_2nd_order_correction(params, ar_fit[ar_data_mask],
+                                                               self.delta_wavelength[ar_data_mask],
+                                                               self.delta_wavelength_sq[ar_data_mask])
+        residual = ar_regulated_fit - ar_flux[ar_data_mask]
+        return residual
 
-    def regulate_mean_flux_1st_order(self, ar_flux, a_mf):
-        return ar_flux * (1 + a_mf * self.delta_wavelength)
+    @staticmethod
+    def mean_flux_2nd_order_correction(params, ar_flux, ar_delta_wavelength, ar_delta_wavelength_sq):
+        a_mf = params['a_mf'].value
+        b_mf = params['b_mf'].value
+        # print a_mf, b_mf
+        return ar_flux * (1 + a_mf * ar_delta_wavelength + b_mf * ar_delta_wavelength_sq)
+
+    def regulate_mean_flux_1st_order(self, params, ar_flux, ar_mean_flux):
+        a_mf = params['a_mf'].value
+        return ar_flux * (1 + a_mf * self.delta_wavelength) - ar_mean_flux
+
+    @staticmethod
+    def mean_flux_constraint(z):
+        return np.exp(-0.001845 * (1 + z) ** 3.924)
