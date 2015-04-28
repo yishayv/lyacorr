@@ -87,6 +87,9 @@ class ContinuumFitPCA:
 
     def fit_binned(self, ar_flux_rebinned, ar_ivar_rebinned,
                    ar_mean_flux_constraint):
+
+        is_good_fit = True
+
         ar_red_flux_rebinned = ar_flux_rebinned[self.LY_A_PEAK_INDEX:]
         ar_red_ivar_rebinned = ar_ivar_rebinned[self.LY_A_PEAK_INDEX:]
 
@@ -130,8 +133,12 @@ class ContinuumFitPCA:
 
             # overwrite the original blue fit with the regulated fit.
             ar_full_fit[:self.LY_A_PEAK_INDEX] = ar_regulated_blue_flux
+        else:
+            is_good_fit = False
 
-        return ar_full_fit, self.ar_wavelength_bins, normalization_factor
+        is_good_fit = is_good_fit and self.is_good_fit(ar_flux_rebinned, ar_full_fit)
+
+        return ar_full_fit, self.ar_wavelength_bins, normalization_factor, is_good_fit
 
     def fit(self, ar_wavelength_rest, ar_flux, ar_ivar, qso_redshift, boundary_value=None):
         ar_flux_rebinned, ar_ivar_rebinned = self.rebin_full_spectrum(ar_flux, ar_ivar, ar_wavelength_rest)
@@ -140,13 +147,12 @@ class ContinuumFitPCA:
         ar_z_rebinned = self.ar_wavelength_bins * (1 + qso_redshift) / self.LY_A_PEAK_BINNED - 1
         ar_mean_flux_constraint = self.mean_flux_constraint(ar_z_rebinned)
 
-        binned_spectrum, ar_wavelength_rest_binned, normalization_factor = \
+        binned_spectrum, ar_wavelength_rest_binned, normalization_factor, is_good_fit = \
             self.fit_binned(ar_flux_rebinned, ar_ivar_rebinned, ar_mean_flux_constraint)
 
         spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
                              boundary_value, boundary_value)
 
-        is_good_fit = self.is_good_fit(ar_flux_rebinned, binned_spectrum)
         return spectrum, normalization_factor, is_good_fit
 
     @classmethod
