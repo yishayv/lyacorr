@@ -86,7 +86,7 @@ class ContinuumFitPCA:
         return ar_flux_rebinned, ar_ivar_rebinned
 
     def fit_binned(self, ar_flux_rebinned, ar_ivar_rebinned,
-                   ar_mean_flux_constraint):
+                   ar_mean_flux_constraint, qso_redshift):
 
         is_good_fit = True
 
@@ -119,17 +119,28 @@ class ContinuumFitPCA:
         if np.array(ar_blue_data_mask).sum() > 50:
             # find the optimal mean flux regulation:
             params = lmfit.Parameters()
-            params.add('a_mf', value=0, min=-100, max=100)
-            params.add('b_mf', value=0, min=-1000, max=1000)
-            result = lmfit.minimize(fcn=self.regulate_mean_flux_2nd_order_residual,
-                                    params=params, args=(ar_blue_flux_rebinned,
-                                                         ar_blue_fit_mean_flux_rebinned,
-                                                         ar_blue_data_mask))
-            # print result.params
+            params.add('a_mf', value=0, min=-10000, max=10000)
+            if qso_redshift > 2.4:
+                # there are enough forest pixels for a 2nd order fit:
+                params.add('b_mf', value=0, min=-10000, max=10000)
+                result = lmfit.minimize(fcn=self.regulate_mean_flux_2nd_order_residual,
+                                        params=params, args=(ar_blue_flux_rebinned,
+                                                             ar_blue_fit_mean_flux_rebinned,
+                                                             ar_blue_data_mask))
+                # apply the 2nd order mean flux regulation to the continuum fit:
+                ar_regulated_blue_flux = self.mean_flux_2nd_order_correction(
+                    result.params, ar_blue_fit, self.delta_wavelength, self.delta_wavelength_sq)
+            else:
+                # low redshift makes most of the forest inaccessible,
+                # use a 1st order fit to avoid over-fitting.
+                result = lmfit.minimize(fcn=self.regulate_mean_flux_1st_order_residual,
+                                        params=params, args=(ar_blue_flux_rebinned,
+                                                             ar_blue_fit_mean_flux_rebinned,
+                                                             ar_blue_data_mask))
 
-            # apply the 2nd order mean flux regulation to the continuum fit:
-            ar_regulated_blue_flux = self.mean_flux_2nd_order_correction(
-                result.params, ar_blue_fit, self.delta_wavelength, self.delta_wavelength_sq)
+                # apply the 1st order mean flux regulation to the continuum fit:
+                ar_regulated_blue_flux = self.mean_flux_1st_order_correction(
+                    result.params, ar_blue_fit, self.delta_wavelength)
 
             # overwrite the original blue fit with the regulated fit.
             ar_full_fit[:self.LY_A_PEAK_INDEX] = ar_regulated_blue_flux
@@ -148,7 +159,7 @@ class ContinuumFitPCA:
         ar_mean_flux_constraint = self.mean_flux_constraint(ar_z_rebinned)
 
         binned_spectrum, ar_wavelength_rest_binned, normalization_factor, is_good_fit = \
-            self.fit_binned(ar_flux_rebinned, ar_ivar_rebinned, ar_mean_flux_constraint)
+            self.fit_binned(ar_flux_rebinned, ar_ivar_rebinned, ar_mean_flux_constraint, qso_redshift)
 
         spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
                              boundary_value, boundary_value)
@@ -181,18 +192,30 @@ class ContinuumFitPCA:
                                                                self.delta_wavelength[ar_data_mask],
                                                                self.delta_wavelength_sq[ar_data_mask])
         residual = ar_regulated_fit - ar_flux[ar_data_mask]
+        # note: it seems better to ignore weights for this fit.
+        # this is because we are trying to improve the far blue side, which also has larger uncertainty.
+        # the fitted parameters have smaller effect as we get near 1280.
+        return residual
+
+    def regulate_mean_flux_1st_order_residual(self, params, ar_flux, ar_fit, ar_data_mask):
+        ar_regulated_fit = self.mean_flux_1st_order_correction(params, ar_fit[ar_data_mask],
+                                                               self.delta_wavelength[ar_data_mask])
+        residual = ar_regulated_fit - ar_flux[ar_data_mask]
+        # note: it seems better to ignore weights for this fit.
+        # this is because we are trying to improve the far blue side, which also has larger uncertainty.
+        # the fitted parameters have smaller effect as we get near 1280.
         return residual
 
     @staticmethod
     def mean_flux_2nd_order_correction(params, ar_flux, ar_delta_wavelength, ar_delta_wavelength_sq):
         a_mf = params['a_mf'].value
         b_mf = params['b_mf'].value
-        # print a_mf, b_mf
         return ar_flux * (1 + a_mf * ar_delta_wavelength + b_mf * ar_delta_wavelength_sq)
 
-    def regulate_mean_flux_1st_order(self, params, ar_flux, ar_mean_flux):
+    @staticmethod
+    def mean_flux_1st_order_correction(params, ar_flux, ar_delta_wavelength):
         a_mf = params['a_mf'].value
-        return ar_flux * (1 + a_mf * self.delta_wavelength) - ar_mean_flux
+        return ar_flux * (1 + a_mf * ar_delta_wavelength)
 
     @staticmethod
     def mean_flux_constraint(z):
