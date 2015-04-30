@@ -4,6 +4,8 @@ import numpy as np
 import astropy.table as table
 from scipy import interpolate
 from mpi4py import MPI
+import pprint
+
 
 import mean_flux
 import continuum_fit_pca
@@ -29,6 +31,7 @@ fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], 
 z_range = (1.9, 3.5, 0.0001)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
+stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'accepted': 0}
 
 
 class DeltaTransmittanceAccumulator:
@@ -95,6 +98,7 @@ def qso_transmittance(qso_spec_obj):
         fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan)
 
     if not is_good_fit:
+        stats['bad_fit'] += 1
         l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
         return empty_result
 
@@ -118,14 +122,17 @@ def qso_transmittance(qso_spec_obj):
 
     # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
     if ar_wavelength_masked.size < 50:
+        stats['low_count'] += 1
         l_print_no_barrier("skipped QSO (low pixel count): ", qso_rec)
         return empty_result
 
     fit_min_value = ar_fit_spectrum_masked.min()
     if fit_min_value < min_continuum_threshold:
+        stats['low_continuum'] += 1
         l_print_no_barrier("skipped QSO (low continuum) :", qso_rec)
         return empty_result
 
+    stats['accepted'] += 1
     l_print_no_barrier("accepted QSO", qso_rec)
 
     ar_rel_transmittance = ar_flux / fit_spectrum
@@ -287,6 +294,7 @@ def accumulate_over_spectra(func, accumulator):
 def mean_transmittance():
     m = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
     l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
+    l_print_no_barrier(pprint.pformat(stats))
 
     if comm.rank == 0:
         m.save(settings.get_mean_transmittance_npy())
@@ -295,3 +303,4 @@ def mean_transmittance():
 def delta_transmittance():
     accumulate_over_spectra(delta_transmittance_chunk,
                             DeltaTransmittanceAccumulator)
+    l_print_no_barrier(pprint.pformat(stats))

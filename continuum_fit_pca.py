@@ -119,10 +119,10 @@ class ContinuumFitPCA:
         if np.array(ar_blue_data_mask).sum() > 50:
             # find the optimal mean flux regulation:
             params = lmfit.Parameters()
-            params.add('a_mf', value=0, min=-10000, max=10000)
+            params.add('a_mf', value=0, min=-30, max=30)
             if qso_redshift > 2.4:
                 # there are enough forest pixels for a 2nd order fit:
-                params.add('b_mf', value=0, min=-10000, max=10000)
+                params.add('b_mf', value=0, min=-30, max=30)
                 result = lmfit.minimize(fcn=self.regulate_mean_flux_2nd_order_residual,
                                         params=params, args=(ar_blue_flux_rebinned,
                                                              ar_blue_fit_mean_flux_rebinned,
