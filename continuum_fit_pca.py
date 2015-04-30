@@ -5,6 +5,10 @@ import scipy.linalg
 import scipy.interpolate
 from scipy import signal
 import lmfit
+import common_settings
+
+
+settings = common_settings.Settings()
 
 
 # based on [Suzuki 2005] and [Lee, Suzuki, & Spergel 2012]
@@ -16,7 +20,7 @@ class ContinuumFitPCA:
     NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
-                 fit_function='dot_product', num_components=8):
+                 fit_function_name=None, num_components=8):
         assert 0 < num_components <= 10
         self.red_pc_table = np.genfromtxt(red_pc_text_file, skip_header=23)
         self.full_pc_table = np.genfromtxt(full_pc_text_file, skip_header=23)
@@ -26,8 +30,11 @@ class ContinuumFitPCA:
         self.full_pc = self.full_pc_table[:, 3:3 + num_components]
         self.red_mean = self.red_pc_table[:, 1]
         self.full_mean = self.full_pc_table[:, 1]
+        if not fit_function_name:
+            fit_function_name = settings.get_continuum_fit_method()
         self.fit_function = {'dot_product': self.project_red_spectrum,
-                             'weighted_ls': self.least_squares_red_spectrum}[fit_function]
+                             'weighted_ls': self.fit_least_squares_red_spectrum,
+                             'lee_2012': self.fit_red_spectrum}[fit_function_name]
         # create wavelength bins
         self.ar_wavelength_bins = np.arange(self.BLUE_START, self.RED_END + .1, 0.5)
         self.ar_red_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, 0.5)
@@ -43,15 +50,77 @@ class ContinuumFitPCA:
 
     def project_red_spectrum(self, ar_red_flux, ar_red_ivar):
         del ar_red_ivar  # suppress unused variable
-        return np.dot(ar_red_flux - self.red_mean, self.red_pc)
+        red_spectrum_coefficients = np.dot(ar_red_flux - self.red_mean, self.red_pc)
+        # map red PCs to full spectrum PCs
+        full_spectrum_coefficients = self.red_to_full(red_spectrum_coefficients)
+        # convert from PCs to an actual spectrum
+        return self.full_spectrum(full_spectrum_coefficients)
 
-    def least_squares_red_spectrum(self, ar_red_flux, ar_red_ivar):
+    def least_squares_red_spectrum_(self, ar_red_flux, ar_red_ivar):
         ar_red_flux_diff = ar_red_flux - self.red_mean
         ar_sqrt_weights = np.sqrt(ar_red_ivar)
         x = self.red_pc * ar_sqrt_weights[:, None]
         y = ar_red_flux_diff * ar_sqrt_weights
-        coefficients = scipy.linalg.lstsq(x, y)
-        return coefficients[0]
+        result = scipy.linalg.lstsq(x, y)
+        red_spectrum_coefficients = result[0]
+        return red_spectrum_coefficients
+
+    def fit_least_squares_red_spectrum(self, ar_red_flux, ar_red_ivar):
+        red_spectrum_coefficients = self.least_squares_red_spectrum_(ar_red_flux, ar_red_ivar)
+        # map red PCs to full spectrum PCs
+        full_spectrum_coefficients = self.red_to_full(red_spectrum_coefficients)
+        # convert from PCs to an actual spectrum
+        return self.full_spectrum(full_spectrum_coefficients)
+
+    def fit_red_spectrum(self, ar_red_flux, ar_red_ivar):
+        params = lmfit.Parameters()
+        max_c_z = 1.1
+        max_alpha_lambda = 3
+        max_f_1280 = 10
+        params.add('f_1280', value=1, min=1. / max_f_1280, max=max_f_1280)
+        params.add('c_z', value=1, min=1. / max_c_z, max=max_c_z)
+        params.add('alpha_lambda', value=1, min=-max_alpha_lambda, max=+max_alpha_lambda)
+        result = lmfit.minimize(fcn=self.red_spectrum_residual,
+                                params=params, args=(ar_red_flux, ar_red_ivar))
+        # get the coefficients of the fitted spectrum:
+        red_spectrum_coefficients = self.red_spectrum_fit_coefficients(params, ar_red_flux, ar_red_ivar)
+        # map red PCs to full spectrum PCs
+        full_spectrum_coefficients = self.red_to_full(red_spectrum_coefficients)
+        # convert from PCs to an actual spectrum
+        full_spectrum_fit = self.full_spectrum(full_spectrum_coefficients)
+        # make an adjustment opposite to the one we made during fit.
+        return self.inverse_full_spectrum_adjustment(result.params, full_spectrum_fit)
+
+    def inverse_full_spectrum_adjustment(self, params, ar_full_flux):
+        ar_full_flux = ar_full_flux / np.power(self.ar_wavelength_bins / self.LY_A_PEAK_BINNED,
+                                               params['alpha_lambda'].value)
+        ar_full_flux = np.interp(self.ar_wavelength_bins,
+                                 self.ar_wavelength_bins * params['c_z'].value, ar_full_flux)
+        ar_full_flux /= params['f_1280'].value
+        return ar_full_flux
+
+    def red_spectrum_fit_coefficients(self, params, ar_red_flux, ar_red_ivar):
+        # modify qso spectrum according to free parameters:
+        # this is not really evaluated at 1280 because we already performed a rough normalization.
+        # instead, just multiply everything by this factor
+        ar_red_flux = ar_red_flux * params['f_1280'].value
+        # red shift correction:
+        ar_red_flux = np.interp(self.ar_red_wavelength_bins * params['c_z'].value,
+                                self.ar_red_wavelength_bins, ar_red_flux)
+        ar_red_flux *= np.power(self.ar_red_wavelength_bins / self.LY_A_PEAK_BINNED,
+                                params['alpha_lambda'].value)
+        coefficients = self.least_squares_red_spectrum_(ar_red_flux, ar_red_ivar)
+        return coefficients
+
+    def red_spectrum_residual(self, params, ar_red_flux, ar_red_ivar):
+        coefficients = self.red_spectrum_fit_coefficients(params, ar_red_flux, ar_red_ivar)
+        ar_red_fit = np.dot(self.red_pc, coefficients) + self.red_mean
+        print params
+        plt.plot(self.ar_red_wavelength_bins, ar_red_fit)
+        plt.plot(self.ar_red_wavelength_bins, ar_red_flux)
+        plt.show()
+        residual = ar_red_fit - ar_red_flux
+        return residual
 
     def full_spectrum(self, full_pc_coefficients):
         return np.dot(self.full_pc, full_pc_coefficients) + self.full_mean
@@ -98,15 +167,9 @@ class ContinuumFitPCA:
             ar_red_flux_rebinned[self.LY_A_PEAK_INDEX - 10:self.LY_A_PEAK_INDEX + 11].mean()
         ar_red_flux_rebinned_normalized = ar_red_flux_rebinned / float(normalization_factor)
 
-        # find the PCA coefficients for the red part of the spectrum.
-        red_spectrum_coefficients = self.fit_function(ar_red_flux_rebinned_normalized,
-                                                      ar_red_ivar_rebinned)
-
-        # map red PCs to full spectrum PCs
-        full_spectrum_coefficients = self.red_to_full(red_spectrum_coefficients)
-
-        # convert from PCs to an actual spectrum
-        ar_full_fit = self.full_spectrum(full_spectrum_coefficients)
+        # predict the full spectrum from the red part of the spectrum.
+        ar_full_fit = self.fit_function(ar_red_flux_rebinned_normalized,
+                                        ar_red_ivar_rebinned)
 
         # restore the original flux scale
         ar_full_fit = ar_full_fit * normalization_factor

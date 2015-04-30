@@ -58,10 +58,13 @@ for qso_data_ in spec_sample:
 
     lya_forest_transmittance = calc_mean_transmittance.qso_transmittance(qso_data_)
 
+    # correct extinction:
+    ar_flux_correct = deredden_spectrum(ar_wavelength, ar_flux, qso_data_.qso_rec.extinction_g)
+
     # begin PCA fit:
     ar_wavelength_rest = ar_wavelength / (1 + qso_z)
     fit_spectrum, fit_normalization_factor, is_good_fit = \
-        fit_pca.fit(ar_wavelength_rest, ar_flux, ar_ivar, qso_z)
+        fit_pca.fit(ar_wavelength_rest, ar_flux_correct, ar_ivar, qso_z)
     print "good fit:", is_good_fit
 
     # begin power-law fit:
@@ -88,6 +91,7 @@ for qso_data_ in spec_sample:
     plt.fill_between(ar_wavelength, ar_flux - ar_flux_err,
                      ar_flux + ar_flux_err, color='lightgray', linewidth=.3)
     plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3)
+    plt.plot(ar_wavelength, ar_flux_correct, ms=2, linewidth=.3, color='cyan')
     # plt.loglog(spec.ma_wavelength.compressed(),
     # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
     plt.plot(ar_wavelength, fit_spectrum, color='orange')

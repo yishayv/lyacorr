@@ -1,11 +1,10 @@
 import itertools
+import pprint
 
 import numpy as np
 import astropy.table as table
 from scipy import interpolate
 from mpi4py import MPI
-import pprint
-
 
 import mean_flux
 import continuum_fit_pca
@@ -31,7 +30,7 @@ fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], 
 z_range = (1.9, 3.5, 0.0001)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
-stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'accepted': 0}
+stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
 
 
 class DeltaTransmittanceAccumulator:
@@ -93,6 +92,11 @@ def qso_transmittance(qso_spec_obj):
     ar_ivar = qso_spec_obj.ar_ivar
     assert ar_flux.size == ar_ivar.size
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]))
+
+    if not ar_ivar.sum() > 0 or not np.any(np.isfinite(ar_flux)):
+        # no useful data
+        stats['empty'] += 1
+        return empty_result
 
     fit_spectrum, fit_normalization_factor, is_good_fit = \
         fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan)
