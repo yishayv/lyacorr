@@ -59,12 +59,12 @@ static void bin_pixel_pairs_loop(PyArrayObject* in_array_z1, PyArrayObject* in_a
 	    weight2 = *((double*) PyArray_GETPTR1(in_array_weights2, j));
 	    
 	    /* r|| = abs(r1 - r2) */
-	    bin_x = abs(dist1 - dist2) / x_bin_size;
+	    bin_x = (int)(fabs(dist1 - dist2) / x_bin_size);
 	    /* r_ =  (r1 + r2)/2 * qso_angle */
-	    bin_y = (dist1 + dist2) * qso_angle / (2. * y_bin_size);
+	    bin_y = (int)((dist1 + dist2) * qso_angle / (2. * y_bin_size));
 
-	    if ((bin_x >= 0 && bin_x < x_bin_count) &&
-	      (bin_y >= 0 && bin_y < y_bin_count))
+	    if ((bin_x < x_bin_count) &&
+	      (bin_y < y_bin_count))
 	    {
 	        /* pixel is in range */
 		if (!first_pair_dist2)
