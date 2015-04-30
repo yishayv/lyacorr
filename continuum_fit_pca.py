@@ -115,10 +115,6 @@ class ContinuumFitPCA:
     def red_spectrum_residual(self, params, ar_red_flux, ar_red_ivar):
         coefficients = self.red_spectrum_fit_coefficients(params, ar_red_flux, ar_red_ivar)
         ar_red_fit = np.dot(self.red_pc, coefficients) + self.red_mean
-        print params
-        plt.plot(self.ar_red_wavelength_bins, ar_red_fit)
-        plt.plot(self.ar_red_wavelength_bins, ar_red_flux)
-        plt.show()
         residual = ar_red_fit - ar_red_flux
         return residual
 
