@@ -42,8 +42,10 @@ qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 spec_sample = read_spectrum_fits.enum_spectra([qso_record_table[i]])
 
 for qso_data_ in spec_sample:
-    qso_z = qso_data_.qso_rec.z
-    print qso_z
+    qso_rec = qso_data_.qso_rec
+    qso_z = qso_rec.z
+    print "Plate, FiberID, MJD:", qso_rec.plate, qso_rec.fiberID, qso_rec.mjd
+    print "Z:", qso_z
 
     fit_pca_files = settings.get_pca_continuum_tables()
     fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
@@ -88,10 +90,10 @@ for qso_data_ in spec_sample:
 
     plt.subplot(2, 1, 1)
     ar_flux_err = np.reciprocal(np.sqrt(ar_ivar))
-    plt.fill_between(ar_wavelength, ar_flux - ar_flux_err,
-                     ar_flux + ar_flux_err, color='lightgray', linewidth=.3)
-    plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3)
-    plt.plot(ar_wavelength, ar_flux_correct, ms=2, linewidth=.3, color='cyan')
+    plt.fill_between(ar_wavelength, ar_flux_correct - ar_flux_err,
+                     ar_flux_correct + ar_flux_err, color='lightgray', linewidth=.3)
+    plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3, color='cyan')
+    plt.plot(ar_wavelength, ar_flux_correct, ms=2, linewidth=.3, color='blue')
     # plt.loglog(spec.ma_wavelength.compressed(),
     # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
     plt.plot(ar_wavelength, fit_spectrum, color='orange')

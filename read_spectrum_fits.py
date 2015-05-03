@@ -95,7 +95,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             # get flux_data
             flux_data = hdu_list[0].data
             ivar_data = hdu_list[1].data
-            or_mask_data = hdu_list[3].data
+            or_mask_data = hdu_list[3].data & 0b11111011101111001111111111111111
 
         # return requested spectrum
         ar_flux = flux_data[qso_rec.fiberID - 1]

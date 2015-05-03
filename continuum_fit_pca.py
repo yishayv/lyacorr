@@ -74,7 +74,7 @@ class ContinuumFitPCA:
 
     def fit_red_spectrum(self, ar_red_flux, ar_red_ivar):
         params = lmfit.Parameters()
-        max_c_z = 1.1
+        max_c_z = 1.02
         max_alpha_lambda = 3
         max_f_1280 = 10
         params.add('f_1280', value=1, min=1. / max_f_1280, max=max_f_1280)
