@@ -35,8 +35,10 @@ def profile_main():
 
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 
+    flag_stats = read_spectrum_fits.FlagStats()
+
     # assume qso_record_table is already sorted
-    spec_sample = read_spectrum_fits.enum_spectra(qso_record_table, pre_sort=False)
+    spec_sample = read_spectrum_fits.enum_spectra(qso_record_table, pre_sort=False, flag_stats=flag_stats)
 
     qso_spectra_hdf5 = settings.get_qso_spectra_hdf5()
     output_spectra = Hdf5SpectrumContainer(qso_spectra_hdf5, readonly=False, create_new=True,
@@ -53,6 +55,10 @@ def profile_main():
         output_spectra.set_flux(index, i[2])
         output_spectra.set_ivar(index, i[3])
 
+    for bit in xrange(0, 32):
+        print flag_stats.to_string(bit)
+
+    print 'Total count: ' + str(flag_stats.pixel_count)
 
 if settings.get_profile():
     cProfile.run('profile_main()', sort=2, filename='extract_sdss_qso_spectra.prof')

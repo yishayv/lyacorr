@@ -21,6 +21,31 @@ QSO_fields_dict = dict(zip(QSO_fields, itertools.count()))
 PLATE_DIR_DEFAULT = settings.get_plate_dir_list()
 
 
+class FlagStats:
+    FlagNames = \
+        {0: 'NOPLUG', 1: 'BADTRACE', 2: 'BADFLAT', 3: 'BADARC',
+         4: 'MANYBADCOLUMNS', 5: 'MANYREJECTED', 6: 'LARGESHIFT', 7: 'BADSKYFIBER',
+         8: 'NEARWHOPPER', 9: 'WHOPPER', 10: 'SMEARIMAGE', 11: 'SMEARHIGHSN',
+         12: 'SMEARMEDSN', 13: 'UNUSED_13', 14: 'UNUSED_14', 15: 'UNUSED_15',
+         16: 'NEARBADPIXEL', 17: 'LOWFLAT', 18: 'FULLREJECT', 19: 'PARTIALREJECT',
+         20: 'SCATTEREDLIGHT', 21: 'CROSSTALK', 22: 'NOSKY', 23: 'BRIGHTSKY',
+         24: 'NODATA', 25: 'COMBINEREJ', 26: 'BADFLUXFACTOR', 27: 'BADSKYCHI',
+         28: 'REDMONSTER', 29: 'UNUSED_29', 30: 'UNUSED_30', 31: 'UNUSED_31'}
+
+    def __init__(self):
+        self.flag_count = np.zeros(shape=(32, 2), dtype=np.uint64)
+        self.pixel_count = np.uint64()
+
+    def bit_fraction(self, bit, and_or):
+        return self.flag_count[bit, and_or] / self.pixel_count
+
+    def to_string(self, bit):
+        return '{bit_number:4}: {bit_name:24}: AND:{and_fraction:8.2%} OR:{or_fraction:8.2%}'.format(
+            bit_number=bit, bit_name=self.FlagNames[bit],
+            and_fraction=self.bit_fraction(bit, 0),
+            or_fraction=self.bit_fraction(bit, 1))
+
+
 def generate_qso_details():
     """
     iterate over the QSO table, yielding a dictionary containing the values for each QSO
@@ -52,7 +77,7 @@ def find_fits_file(plate_dir_list, fits_partial_path):
     return None
 
 
-def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True):
+def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True, flag_stats=None):
     """
     yields a QSO object from the fits files corresponding to the appropriate qso_record
     :type qso_record_table: table.Table
@@ -73,7 +98,6 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             if not fits_full_path:
                 print "Missing file:", fits_partial_path
                 continue
-
 
             # get header
             hdu_list = pyfits.open(fits_full_path)
@@ -97,13 +121,24 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             ivar_data = hdu_list[1].data
             # ignore SPPIXMASK bits that tend to block big parts of some spectra
             # (16 NEARBADPIXEL, 17 LOWFLAT, 22 NOSKY, 26 BADFLUXFACTOR).
-            or_mask_data = hdu_list[3].data & 0b11111011101111001111111111111111
+            and_mask_data = hdu_list[2].data
+            or_mask_data = hdu_list[3].data
 
         # return requested spectrum
         ar_flux = flux_data[qso_rec.fiberID - 1]
         ar_ivar = ivar_data[qso_rec.fiberID - 1]
         assert ar_flux.size == ar_ivar.size
-        ar_or_mask = or_mask_data[qso_rec.fiberID - 1]
+        ar_or_mask = or_mask_data[qso_rec.fiberID - 1] & 0b11111011101111001111111111111111
+
+        if flag_stats.flag_count is not None:
+            current_and_mask_data = and_mask_data[qso_rec.fiberID - 1]
+            current_or_mask_data = or_mask_data[qso_rec.fiberID - 1]
+            for bit in xrange(0, 32):
+                flag_stats.flag_count[bit, 0] += (current_and_mask_data & 1).sum()
+                flag_stats.flag_count[bit, 1] += (current_or_mask_data & 1).sum()
+                current_and_mask_data >>= 1
+                current_or_mask_data >>= 1
+            flag_stats.pixel_count += current_and_mask_data.size
 
         # temporary: set ivar to 0 for all bad pixels
         ar_ivar[ar_or_mask != 0] = 0
