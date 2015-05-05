@@ -1,7 +1,10 @@
 import numpy as np
-from read_spectrum_fits import reverse_dict
 
 __author__ = 'yishay'
+
+
+def reverse_dict(d):
+    return dict((v, k) for k, v in d.iteritems())
 
 
 class PixelFlags:
@@ -50,3 +53,5 @@ class FlagStats:
             bit_number=bit, bit_name=self.FlagNames[bit],
             and_fraction=self.bit_fraction(bit, 0),
             or_fraction=self.bit_fraction(bit, 1))
+
+

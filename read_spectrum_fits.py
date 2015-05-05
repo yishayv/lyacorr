@@ -7,7 +7,7 @@ import pyfits
 import astropy.table as table
 
 import common_settings
-from pixel_flags import FlagStats
+from pixel_flags import PixelFlags
 from qso_data import QSORecord, QSOData
 
 
@@ -21,9 +21,10 @@ with open(QSO_FIELDS_FILE, mode='rb') as f:
 QSO_fields_dict = dict(zip(QSO_fields, itertools.count()))
 PLATE_DIR_DEFAULT = settings.get_plate_dir_list()
 
-
-def reverse_dict(d):
-    return dict((v, k) for k, v in d.iteritems())
+# remove all pixels with AND bits:
+AND_MASK = np.bitwise_not(np.uint32(0))
+# remove pixels with the following OR bits:
+OR_MASK = PixelFlags.string_to_int('BRIGHTSKY')
 
 
 def generate_qso_details():
@@ -99,8 +100,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             # get flux_data
             flux_data = hdu_list[0].data
             ivar_data = hdu_list[1].data
-            # ignore SPPIXMASK bits that tend to block big parts of some spectra
-            # (16 NEARBADPIXEL, 17 LOWFLAT, 22 NOSKY, 26 BADFLUXFACTOR).
+
             and_mask_data = hdu_list[2].data
             or_mask_data = hdu_list[3].data
 
@@ -108,11 +108,13 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
         ar_flux = flux_data[qso_rec.fiberID - 1]
         ar_ivar = ivar_data[qso_rec.fiberID - 1]
         assert ar_flux.size == ar_ivar.size
-        ar_or_mask = or_mask_data[qso_rec.fiberID - 1] & 0b11111011101111001111111111111111
+
+        current_and_mask_data = and_mask_data[qso_rec.fiberID - 1]
+        current_or_mask_data = or_mask_data[qso_rec.fiberID - 1]
+        ar_effective_mask = np.logical_or(current_and_mask_data & AND_MASK,
+                                          current_or_mask_data & OR_MASK)
 
         if flag_stats is not None:
-            current_and_mask_data = and_mask_data[qso_rec.fiberID - 1]
-            current_or_mask_data = or_mask_data[qso_rec.fiberID - 1]
             for bit in xrange(0, 32):
                 flag_stats.flag_count[bit, 0] += (current_and_mask_data & 1).sum()
                 flag_stats.flag_count[bit, 1] += (current_or_mask_data & 1).sum()
@@ -121,7 +123,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             flag_stats.pixel_count += current_and_mask_data.size
 
         # temporary: set ivar to 0 for all bad pixels
-        ar_ivar[ar_or_mask != 0] = 0
+        ar_ivar[ar_effective_mask != 0] = 0
 
         last_fits_partial_path = fits_partial_path
         yield QSOData(qso_rec, o_grid, ar_flux, ar_ivar)
