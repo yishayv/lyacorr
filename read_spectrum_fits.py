@@ -130,7 +130,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
         assert ar_flux.size == ar_ivar.size
         ar_or_mask = or_mask_data[qso_rec.fiberID - 1] & 0b11111011101111001111111111111111
 
-        if flag_stats.flag_count is not None:
+        if flag_stats is not None:
             current_and_mask_data = and_mask_data[qso_rec.fiberID - 1]
             current_or_mask_data = or_mask_data[qso_rec.fiberID - 1]
             for bit in xrange(0, 32):

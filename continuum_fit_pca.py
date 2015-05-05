@@ -74,7 +74,7 @@ class ContinuumFitPCA:
 
     def fit_red_spectrum(self, ar_red_flux, ar_red_ivar):
         params = lmfit.Parameters()
-        max_c_z = 1.02
+        max_c_z = 1.01
         max_alpha_lambda = 3
         max_f_1280 = 10
         params.add('f_1280', value=1, min=1. / max_f_1280, max=max_f_1280)
@@ -206,7 +206,7 @@ class ContinuumFitPCA:
         else:
             is_good_fit = False
 
-        is_good_fit = is_good_fit and self.is_good_fit(ar_flux_rebinned, ar_full_fit)
+        is_good_fit = is_good_fit and self.is_good_fit(ar_flux_rebinned, ar_ivar_rebinned, ar_full_fit)
 
         return ar_full_fit, self.ar_wavelength_bins, normalization_factor, is_good_fit
 
@@ -242,9 +242,11 @@ class ContinuumFitPCA:
         return delta_f
 
     @classmethod
-    def is_good_fit(cls, ar_flux, ar_flux_fit):
-        # TODO: threshold should be based on signal to noise.
-        return cls.get_goodness_of_fit(ar_flux, ar_flux_fit) < 0.15
+    def is_good_fit(cls, ar_flux, ar_ivar, ar_flux_fit):
+        # threshold is based on signal to noise.
+        snr = cls.get_simple_snr(ar_flux, ar_ivar)
+        max_delta_f = cls.max_delta_f_per_snr(snr) * 2
+        return cls.get_goodness_of_fit(ar_flux, ar_flux_fit) < max_delta_f
 
     def regulate_mean_flux_2nd_order_residual(self, params, ar_flux, ar_fit, ar_data_mask):
         ar_regulated_fit = self.mean_flux_2nd_order_correction(params, ar_fit[ar_data_mask],
@@ -279,3 +281,11 @@ class ContinuumFitPCA:
     @staticmethod
     def mean_flux_constraint(z):
         return np.exp(-0.001845 * (1 + z) ** 3.924)
+
+    @staticmethod
+    def get_simple_snr(ar_flux, ar_ivar):
+        return np.sqrt(np.percentile(np.square(ar_flux), 50)) * np.sqrt(np.percentile(ar_ivar, 50))
+
+    @staticmethod
+    def max_delta_f_per_snr(snr):
+        return snr**(-1.5)/3.6 + 0.05
