@@ -284,7 +284,9 @@ class ContinuumFitPCA:
 
     @staticmethod
     def get_simple_snr(ar_flux, ar_ivar):
-        return np.sqrt(np.percentile(np.square(ar_flux), 50)) * np.sqrt(np.percentile(ar_ivar, 50))
+        # no need to square ar_flux because median
+        # TODO: is it correct to use the absolute value even though it has no physical justification?
+        return np.percentile(np.abs(ar_flux), 50) * np.sqrt(np.percentile(ar_ivar, 50))
 
     @staticmethod
     def max_delta_f_per_snr(snr):

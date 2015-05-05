@@ -4,6 +4,7 @@ import cProfile
 
 import numpy as np
 import astropy.table as table
+from pixel_flags import FlagStats
 
 import read_spectrum_fits
 from hdf5_spectrum_container import Hdf5SpectrumContainer
@@ -35,7 +36,7 @@ def profile_main():
 
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 
-    flag_stats = read_spectrum_fits.FlagStats()
+    flag_stats = FlagStats()
 
     # assume qso_record_table is already sorted
     spec_sample = read_spectrum_fits.enum_spectra(qso_record_table, pre_sort=False, flag_stats=flag_stats)

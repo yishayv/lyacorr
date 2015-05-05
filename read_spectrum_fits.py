@@ -7,6 +7,7 @@ import pyfits
 import astropy.table as table
 
 import common_settings
+from pixel_flags import FlagStats
 from qso_data import QSORecord, QSOData
 
 
@@ -21,29 +22,8 @@ QSO_fields_dict = dict(zip(QSO_fields, itertools.count()))
 PLATE_DIR_DEFAULT = settings.get_plate_dir_list()
 
 
-class FlagStats:
-    FlagNames = \
-        {0: 'NOPLUG', 1: 'BADTRACE', 2: 'BADFLAT', 3: 'BADARC',
-         4: 'MANYBADCOLUMNS', 5: 'MANYREJECTED', 6: 'LARGESHIFT', 7: 'BADSKYFIBER',
-         8: 'NEARWHOPPER', 9: 'WHOPPER', 10: 'SMEARIMAGE', 11: 'SMEARHIGHSN',
-         12: 'SMEARMEDSN', 13: 'UNUSED_13', 14: 'UNUSED_14', 15: 'UNUSED_15',
-         16: 'NEARBADPIXEL', 17: 'LOWFLAT', 18: 'FULLREJECT', 19: 'PARTIALREJECT',
-         20: 'SCATTEREDLIGHT', 21: 'CROSSTALK', 22: 'NOSKY', 23: 'BRIGHTSKY',
-         24: 'NODATA', 25: 'COMBINEREJ', 26: 'BADFLUXFACTOR', 27: 'BADSKYCHI',
-         28: 'REDMONSTER', 29: 'UNUSED_29', 30: 'UNUSED_30', 31: 'UNUSED_31'}
-
-    def __init__(self):
-        self.flag_count = np.zeros(shape=(32, 2), dtype=np.uint64)
-        self.pixel_count = np.uint64()
-
-    def bit_fraction(self, bit, and_or):
-        return self.flag_count[bit, and_or] / self.pixel_count
-
-    def to_string(self, bit):
-        return '{bit_number:4}: {bit_name:24}: AND:{and_fraction:8.2%} OR:{or_fraction:8.2%}'.format(
-            bit_number=bit, bit_name=self.FlagNames[bit],
-            and_fraction=self.bit_fraction(bit, 0),
-            or_fraction=self.bit_fraction(bit, 1))
+def reverse_dict(d):
+    return dict((v, k) for k, v in d.iteritems())
 
 
 def generate_qso_details():
