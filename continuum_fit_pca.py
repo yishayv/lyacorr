@@ -5,6 +5,7 @@ import scipy.linalg
 import scipy.interpolate
 from scipy import signal
 import lmfit
+
 import common_settings
 
 
@@ -44,7 +45,7 @@ class ContinuumFitPCA:
         self.pivot_wavelength = 1280
         self.delta_wavelength = self.ar_blue_wavelength_bins / self.pivot_wavelength - 1
         self.delta_wavelength_sq = np.square(self.delta_wavelength)
-        self.snr_stats = np.zeros(shape=(50, 50))
+        self.snr_stats = np.zeros(shape=(3, 50, 50))
 
     def red_to_full(self, red_pc_coefficients):
         return np.dot(self.projection_matrix.T, red_pc_coefficients)
@@ -245,11 +246,16 @@ class ContinuumFitPCA:
     def is_good_fit(self, ar_flux, ar_ivar, ar_flux_fit):
         # threshold is based on signal to noise.
         snr = self.get_simple_snr(ar_flux, ar_ivar)
-        max_delta_f = self.max_delta_f_per_snr(snr)
+        max_delta_f = self.max_delta_f_per_snr(snr / 1.3) * 1.3
         delta_f = self.get_goodness_of_fit(ar_flux, ar_flux_fit)
 
-        self.snr_stats[np.clip(snr * 50/15, 0, 49), np.clip(delta_f * 50 / 1., 0, 49)] += 1
-        return delta_f < max_delta_f
+        # in addition to a max_delta_f value, avoid suspicious over-fitting and very low SNR values
+        is_good_fit_result = 0.01 < delta_f < max_delta_f and snr > 0.5
+
+        bin_x = np.clip(snr * 50 / 15, 0, 49)
+        bin_y = np.clip(delta_f * 50 / 1., 0, 49)
+        self.snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
+        return is_good_fit_result
 
     def regulate_mean_flux_2nd_order_residual(self, params, ar_flux, ar_fit, ar_data_mask):
         ar_regulated_fit = self.mean_flux_2nd_order_correction(params, ar_fit[ar_data_mask],
@@ -293,4 +299,4 @@ class ContinuumFitPCA:
 
     @staticmethod
     def max_delta_f_per_snr(snr):
-        return snr**(-1.5)/3.6 + 0.05
+        return snr ** (-1.5) / 3.6 + 0.05
