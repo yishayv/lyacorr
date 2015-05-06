@@ -44,6 +44,7 @@ class ContinuumFitPCA:
         self.pivot_wavelength = 1280
         self.delta_wavelength = self.ar_blue_wavelength_bins / self.pivot_wavelength - 1
         self.delta_wavelength_sq = np.square(self.delta_wavelength)
+        self.snr_stats = np.zeros(shape=(50, 50))
 
     def red_to_full(self, red_pc_coefficients):
         return np.dot(self.projection_matrix.T, red_pc_coefficients)
@@ -241,12 +242,14 @@ class ContinuumFitPCA:
         delta_f = ar_diff.sum() / cls.NUM_RED_BINS
         return delta_f
 
-    @classmethod
-    def is_good_fit(cls, ar_flux, ar_ivar, ar_flux_fit):
+    def is_good_fit(self, ar_flux, ar_ivar, ar_flux_fit):
         # threshold is based on signal to noise.
-        snr = cls.get_simple_snr(ar_flux, ar_ivar)
-        max_delta_f = cls.max_delta_f_per_snr(snr) * 2
-        return cls.get_goodness_of_fit(ar_flux, ar_flux_fit) < max_delta_f
+        snr = self.get_simple_snr(ar_flux, ar_ivar)
+        max_delta_f = self.max_delta_f_per_snr(snr)
+        delta_f = self.get_goodness_of_fit(ar_flux, ar_flux_fit)
+
+        self.snr_stats[np.clip(snr * 50/15, 0, 49), np.clip(delta_f * 50 / 1., 0, 49)] += 1
+        return delta_f < max_delta_f
 
     def regulate_mean_flux_2nd_order_residual(self, params, ar_flux, ar_fit, ar_data_mask):
         ar_regulated_fit = self.mean_flux_2nd_order_correction(params, ar_fit[ar_data_mask],
