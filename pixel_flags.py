@@ -50,7 +50,7 @@ class FlagStats:
 
     def to_string(self, bit):
         return '{bit_number:4}: {bit_name:24}: AND:{and_fraction:8.2%} OR:{or_fraction:8.2%}'.format(
-            bit_number=bit, bit_name=self.FlagNames[bit],
+            bit_number=bit, bit_name=PixelFlags.FlagNames[bit],
             and_fraction=self.bit_fraction(bit, 0),
             or_fraction=self.bit_fraction(bit, 1))
 

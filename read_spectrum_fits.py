@@ -24,7 +24,12 @@ PLATE_DIR_DEFAULT = settings.get_plate_dir_list()
 # remove all pixels with AND bits:
 AND_MASK = np.bitwise_not(np.uint32(0))
 # remove pixels with the following OR bits:
-OR_MASK = PixelFlags.string_to_int('BRIGHTSKY')
+# the first 13 bits do not mask many pixels so we might as well include them.
+# the AND mask of 'bright sky' does not always block sky lines.
+OR_MASK = PixelFlags.string_to_int(
+    'NOPLUG|BADTRACE|BADFLAT|BADARC|MANYBADCOLUMNS|MANYREJECTED|LARGESHIFT|BADSKYFIBER|' +
+    'NEARWHOPPER|WHOPPER|SMEARIMAGE|SMEARHIGHSN|SMEARMEDSN|' +
+    'BRIGHTSKY')
 
 
 def generate_qso_details():
