@@ -305,7 +305,7 @@ def mean_transmittance():
         snr_stats = np.zeros_like(snr_stats_list[0])
         for i in snr_stats_list:
             snr_stats += i
-        np.save('snr_stats.npy', snr_stats)
+        np.save(settings.get_fit_snr_stats(), snr_stats)
         m.save(settings.get_mean_transmittance_npy())
 
 

@@ -246,11 +246,12 @@ class ContinuumFitPCA:
     def is_good_fit(self, ar_flux, ar_ivar, ar_flux_fit):
         # threshold is based on signal to noise.
         snr = self.get_simple_snr(ar_flux, ar_ivar)
-        max_delta_f = self.max_delta_f_per_snr(snr / 1.3) * 1.3
+        max_delta_f = self.max_delta_f_per_snr(snr / 1.3) * 1.3 if snr != 0 else 0
+
         delta_f = self.get_goodness_of_fit(ar_flux, ar_flux_fit)
 
         # in addition to a max_delta_f value, avoid suspicious over-fitting and very low SNR values
-        is_good_fit_result = 0.01 < delta_f < max_delta_f and snr > 0.5
+        is_good_fit_result = 0.02 < delta_f < max_delta_f and snr > 0.5
 
         bin_x = np.clip(snr * 50 / 15, 0, 49)
         bin_y = np.clip(delta_f * 50 / 1., 0, 49)
