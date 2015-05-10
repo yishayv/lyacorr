@@ -34,7 +34,6 @@ class DeltaTransmittanceAccumulator:
         self.num_spectra = num_spectra
         self.delta_t_file = NpSpectrumContainer(False, self.num_spectra, settings.get_delta_t_npy(),
                                                 max_wavelength_count=1000)
-        self.ar_continuum_ivar = np.zeros(self.num_spectra)
         self.n = 0
         # initialize file
         self.delta_t_file.zero()
