@@ -47,6 +47,13 @@ class MeanFlux:
                           self.ar_count,
                           self.ar_weights))
 
+    # noinspection PyMethodMayBeStatic
+    def as_object(self):
+        """
+        Return data that cannot be easily represented in an array.
+        """
+        pass
+
     @classmethod
     def from_np_array(cls, np_array):
         new_obj = cls(np.empty(1))

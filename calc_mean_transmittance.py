@@ -38,9 +38,9 @@ class DeltaTransmittanceAccumulator:
         # initialize file
         self.delta_t_file.zero()
 
-    def accumulate(self, result_enum, ar_qso_indices_list):
+    def accumulate(self, result_enum, ar_qso_indices_list, object_results):
         for ar_delta_t, ar_qso_indices in itertools.izip(result_enum, ar_qso_indices_list):
-            delta_t = NpSpectrumContainer.from_np_array(ar_delta_t, 1)
+            delta_t = NpSpectrumContainer.from_np_array(ar_delta_t, readonly=True)
             for j, n in itertools.izip(NpSpectrumIterator(delta_t), ar_qso_indices):
                 # if self.n >= self.num_spectra:
                 # break
@@ -55,12 +55,15 @@ class DeltaTransmittanceAccumulator:
     def return_result(self):
         return self.n
 
+    def finalize(self):
+        pass
+
 
 class MeanTransmittanceAccumulator:
     def __init__(self, num_spectra):
         self.m = mean_flux.MeanFlux(np.arange(*z_range))
 
-    def accumulate(self, result_enum, qso_record_table):
+    def accumulate(self, result_enum, qso_record_table, object_results):
         for ar_m in result_enum:
             l_print_no_barrier("--- mean accumulate ----")
             m = mean_flux.MeanFlux.from_np_array(ar_m)
@@ -70,8 +73,11 @@ class MeanTransmittanceAccumulator:
     def return_result(self):
         return self.m
 
+    def finalize(self):
+        pass
 
-def qso_transmittance(qso_spec_obj):
+
+def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
     """
 
     :type qso_spec_obj: QSOData
@@ -88,24 +94,23 @@ def qso_transmittance(qso_spec_obj):
     assert ar_flux.size == ar_ivar.size
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]))
 
+    if not ar_fit_spectrum.size:
+        stats['bad_fit'] += 1
+        l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
+        return empty_result
+
+    assert ar_flux.size == ar_fit_spectrum.size
+
     if not ar_ivar.sum() > 0 or not np.any(np.isfinite(ar_flux)):
         # no useful data
         stats['empty'] += 1
-        return empty_result
-
-    fit_spectrum, fit_normalization_factor, is_good_fit = \
-        fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan)
-
-    if not is_good_fit:
-        stats['bad_fit'] += 1
-        l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
         return empty_result
 
     # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
     # use the same range as in 1404.1801 (2014)
     forest_mask = np.logical_and(ar_wavelength > 1040 * (1 + z),
                                  ar_wavelength < 1200 * (1 + z))
-    fit_mask = ~np.isnan(fit_spectrum)
+    fit_mask = ~np.isnan(ar_fit_spectrum)
     # since at high redshift the sample size becomes smaller,
     # discard all forest pixels that have a redshift greater/less than a globally defined value
     min_redshift = settings.get_min_forest_redshift()
@@ -117,7 +122,7 @@ def qso_transmittance(qso_spec_obj):
     # combine all different masks
     effective_mask = forest_mask & fit_mask & redshift_mask
     ar_wavelength_masked = ar_wavelength[effective_mask]
-    ar_fit_spectrum_masked = fit_spectrum[effective_mask]
+    ar_fit_spectrum_masked = ar_fit_spectrum[effective_mask]
 
     # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
     if ar_wavelength_masked.size < 50:
@@ -134,7 +139,7 @@ def qso_transmittance(qso_spec_obj):
     stats['accepted'] += 1
     l_print_no_barrier("accepted QSO", qso_rec)
 
-    ar_rel_transmittance = ar_flux / fit_spectrum
+    ar_rel_transmittance = ar_flux / ar_fit_spectrum
     ar_rel_transmittance_masked = ar_rel_transmittance[effective_mask]
     ar_z_masked = ar_wavelength_masked / lya_center - 1
     assert ar_z_masked.size == ar_rel_transmittance_masked.size
@@ -151,9 +156,9 @@ def qso_transmittance(qso_spec_obj):
     return LyaForestTransmittance(ar_z_masked, ar_rel_transmittance_masked, ar_pipeline_ivar_masked)
 
 
-def qso_transmittance_binned(qso_spec_obj):
+def qso_transmittance_binned(qso_spec_obj, ar_fit_spectrum):
     ar_z = ar_z_range
-    lya_forest_transmittance = qso_transmittance(qso_spec_obj)
+    lya_forest_transmittance = qso_transmittance(qso_spec_obj, ar_fit_spectrum)
     if lya_forest_transmittance.ar_transmittance.size == 0:
         # no samples found, no need to interpolate, just return the empty result
         return LyaForestTransmittanceBinned(lya_forest_transmittance.ar_z,
@@ -174,11 +179,17 @@ def qso_transmittance_binned(qso_spec_obj):
 
 
 def mean_transmittance_chunk(qso_record_table):
-    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5(),
-                                                     table_offset=qso_record_table[0]['index'])
+    start_offset = qso_record_table[0]['index']
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5())
+    continuum_fit_file = NpSpectrumContainer(True, filename=settings.get_continuum_fit_npy())
+
     m = mean_flux.MeanFlux(np.arange(*z_range))
     for i in qso_record_table:
-        lya_forest_transmittance_binned = qso_transmittance_binned(spectra.return_spectrum(i['index']))
+        index = i['index']
+        qso_spec_obj = spectra.return_spectrum(index - start_offset)
+        ar_fit_spectrum = continuum_fit_file.get_flux(index - start_offset)
+
+        lya_forest_transmittance_binned = qso_transmittance_binned(qso_spec_obj, ar_fit_spectrum)
         if lya_forest_transmittance_binned.ar_transmittance.size:
             m.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
                                   lya_forest_transmittance_binned.ar_mask,
@@ -191,8 +202,9 @@ def mean_transmittance_chunk(qso_record_table):
 
 def delta_transmittance_chunk(qso_record_table):
     start_offset = qso_record_table[0]['index']
-    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5(),
-                                                     table_offset=start_offset)
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5())
+    continuum_fit_file = NpSpectrumContainer(True, filename=settings.get_continuum_fit_npy())
+
     num_spectra = len(qso_record_table)
     delta_t = NpSpectrumContainer(False, num_spectra)
     # warning: np.ndarray is not initialized by default. zeroing manually.
@@ -207,7 +219,10 @@ def delta_transmittance_chunk(qso_record_table):
     chunk_weight = 0
     n = 0
     for i in qso_record_table:
-        lya_forest_transmittance = qso_transmittance(spectra.return_spectrum(i['index']))
+        index = i['index']
+        qso_spec_obj = spectra.return_spectrum(index - start_offset)
+        ar_fit_spectrum = continuum_fit_file.get_flux(index - start_offset)
+        lya_forest_transmittance = qso_transmittance(qso_spec_obj,ar_fit_spectrum)
         ar_z = lya_forest_transmittance.ar_z
         if ar_z.size:
             # prepare the mean flux for the z range of this QSO

@@ -36,8 +36,10 @@ class Settings():
     opt_sigma_sq_lss = 'sigma_squared_lss_txt'
     # eta correction function for weights
     opt_weight_eta = 'weight_eta_function_txt'
-    # inverse variance of the continuum
+    # continuum fit spectra
     opt_continuum_fit_npy = 'continuum_fit_npy'
+    # continuum fit metadata
+    opt_continuum_fit_metadata_npy = 'continuum_fit_metadata_npy'
     # total weight and weighted delta_t values
     opt_total_delta_t = 'total_delta_t_npy'
     # goodness-of-fit for QSO continua, as a function of signal-to-noise ratio.
@@ -95,6 +97,7 @@ class Settings():
         value_sigma_sq_lss = '../../data/Sigma_sq_LSS.txt'
         value_weight_eta = '../../data/Weight_eta_func.txt'
         value_continuum_fit_npy = '../../data/continuum_fit.npy'
+        value_continuum_fit_metadata_npy = '../../data/continuum_fit_metadata.npy'
         value_total_delta_t_npy = '../../data/total_delta_t.npy'
         value_fit_snr_stats_npy = '../../data/fit_snr_stats.npy'
 
@@ -131,6 +134,8 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_sigma_sq_lss, value_sigma_sq_lss)
         self.config_parser.set(self.section_file_paths, self.opt_weight_eta, value_weight_eta)
         self.config_parser.set(self.section_file_paths, self.opt_continuum_fit_npy, value_continuum_fit_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_continuum_fit_metadata_npy,
+                               value_continuum_fit_metadata_npy)
         self.config_parser.set(self.section_file_paths, self.opt_total_delta_t, value_total_delta_t_npy)
         self.config_parser.set(self.section_file_paths, self.opt_fit_snr_stats_npy, value_fit_snr_stats_npy)
 
@@ -201,6 +206,9 @@ class Settings():
 
     def get_continuum_fit_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_continuum_fit_npy)
+
+    def get_continuum_fit_metadata_npy(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_continuum_fit_metadata_npy)
 
     def get_total_delta_t(self):
         return self.config_parser.get(self.section_file_paths, self.opt_total_delta_t)

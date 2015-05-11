@@ -20,15 +20,17 @@ class NpSpectrumContainer(object):
         self.max_wavelength_count = max_wavelength_count
         if filename:
             mode = 'r' if readonly else 'w+'
+            if readonly:
+                existing_file_num_spectra = os.path.getsize(filename) // (NUM_FIELDS * self.max_wavelength_count * 8)
+                if num_spectra != -1:
+                    assert num_spectra == existing_file_num_spectra
+                else:
+                    num_spectra = existing_file_num_spectra
             self.np_array = np.memmap(filename, 'f8', mode=mode,
                                       shape=(num_spectra, NUM_FIELDS, self.max_wavelength_count))
-            if readonly:
-                self.num_spectra = os.path.getsize(filename) // (NUM_FIELDS * self.max_wavelength_count * 8)
-                if num_spectra != -1:
-                    assert self.num_spectra == num_spectra
         else:
             self.np_array = np.ndarray(shape=(num_spectra, NUM_FIELDS, self.max_wavelength_count))
-            self.num_spectra = num_spectra
+        self.num_spectra = num_spectra
 
     def get_wavelength(self, n):
         return self._get_array(n, 0)
@@ -63,6 +65,10 @@ class NpSpectrumContainer(object):
 
     def as_np_array(self):
         return self.np_array
+
+    def as_object(self):
+        pass
+
 
     @classmethod
     def from_np_array(cls, np_array, readonly):
