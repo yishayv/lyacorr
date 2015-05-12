@@ -1,5 +1,5 @@
-from hdf5_spectrum_container import Hdf5SpectrumContainer
-from qso_data import QSORecord, QSOData
+from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
+from data_access.qso_data import QSORecord, QSOData
 
 MAX_WAVELENGTH_COUNT = 4992
 

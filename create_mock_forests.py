@@ -3,10 +3,10 @@ import cProfile
 import numpy as np
 import astropy.table as table
 
-from hdf5_spectrum_container import Hdf5SpectrumContainer
+from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 import common_settings
-from qso_data import QSORecord
-import comoving_distance
+from data_access.qso_data import QSORecord
+from physics_functions import comoving_distance
 import mock_core_with_shell
 import continuum_fit_pca
 

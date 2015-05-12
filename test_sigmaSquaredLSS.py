@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-import pixel_weight_coefficients
+from physics_functions import pixel_weight_coefficients
 
 
 class TestSigmaSquaredLSS(TestCase):

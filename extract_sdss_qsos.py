@@ -5,10 +5,9 @@ import numpy as np
 import astropy.table as table
 import astropy.units as u
 
-import read_spectrum_fits
-from qso_data import QSORecord
-from read_spectrum_fits import QSO_fields_dict
+from data_access.read_spectrum_fits import QSO_fields_dict
 import common_settings
+from data_access import read_spectrum_fits
 
 
 settings = common_settings.Settings()

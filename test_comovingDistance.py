@@ -1,10 +1,10 @@
 from unittest import TestCase
 
 import numpy as np
-
-import comoving_distance
 from astropy.cosmology import Planck13
 import astropy.units as u
+
+from physics_functions import comoving_distance
 
 class TestComovingDistance(TestCase):
     def test_fast_comoving_distance(self):

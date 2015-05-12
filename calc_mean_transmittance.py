@@ -4,17 +4,18 @@ import pprint
 import numpy as np
 from scipy import interpolate
 
+from data_access import read_spectrum_hdf5
+
 import mean_flux
 from continuum_fit_pca import ContinuumFitContainerFiles, ContinuumFitPCA
 from mpi_accumulate import accumulate_over_spectra, comm
-import read_spectrum_hdf5
 import common_settings
-from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
-from qso_data import QSOData
-import pixel_weight_coefficients
+from data_access.numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
+from data_access.qso_data import QSOData
+from physics_functions import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 from mpi_helper import l_print_no_barrier
-from deredden_func import deredden_spectrum
+from physics_functions.deredden_func import deredden_spectrum
 
 
 lya_center = 1215.67
@@ -222,7 +223,7 @@ def delta_transmittance_chunk(qso_record_table):
         index = qso_spec_obj.qso_rec.index
         ar_fit_spectrum = continuum_fit_file.get_flux(index)
 
-        lya_forest_transmittance = qso_transmittance(qso_spec_obj,ar_fit_spectrum)
+        lya_forest_transmittance = qso_transmittance(qso_spec_obj, ar_fit_spectrum)
         ar_z = lya_forest_transmittance.ar_z
         if ar_z.size:
             # prepare the mean flux for the z range of this QSO

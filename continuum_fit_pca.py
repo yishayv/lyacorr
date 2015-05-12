@@ -8,7 +8,7 @@ import lmfit
 import astropy.table as table
 
 import common_settings
-from numpy_spectrum_container import NpSpectrumContainer
+from data_access.numpy_spectrum_container import NpSpectrumContainer
 
 
 settings = common_settings.Settings()

@@ -12,10 +12,10 @@ from astropy import table
 from mpi4py import MPI
 
 import common_settings
-from read_spectrum_fits import QSORecord
-import comoving_distance
+from data_access.read_spectrum_fits import QSORecord
+from physics_functions import comoving_distance
 import calc_pixel_pairs
-from numpy_spectrum_container import NpSpectrumContainer
+from data_access.numpy_spectrum_container import NpSpectrumContainer
 import bins_2d
 import mpi_helper
 

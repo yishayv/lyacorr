@@ -1,15 +1,16 @@
 import itertools
-import random
+
 import cProfile
 
 import numpy as np
 import astropy.table as table
-from pixel_flags import FlagStats
 
-import read_spectrum_fits
-from hdf5_spectrum_container import Hdf5SpectrumContainer
+from data_access import read_spectrum_fits
+
+from pixel_flags import FlagStats
+from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 import common_settings
-from qso_data import QSORecord, QSOData
+from data_access.qso_data import QSOData
 
 
 MAX_SPECTRA = 220000

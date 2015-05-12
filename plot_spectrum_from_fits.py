@@ -7,7 +7,7 @@ from scipy import signal
 # from astropy.convolution import convolve as ap_convolve, Gaussian1DKernel
 import weighted
 
-import read_spectrum_fits
+from data_access import read_spectrum_fits
 import common_settings
 import continuum_fit_pca
 import spectrum
@@ -15,7 +15,7 @@ import qso_line_mask
 import continuum_fit
 import calc_mean_transmittance
 import mean_flux
-from deredden_func import deredden_spectrum
+from physics_functions.deredden_func import deredden_spectrum
 
 i = 834
 

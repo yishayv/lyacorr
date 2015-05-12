@@ -8,7 +8,7 @@ import astropy.table as table
 
 import common_settings
 from pixel_flags import PixelFlags
-from qso_data import QSORecord, QSOData
+from data_access.qso_data import QSORecord, QSOData
 
 
 settings = common_settings.Settings()

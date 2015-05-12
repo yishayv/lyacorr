@@ -7,10 +7,10 @@ from mpi4py import MPI
 import mean_flux
 from continuum_fit_pca import ContinuumFitPCA, ContinuumFitContainer, ContinuumFitContainerFiles
 from mpi_accumulate import accumulate_over_spectra
-import read_spectrum_hdf5
+from data_access import read_spectrum_hdf5
 import common_settings
 from mpi_helper import l_print_no_barrier
-from deredden_func import deredden_spectrum
+from physics_functions.deredden_func import deredden_spectrum
 
 
 MAX_WAVELENGTH_COUNT = 4992

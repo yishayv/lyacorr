@@ -3,7 +3,7 @@ import numpy as np
 import common_settings
 import bins_2d
 from flux_accumulator import AccumulatorBase
-from read_spectrum_numpy import NpSpectrumContainer
+from data_access.numpy_spectrum_container import NpSpectrumContainer
 import bin_pixel_pairs
 
 NUM_BINS_X = 50
