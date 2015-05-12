@@ -57,8 +57,7 @@ class ContinuumAccumulator:
 
 def do_continuum_fit_chunk(qso_record_table):
     start_offset = qso_record_table[0]['index']
-    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5(),
-                                                     table_offset=start_offset)
+    spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5())
     num_spectra = len(qso_record_table)
     continuum_chunk = ContinuumFitContainer(num_spectra)
 
@@ -67,9 +66,9 @@ def do_continuum_fit_chunk(qso_record_table):
     # ignore values with less than 20 sample points
     ar_z_mean_flux, ar_mean_flux = m.get_low_pass_mean(20)
 
-    n = 0
-    for i in qso_record_table:
-        current_qso_data = spectra.return_spectrum(i['index'])
+    for n in xrange(len(qso_record_table)):
+        current_qso_data = spectra.return_spectrum(n)
+        current_qso_index = current_qso_data.qso_rec.index
         ar_wavelength = current_qso_data.ar_wavelength
         ar_flux = current_qso_data.ar_flux
         ar_ivar = current_qso_data.ar_ivar
@@ -100,9 +99,7 @@ def do_continuum_fit_chunk(qso_record_table):
 
         stats['accepted'] += 1
 
-        n += 1
-
-    l_print_no_barrier("chunk n =", n, "offset =", start_offset)
+    l_print_no_barrier("offset =", start_offset)
     return continuum_chunk
 
 

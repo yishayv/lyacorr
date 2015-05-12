@@ -5,7 +5,7 @@ import numpy as np
 from scipy import interpolate
 
 import mean_flux
-import continuum_fit_pca
+from continuum_fit_pca import ContinuumFitContainerFiles, ContinuumFitPCA
 from mpi_accumulate import accumulate_over_spectra, comm
 import read_spectrum_hdf5
 import common_settings
@@ -22,7 +22,7 @@ lya_center = 1215.67
 settings = common_settings.Settings()
 force_single_process = settings.get_single_process()
 fit_pca_files = settings.get_pca_continuum_tables()
-fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
+fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (1.9, 3.5, 0.0001)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
@@ -179,15 +179,14 @@ def qso_transmittance_binned(qso_spec_obj, ar_fit_spectrum):
 
 
 def mean_transmittance_chunk(qso_record_table):
-    start_offset = qso_record_table[0]['index']
     spectra = read_spectrum_hdf5.SpectraWithMetadata(qso_record_table, settings.get_qso_spectra_hdf5())
-    continuum_fit_file = NpSpectrumContainer(True, filename=settings.get_continuum_fit_npy())
+    continuum_fit_file = ContinuumFitContainerFiles(False)
 
     m = mean_flux.MeanFlux(np.arange(*z_range))
-    for i in qso_record_table:
-        index = i['index']
-        qso_spec_obj = spectra.return_spectrum(index - start_offset)
-        ar_fit_spectrum = continuum_fit_file.get_flux(index - start_offset)
+    for n in xrange(len(qso_record_table)):
+        qso_spec_obj = spectra.return_spectrum(n)
+        index = qso_spec_obj.qso_rec.index
+        ar_fit_spectrum = continuum_fit_file.get_flux(index)
 
         lya_forest_transmittance_binned = qso_transmittance_binned(qso_spec_obj, ar_fit_spectrum)
         if lya_forest_transmittance_binned.ar_transmittance.size:
@@ -218,10 +217,11 @@ def delta_transmittance_chunk(qso_record_table):
     chunk_weighted_delta_t = 0
     chunk_weight = 0
     n = 0
-    for i in qso_record_table:
-        index = i['index']
-        qso_spec_obj = spectra.return_spectrum(index - start_offset)
-        ar_fit_spectrum = continuum_fit_file.get_flux(index - start_offset)
+    for n in xrange(len(qso_record_table)):
+        qso_spec_obj = spectra.return_spectrum(n)
+        index = qso_spec_obj.qso_rec.index
+        ar_fit_spectrum = continuum_fit_file.get_flux(index)
+
         lya_forest_transmittance = qso_transmittance(qso_spec_obj,ar_fit_spectrum)
         ar_z = lya_forest_transmittance.ar_z
         if ar_z.size:
