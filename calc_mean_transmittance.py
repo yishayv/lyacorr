@@ -267,12 +267,7 @@ def mean_transmittance():
     l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
     l_print_no_barrier(pprint.pformat(stats))
 
-    snr_stats_list = comm.gather(fit_pca.snr_stats)
     if comm.rank == 0:
-        snr_stats = np.zeros_like(snr_stats_list[0])
-        for i in snr_stats_list:
-            snr_stats += i
-        np.save(settings.get_fit_snr_stats(), snr_stats)
         m.save(settings.get_mean_transmittance_npy())
 
 

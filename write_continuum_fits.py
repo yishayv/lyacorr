@@ -9,7 +9,6 @@ from continuum_fit_pca import ContinuumFitPCA, ContinuumFitContainer, ContinuumF
 from mpi_accumulate import accumulate_over_spectra
 import read_spectrum_hdf5
 import common_settings
-from numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from mpi_helper import l_print_no_barrier
 from deredden_func import deredden_spectrum
 
@@ -37,12 +36,15 @@ class ContinuumAccumulator:
                 result_enum, ar_qso_indices_list, object_all_results):
 
             continua = ContinuumFitContainer.from_np_array_and_object(ar_continua, object_result)
-            for i in xrange(continua.num_spectra):
-                n = ar_qso_indices[i]
-                self.continuum_fit_container.set_wavelength(n, continua.get_wavelength(i))
-                self.continuum_fit_container.set_flux(n, continua.get_flux(i))
+            # array based mpi gather returns zeros at the end of the global array.
+            # use the fact that the object based gather returns the correct number of elements:
+            num_spectra = len(object_result)
+            for n in xrange(num_spectra):
+                index = ar_qso_indices[n]
+                self.continuum_fit_container.set_wavelength(index, continua.get_wavelength(n))
+                self.continuum_fit_container.set_flux(index, continua.get_flux(n))
                 # TODO: refactor
-                self.continuum_fit_container.copy_metadata(n, continua.get_metadata(i))
+                self.continuum_fit_container.copy_metadata(index, continua.get_metadata(n))
                 self.n += 1
             l_print_no_barrier("n =", self.n)
         l_print_no_barrier("n =", self.n)
@@ -105,3 +107,10 @@ def do_continuum_fit_chunk(qso_record_table):
 
 accumulate_over_spectra(do_continuum_fit_chunk, ContinuumAccumulator)
 l_print_no_barrier(pprint.pformat(stats))
+
+snr_stats_list = comm.gather(fit_pca.snr_stats)
+if comm.rank == 0:
+    snr_stats = np.zeros_like(snr_stats_list[0])
+    for i in snr_stats_list:
+        snr_stats += i
+    np.save(settings.get_fit_snr_stats(), snr_stats)
