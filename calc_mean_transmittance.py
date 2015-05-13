@@ -7,6 +7,7 @@ from scipy import interpolate
 from data_access import read_spectrum_hdf5
 
 import mean_flux
+import median_flux
 from continuum_fit_pca import ContinuumFitContainerFiles, ContinuumFitPCA
 from mpi_accumulate import accumulate_over_spectra, comm
 import common_settings
@@ -24,7 +25,7 @@ settings = common_settings.Settings()
 force_single_process = settings.get_single_process()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
-z_range = (1.9, 3.5, 0.0001)
+z_range = (1.9, 3.5, 0.0002)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
@@ -54,7 +55,7 @@ class DeltaTransmittanceAccumulator:
         return self.return_result()
 
     def return_result(self):
-        return self.n
+        return self.n, None
 
     def finalize(self):
         pass
@@ -63,16 +64,19 @@ class DeltaTransmittanceAccumulator:
 class MeanTransmittanceAccumulator:
     def __init__(self, num_spectra):
         self.m = mean_flux.MeanFlux(np.arange(*z_range))
+        self.med = median_flux.MedianFlux(np.arange(*z_range))
 
     def accumulate(self, result_enum, qso_record_table, object_results):
-        for ar_m in result_enum:
+        for ar_m_med in result_enum:
             l_print_no_barrier("--- mean accumulate ----")
-            m = mean_flux.MeanFlux.from_np_array(ar_m)
+            m = mean_flux.MeanFlux.from_np_array(ar_m_med[0:4])
             self.m.merge(m)
+            med = median_flux.MedianFlux.from_np_array(ar_m_med[4:])
+            self.med.merge(med)
         return self.return_result()
 
     def return_result(self):
-        return self.m
+        return self.m, self.med
 
     def finalize(self):
         pass
@@ -184,6 +188,7 @@ def mean_transmittance_chunk(qso_record_table):
     continuum_fit_file = ContinuumFitContainerFiles(False)
 
     m = mean_flux.MeanFlux(np.arange(*z_range))
+    med = median_flux.MedianFlux(np.arange(*z_range))
     for n in xrange(len(qso_record_table)):
         qso_spec_obj = spectra.return_spectrum(n)
         index = qso_spec_obj.qso_rec.index
@@ -194,10 +199,13 @@ def mean_transmittance_chunk(qso_record_table):
             m.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
                                   lya_forest_transmittance_binned.ar_mask,
                                   lya_forest_transmittance_binned.ar_ivar)
+            med.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
+                                    lya_forest_transmittance_binned.ar_mask,
+                                    lya_forest_transmittance_binned.ar_ivar)
             mean_transmittance_chunk.num_spec += 1
 
     l_print_no_barrier("finished chunk", mean_transmittance_chunk.num_spec)
-    return m
+    return np.vstack((m.as_np_array(), med.as_np_array())), None
 
 
 def delta_transmittance_chunk(qso_record_table):
@@ -212,7 +220,7 @@ def delta_transmittance_chunk(qso_record_table):
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
     # for debugging with a small data set:
     # ignore values with less than 20 sample points
-    ar_z_mean_flux, ar_mean_flux = m.get_low_pass_mean(20)
+    ar_z_mean_flux, ar_mean_flux = m.get_weighted_mean_with_minimum_count(20)
 
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     chunk_weighted_delta_t = 0
@@ -257,19 +265,20 @@ def delta_transmittance_chunk(qso_record_table):
         n += 1
 
     l_print_no_barrier("chunk n =", n, "offset =", start_offset)
-    return delta_t
+    return delta_t.as_np_array(), None
 
 
 mean_transmittance_chunk.num_spec = 0
 
 
 def mean_transmittance():
-    m = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
+    m, med = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
     l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
     l_print_no_barrier(pprint.pformat(stats))
 
     if comm.rank == 0:
         m.save(settings.get_mean_transmittance_npy())
+        med.save(settings.get_median_transmittance_npy())
 
 
 def delta_transmittance():

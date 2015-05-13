@@ -102,7 +102,7 @@ def do_continuum_fit_chunk(qso_record_table):
         stats['accepted'] += 1
 
     l_print_no_barrier("offset =", start_offset)
-    return continuum_chunk
+    return continuum_chunk.as_np_array(), continuum_chunk.as_object()
 
 
 accumulate_over_spectra(do_continuum_fit_chunk, ContinuumAccumulator)
