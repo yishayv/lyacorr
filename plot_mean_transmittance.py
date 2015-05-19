@@ -18,7 +18,7 @@ def do_plot():
     ar_z_med, ar_unweighted_median = med.get_weighted_median_with_minimum_count(1, weighted=False)
     low_pass_mean = m.get_low_pass_mean()[1]
 
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(14, 10))
     ax1 = fig.add_subplot(2, 1, 1)
     ax2 = ax1.twiny()
     ax1.plot(ar_z, mean)
