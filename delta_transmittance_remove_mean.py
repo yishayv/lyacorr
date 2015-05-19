@@ -46,17 +46,17 @@ def delta_transmittance_remove_mean():
 
     n = 0
 
+    # save intermediate result (the mean delta_t before removal)
+    np.save(settings.get_mean_delta_t_npy(), np.vstack((ar_z,
+                                                        ar_delta_t_weighted, ar_ivar_total,
+                                                        ar_delta_t_sum, ar_delta_t_count)))
+
     # remove nan values (redshift bins with a total weight of 0)
     mask = ar_ivar_total != 0
-    ar_z_no_nan = ar_z[mask]
-    ar_ivar_total_no_nan = ar_ivar_total[mask]
-    ar_delta_t_weighted_no_nan = ar_delta_t_weighted[mask]
 
     # calculate the mean of the delta transmittance per redshift bin.
-    ar_weighted_mean_no_nan = ar_delta_t_weighted_no_nan / ar_ivar_total_no_nan
-
-    # save intermediate result (the mean delta_t before removal)
-    np.save(settings.get_mean_delta_t_npy(), np.vstack((ar_z_no_nan, ar_weighted_mean_no_nan)))
+    ar_weighted_mean_no_nan = ar_delta_t_weighted[mask] / ar_ivar_total[mask]
+    ar_z_no_nan = ar_z[mask]
 
     empty_array = np.array([])
 
