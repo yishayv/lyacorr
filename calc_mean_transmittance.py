@@ -5,7 +5,6 @@ import numpy as np
 from scipy import interpolate
 
 from data_access import read_spectrum_hdf5
-
 import mean_flux
 import median_flux
 from continuum_fit_pca import ContinuumFitContainerFiles, ContinuumFitPCA
@@ -34,8 +33,8 @@ stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted
 class DeltaTransmittanceAccumulator:
     def __init__(self, num_spectra):
         self.num_spectra = num_spectra
-        self.delta_t_file = NpSpectrumContainer(False, self.num_spectra, settings.get_delta_t_npy(),
-                                                max_wavelength_count=1000)
+        self.delta_t_file = NpSpectrumContainer(False, num_spectra=self.num_spectra,
+                                                filename=settings.get_delta_t_npy(), max_wavelength_count=1000)
         self.n = 0
         # initialize file
         self.delta_t_file.zero()
@@ -214,7 +213,7 @@ def delta_transmittance_chunk(qso_record_table):
     continuum_fit_file = NpSpectrumContainer(True, filename=settings.get_continuum_fit_npy())
 
     num_spectra = len(qso_record_table)
-    delta_t = NpSpectrumContainer(False, num_spectra)
+    delta_t = NpSpectrumContainer(False, num_spectra=num_spectra)
     # warning: np.ndarray is not initialized by default. zeroing manually.
     delta_t.zero()
     m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
@@ -285,3 +284,4 @@ def delta_transmittance():
     accumulate_over_spectra(delta_transmittance_chunk,
                             DeltaTransmittanceAccumulator)
     l_print_no_barrier(pprint.pformat(stats))
+

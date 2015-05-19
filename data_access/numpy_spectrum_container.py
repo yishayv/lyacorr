@@ -13,13 +13,14 @@ class NpSpectrumContainer(object):
     Holds spectra in a numpy memory mapped file, or a memory based array
     """
 
-    def __init__(self, readonly, num_spectra=-1, filename=None, max_wavelength_count=MAX_WAVELENGTH_COUNT):
+    def __init__(self, readonly, create_new=True, num_spectra=-1, filename=None,
+                 max_wavelength_count=MAX_WAVELENGTH_COUNT):
         assert num_spectra <= MAX_SPECTRA
         self.filename = filename
         self.readonly = readonly
         self.max_wavelength_count = max_wavelength_count
         if filename:
-            mode = 'r' if readonly else 'w+'
+            mode = 'r' if readonly else 'w+' if create_new else 'r+'
             if readonly:
                 existing_file_num_spectra = os.path.getsize(filename) // (NUM_FIELDS * self.max_wavelength_count * 8)
                 if num_spectra != -1:
@@ -69,7 +70,6 @@ class NpSpectrumContainer(object):
     def as_object(self):
         pass
 
-
     @classmethod
     def from_np_array(cls, np_array, readonly):
         assert np_array.ndim == 3 & np_array.shape[1] == NUM_FIELDS
@@ -77,7 +77,7 @@ class NpSpectrumContainer(object):
         max_wavelength_count = np_array.shape[2]
         # create a similar object with an empty array
         # this might not be the best way to do that, but it saves adding an argument and extra logic to the initializer.
-        new_obj = cls(readonly, 0)
+        new_obj = cls(readonly=readonly, create_new=False, num_spectra=0)
         # replace the empty array with the one supplied as an argument.
         new_obj.np_array = np_array
         # update instance variables.

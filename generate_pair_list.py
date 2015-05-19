@@ -82,7 +82,7 @@ def profile_main():
 
     # initialize data sources
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
-    delta_t_file = NpSpectrumContainer(True, len(qso_record_table), settings.get_delta_t_npy(),
+    delta_t_file = NpSpectrumContainer(True, num_spectra=len(qso_record_table), filename=settings.get_delta_t_npy(),
                                        max_wavelength_count=1000)
 
     # prepare data for quicker access
