@@ -1,6 +1,7 @@
 import itertools
 import pprint
 import os.path
+import cProfile
 
 import numpy as np
 from mpi4py import MPI
@@ -119,12 +120,20 @@ def do_continuum_fit_chunk(qso_record_table):
     return continuum_chunk.as_np_array(), continuum_chunk.as_object()
 
 
-accumulate_over_spectra(do_continuum_fit_chunk, ContinuumAccumulator)
-l_print_no_barrier(pprint.pformat(stats))
+def profile_main():
+    accumulate_over_spectra(do_continuum_fit_chunk, ContinuumAccumulator)
+    l_print_no_barrier(pprint.pformat(stats))
 
-snr_stats_list = comm.gather(fit_pca.snr_stats)
-if comm.rank == 0:
-    snr_stats = np.zeros_like(snr_stats_list[0])
-    for i in snr_stats_list:
-        snr_stats += i
-    np.save(settings.get_fit_snr_stats(), snr_stats)
+    snr_stats_list = comm.gather(fit_pca.snr_stats)
+    if comm.rank == 0:
+        snr_stats = np.zeros_like(snr_stats_list[0])
+        for i in snr_stats_list:
+            snr_stats += i
+        np.save(settings.get_fit_snr_stats(), snr_stats)
+
+
+if settings.get_profile():
+    cProfile.runctx('profile_main()', globals(), locals(), filename='write_continuum_fits.prof', sort=2)
+else:
+    profile_main()
+

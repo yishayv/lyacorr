@@ -274,6 +274,7 @@ def mean_transmittance():
     m, med = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
     l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
     l_print_no_barrier(pprint.pformat(stats))
+    comm.Barrier()
 
     if comm.rank == 0:
         m.save(settings.get_mean_transmittance_npy())
@@ -281,6 +282,7 @@ def mean_transmittance():
 
 
 def delta_transmittance():
+    comm.Barrier()
     accumulate_over_spectra(delta_transmittance_chunk,
                             DeltaTransmittanceAccumulator)
     l_print_no_barrier(pprint.pformat(stats))
