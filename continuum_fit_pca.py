@@ -214,12 +214,18 @@ class ContinuumFitPCA:
 
         return ar_full_fit, self.ar_wavelength_bins, normalization_factor, is_good_fit
 
-    def fit(self, ar_wavelength_rest, ar_flux, ar_ivar, qso_redshift, boundary_value=None):
+    def fit(self, ar_wavelength_rest, ar_flux, ar_ivar, qso_redshift, boundary_value=None,
+            mean_flux_constraint_func=None):
         ar_flux_rebinned, ar_ivar_rebinned = self.rebin_full_spectrum(ar_flux, ar_ivar, ar_wavelength_rest)
 
         # find the theoretical mean flux
         ar_z_rebinned = self.ar_wavelength_bins * (1 + qso_redshift) / self.LY_A_PEAK_BINNED - 1
-        ar_mean_flux_constraint = self.mean_flux_constraint(ar_z_rebinned)
+
+        # use standard mean transmission flux, unless specified otherwise.
+        if not mean_flux_constraint_func:
+            ar_mean_flux_constraint = self.mean_flux_constraint(ar_z_rebinned)
+        else:
+            ar_mean_flux_constraint = mean_flux_constraint_func(ar_z_rebinned)
 
         binned_spectrum, ar_wavelength_rest_binned, normalization_factor, is_good_fit = \
             self.fit_binned(ar_flux_rebinned, ar_ivar_rebinned, ar_mean_flux_constraint, qso_redshift)
@@ -329,7 +335,7 @@ class ContinuumFitContainer(object):
     def get_wavelength(self, n):
         return self.np_spectrum.get_wavelength(n)
 
-    def get_flux(self,n):
+    def get_flux(self, n):
         return self.np_spectrum.get_flux(n)
 
     def set_wavelength(self, n, data):

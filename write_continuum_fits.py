@@ -1,16 +1,18 @@
 import itertools
 import pprint
+import os.path
 
 import numpy as np
 from mpi4py import MPI
 
-import mean_flux
+import median_flux
 from continuum_fit_pca import ContinuumFitPCA, ContinuumFitContainer, ContinuumFitContainerFiles
 from mpi_accumulate import accumulate_over_spectra
 from data_access import read_spectrum_hdf5
 import common_settings
 from mpi_helper import l_print_no_barrier
 from physics_functions.deredden_func import deredden_spectrum
+from delta_transmittance_remove_mean import get_weighted_mean_from_file
 
 
 MAX_WAVELENGTH_COUNT = 4992
@@ -63,10 +65,20 @@ def do_continuum_fit_chunk(qso_record_table):
     num_spectra = len(qso_record_table)
     continuum_chunk = ContinuumFitContainer(num_spectra)
 
-    m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
-    # for debugging with a small data set:
-    # ignore values with less than 20 sample points
-    ar_z_mean_flux, ar_mean_flux = m.get_low_pass_mean(20)
+    use_existing_mean_transmittance = os.path.exists(settings.get_median_transmittance_npy())
+
+    median_flux_func = False
+    if use_existing_mean_transmittance:
+        # m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
+        med = median_flux.MedianFlux.from_file(settings.get_median_transmittance_npy())
+        # for debugging with a small data set:
+        # ignore values with less than 20 sample points
+        # ar_z_mean_flux, ar_mean_flux = m.get_weighted_mean_with_minimum_count(20)
+        ar_z_mean_flux, ar_mean_flux = med.get_weighted_median_with_minimum_count(20)
+        median_flux_func = lambda (ar_z): np.interp(ar_z, ar_z_mean_flux, ar_mean_flux)
+        ar_z_mean_correction, ar_mean_correction = get_weighted_mean_from_file()
+        median_flux_correction_func = lambda (ar_z): median_flux_func(ar_z) * (
+            1 - np.interp(ar_z, ar_z_mean_correction, ar_mean_correction))
 
     for n in xrange(len(qso_record_table)):
         current_qso_data = spectra.return_spectrum(n)
@@ -88,7 +100,8 @@ def do_continuum_fit_chunk(qso_record_table):
             continue
 
         fit_spectrum, fit_normalization_factor, is_good_fit = \
-            fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan)
+            fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan,
+                        mean_flux_constraint_func=median_flux_correction_func)
 
         if not is_good_fit:
             stats['bad_fit'] += 1

@@ -5,9 +5,11 @@ import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 from mpi_accumulate import comm
 
+
 settings = common_settings.Settings()
 
-def delta_transmittance_update_mean(delta_t_file):
+
+def update_mean(delta_t_file):
     n = 0
     ar_z = np.arange(1.9, 3.3, 0.001)
     ar_delta_t_sum = np.zeros_like(ar_z)
@@ -35,7 +37,7 @@ def delta_transmittance_update_mean(delta_t_file):
     return ar_delta_t_weighted, ar_ivar_total, ar_z, n
 
 
-def delta_transmittance_remove_mean():
+def remove_mean():
     """
     Remove the mean of the delta transmittance per redshift bin.
     The change is made in-place.
@@ -81,5 +83,12 @@ def delta_transmittance_remove_mean():
             delta_t_file.set_ivar(i, empty_array)
 
 
+def get_weighted_mean_from_file():
+    ar_mean_delta_t_table = np.load(settings.get_mean_delta_t_npy())
+    ar_z, ar_delta_t_weighted, ar_ivar_total, ar_delta_t_sum, ar_delta_t_count = np.vsplit(ar_mean_delta_t_table,5)
+    mask = ar_ivar_total != 0
+
+    return ar_z[mask], ar_delta_t_weighted[mask]
+
 if __name__ == '__main__':
-    delta_transmittance_remove_mean()
+    remove_mean()
