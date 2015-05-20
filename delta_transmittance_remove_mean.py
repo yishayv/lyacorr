@@ -54,7 +54,7 @@ def remove_mean():
     delta_t_file = NpSpectrumContainer(readonly=False, create_new=False, num_spectra=len(qso_record_table),
                                        filename=settings.get_delta_t_npy(), max_wavelength_count=1000)
 
-    ar_delta_t_weighted, ar_ivar_total, ar_z, n = delta_transmittance_update_mean(delta_t_file)
+    ar_delta_t_weighted, ar_ivar_total, ar_z, n = update_mean(delta_t_file)
 
     # remove nan values (redshift bins with a total weight of 0)
     mask = ar_ivar_total != 0
@@ -88,7 +88,7 @@ def get_weighted_mean_from_file():
     ar_z, ar_delta_t_weighted, ar_ivar_total, ar_delta_t_sum, ar_delta_t_count = np.vsplit(ar_mean_delta_t_table,5)
     mask = ar_ivar_total != 0
 
-    return ar_z[mask], ar_delta_t_weighted[mask]
+    return ar_z[mask], ar_delta_t_weighted[mask] / ar_ivar_total[mask]
 
 if __name__ == '__main__':
     remove_mean()
