@@ -257,10 +257,6 @@ def delta_transmittance_chunk(qso_record_table):
             delta_t.set_wavelength(n, finite_z)
             delta_t.set_flux(n, finite_delta_t)
             delta_t.set_ivar(n, finite_ivar)
-
-            # accumulate the total weight so that we can zero out the weight mean of delta_t.
-            chunk_weight += finite_ivar.sum()
-            chunk_weighted_delta_t += (finite_delta_t * finite_ivar).sum()
         else:
             # empty record
             pass
@@ -273,7 +269,7 @@ def delta_transmittance_chunk(qso_record_table):
 mean_transmittance_chunk.num_spec = 0
 
 
-def mean_transmittance():
+def calc_mean_transmittance():
     m, med = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
     l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
     l_print_no_barrier(pprint.pformat(stats))
@@ -284,7 +280,7 @@ def mean_transmittance():
         med.save(settings.get_median_transmittance_npy())
 
 
-def delta_transmittance():
+def calc_delta_transmittance():
     comm.Barrier()
     accumulate_over_spectra(delta_transmittance_chunk,
                             DeltaTransmittanceAccumulator)

@@ -7,8 +7,8 @@ settings = common_settings.Settings()
 
 
 def profile_main():
-    calc_mean_transmittance.mean_transmittance()
-    calc_mean_transmittance.delta_transmittance()
+    calc_mean_transmittance.calc_mean_transmittance()
+    calc_mean_transmittance.calc_delta_transmittance()
 
 
 if settings.get_profile():

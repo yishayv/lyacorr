@@ -57,13 +57,6 @@ class PixelPairs:
         self.cd = cd
         self.radius = radius
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
-        if settings.get_enable_mean_correction():
-            weighted_delta_t = np.load(settings.get_total_delta_t())
-            total_weight = weighted_delta_t[0]
-            total_weighted_delta_t = weighted_delta_t[1]
-            self.mean_delta_t = total_weighted_delta_t / total_weight
-        else:
-            self.mean_delta_t = 0
 
     def find_nearby_pixels2(self, accumulator, qso_angle,
                             spec1_index, spec2_index, delta_t_file):
@@ -93,10 +86,10 @@ class PixelPairs:
         assert spec2_z.min() > 0, "z out of range: {0}, spec index {1}".format(spec2_z.min(), spec2_index)
 
         # Note: throughout this method, "flux" means delta_f
-        spec1_flux = delta_t_file.get_flux(spec1_index) - self.mean_delta_t
+        spec1_flux = delta_t_file.get_flux(spec1_index)
         spec1_distances = self.cd.fast_comoving_distance(spec1_z)
 
-        spec2_flux = delta_t_file.get_flux(spec2_index) - self.mean_delta_t
+        spec2_flux = delta_t_file.get_flux(spec2_index)
         # print spec2_flux
         spec2_distances = self.cd.fast_comoving_distance(spec2_z)
 

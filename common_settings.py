@@ -42,8 +42,6 @@ class Settings():
     opt_continuum_fit_npy = 'continuum_fit_npy'
     # continuum fit metadata
     opt_continuum_fit_metadata_npy = 'continuum_fit_metadata_npy'
-    # total weight and weighted delta_t values
-    opt_total_delta_t = 'total_delta_t_npy'
     # goodness-of-fit for QSO continua, as a function of signal-to-noise ratio.
     opt_fit_snr_stats_npy = 'fit_snr_stats_npy'
     # mean delta_t per redshift
@@ -111,7 +109,6 @@ class Settings():
         value_profile = False
 
         value_min_continuum_threshold = 0.5
-        value_mean_correction = False
         value_min_forest_redshift = 1.96
         value_max_forest_redshift = 3.2
         value_continuum_fit_method = 'dot_product'
@@ -155,8 +152,6 @@ class Settings():
         self.config_parser.add_section(self.section_data_processing)
         self.config_parser.set(self.section_data_processing, self.opt_min_continuum_threshold,
                                str(value_min_continuum_threshold))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_mean_correction,
-                               bool(value_mean_correction))
         self.config_parser.set(self.section_data_processing, self.opt_min_forest_redshift,
                                float(value_min_forest_redshift))
         self.config_parser.set(self.section_data_processing, self.opt_max_forest_redshift,
@@ -243,9 +238,6 @@ class Settings():
 
     def get_min_continuum_threshold(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)
-
-    def get_enable_mean_correction(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mean_correction)
 
     def get_min_forest_redshift(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_min_forest_redshift)

@@ -2,6 +2,7 @@ import numpy as np
 from scipy import signal
 import weighted as weighted_module
 
+
 class MedianTransmittance:
     def __init__(self, ar_z, flux_res=1000):
         self.ar_z = np.copy(ar_z)
