@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 
 import common_settings
-import mean_flux
-import median_flux
+import mean_transmittance
+import median_transmittance
 
 lya_center = 1215.67
 
@@ -10,8 +10,8 @@ settings = common_settings.Settings()
 
 
 def do_plot():
-    m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
-    med = median_flux.MedianFlux.from_file(settings.get_median_transmittance_npy())
+    m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
+    med = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())
 
     ar_z, mean = m.get_weighted_mean_with_minimum_count(1)
     ar_z_med, ar_median = med.get_weighted_median_with_minimum_count(1)

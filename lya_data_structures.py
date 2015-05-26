@@ -1,5 +1,5 @@
 class LyaForestTransmittance:
-    def __init__(self, ar_z, ar_transmittance, ar_pipeline_ivar):
+    def __init__(self, ar_z, ar_transmittance, ar_pipeline_ivar, ar_fit):
         """
         a simple wrapper for holding lya-forest data.
         :type ar_z: np.array
@@ -9,6 +9,7 @@ class LyaForestTransmittance:
         self.ar_z = ar_z
         self.ar_transmittance = ar_transmittance
         self.ar_ivar = ar_pipeline_ivar
+        self.ar_fit = ar_fit
 
 
 class LyaForestTransmittanceBinned:

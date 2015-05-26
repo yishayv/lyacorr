@@ -62,8 +62,6 @@ class Settings():
     section_data_processing = 'DataProcessing'
     # low continuum flux cutoff
     opt_min_continuum_threshold = 'min_continuum_threshold'
-    # enable or disable a 2nd-pass mean flux correction
-    opt_enable_mean_correction = 'enable_mean_correction'
     # minimum forest redshift to use
     opt_min_forest_redshift = 'min_forest_redshift'
     # maximum forest redshift to use

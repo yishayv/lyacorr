@@ -17,10 +17,10 @@ class PixelWeight:
     def eval(self, ar_pipeline_ivar, ar_mean_flux, ar_z):
         assert ar_pipeline_ivar.shape == ar_mean_flux.shape == ar_z.shape
         # equations (15) and (16) in Busca et al. 2013
-        gamma = 3.8 / 2
-        xi_squared = 1 / (ar_pipeline_ivar * ar_mean_flux * self.weight_eta.eval(ar_z)) + \
+        gamma_half = 3.8 / 2
+        xi_squared = 1 / (ar_pipeline_ivar * np.square(ar_mean_flux) * self.weight_eta.eval(ar_z)) + \
             self.sigma_squared_lss.eval(ar_z)
-        weight = (1 + ar_z) ** gamma / xi_squared
+        weight = (1 + ar_z) ** gamma_half / xi_squared
         return weight
 
 

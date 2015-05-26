@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 
 
-class MeanFlux:
+class MeanTransmittance:
     def __init__(self, ar_z):
         self.ar_z = np.copy(ar_z)
         self.ar_total_flux = np.zeros_like(self.ar_z)
@@ -17,7 +17,7 @@ class MeanFlux:
     def merge(self, mean_flux2):
         """
 
-        :type mean_flux2: MeanFlux
+        :type mean_flux2: MeanTransmittance
         """
         self.ar_total_flux += mean_flux2.ar_total_flux
         self.ar_count += mean_flux2.ar_count
@@ -75,7 +75,7 @@ class MeanFlux:
     def from_file(cls, filename):
         """
 
-        :rtype : MeanFlux
+        :rtype : MeanTransmittance
         """
         return cls.load(filename)
 

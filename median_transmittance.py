@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 import weighted as weighted_module
 
-class MedianFlux:
+class MedianTransmittance:
     def __init__(self, ar_z, flux_res=1000):
         self.ar_z = np.copy(ar_z)
         self.ar_flux_bins = np.zeros(shape=(ar_z.size, flux_res))
@@ -28,7 +28,7 @@ class MedianFlux:
     def merge(self, median_flux2):
         """
 
-        :type median_flux2: MedianFlux
+        :type median_flux2: MedianTransmittance
         """
         self.ar_flux_bins += median_flux2.ar_flux_bins
         self.ar_unweighted_flux_bins += median_flux2.ar_unweighted_flux_bins
@@ -89,7 +89,7 @@ class MedianFlux:
     def from_file(cls, filename):
         """
 
-        :rtype : MeanFlux
+        :rtype : MeanTransmittance
         """
         return cls.load(filename)
 

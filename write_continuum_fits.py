@@ -6,7 +6,7 @@ import cProfile
 import numpy as np
 from mpi4py import MPI
 
-import median_flux
+import median_transmittance
 from continuum_fit_pca import ContinuumFitPCA, ContinuumFitContainer, ContinuumFitContainerFiles
 from mpi_accumulate import accumulate_over_spectra
 from data_access import read_spectrum_hdf5
@@ -71,8 +71,8 @@ def do_continuum_fit_chunk(qso_record_table):
 
     median_flux_correction_func = False
     if use_existing_mean_transmittance:
-        # m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
-        med = median_flux.MedianFlux.from_file(settings.get_median_transmittance_npy())
+        # m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
+        med = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())
         # for debugging with a small data set:
         # ignore values with less than 20 sample points
         # ar_z_mean_flux, ar_mean_flux = m.get_weighted_mean_with_minimum_count(20)

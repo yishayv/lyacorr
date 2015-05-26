@@ -14,7 +14,7 @@ import spectrum
 import qso_line_mask
 import continuum_fit
 import calc_mean_transmittance
-import mean_flux
+import mean_transmittance
 from physics_functions.deredden_func import deredden_spectrum
 
 i = 834
@@ -129,7 +129,7 @@ def plot_fits_spectra(spec_sample):
         plt.plot(ar_wavelength, fit_spectrum, color='orange')
 
         if os.path.exists(settings.get_mean_transmittance_npy()):
-            m = mean_flux.MeanFlux.from_file(settings.get_mean_transmittance_npy())
+            m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
             ar_mean_flux_lookup = m.get_weighted_mean()
             ar_z = ar_wavelength / lya_center - 1
             ar_mean_flux_for_z_range = np.interp(ar_z, m.ar_z, ar_mean_flux_lookup)
