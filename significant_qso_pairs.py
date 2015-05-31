@@ -19,3 +19,7 @@ class SignificantQSOPairs:
 
             # find the new minimum, and store it for fast access
             self.current_index_of_minimum = self.ar_values.argmin()
+
+    def save(self, filename):
+        ar = np.vstack((self.ar_qso1, self.ar_qso2, self.ar_values))
+        np.save(filename, ar)

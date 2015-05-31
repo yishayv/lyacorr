@@ -16,8 +16,12 @@ import continuum_fit
 import calc_mean_transmittance
 import mean_transmittance
 from physics_functions.deredden_func import deredden_spectrum
+import sys
 
-i = 834
+i = 233
+
+if len(sys.argv) > 1:
+    i = int(sys.argv[1])
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -72,8 +76,6 @@ def plot_fits_spectra(spec_sample):
         # we assume the wavelength range in the input file is correct
         assert ar_wavelength.size == ar_flux.size
 
-        lya_forest_transmittance = calc_mean_transmittance.qso_transmittance(qso_data_)
-
         # correct extinction:
         ar_flux_correct = deredden_spectrum(ar_wavelength, ar_flux, qso_data_.qso_rec.extinction_g)
 
@@ -82,6 +84,8 @@ def plot_fits_spectra(spec_sample):
         fit_spectrum, fit_normalization_factor, is_good_fit = \
             fit_pca.fit(ar_wavelength_rest, ar_flux_correct, ar_ivar, qso_z)
         print "good fit:", is_good_fit
+
+        lya_forest_transmittance = calc_mean_transmittance.qso_transmittance(qso_data_, fit_spectrum)
 
         # begin power-law fit:
         # for now we have no real error data, so just use '1's:

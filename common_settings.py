@@ -46,6 +46,8 @@ class Settings():
     opt_fit_snr_stats_npy = 'fit_snr_stats_npy'
     # mean delta_t per redshift
     opt_mean_delta_t_npy = 'mean_delta_t_npy'
+    # list of QSO pairs with most significant contribution to the correlation estimator.
+    opt_significant_qso_pairs_npy = 'significant_qso_pairs_npy'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
@@ -102,6 +104,7 @@ class Settings():
         value_total_delta_t_npy = '../../data/total_delta_t.npy'
         value_fit_snr_stats_npy = '../../data/fit_snr_stats.npy'
         value_mean_delta_t_npy = '../../data/mean_delta_t.npy'
+        value_significant_qso_pairs_npy = '../../data/significant_qso_pairs.npy'
 
         value_file_chunk_size = 10000
         value_mpi_num_sub_chunks = 1440
@@ -142,6 +145,8 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_total_delta_t, value_total_delta_t_npy)
         self.config_parser.set(self.section_file_paths, self.opt_fit_snr_stats_npy, value_fit_snr_stats_npy)
         self.config_parser.set(self.section_file_paths, self.opt_mean_delta_t_npy_npy, value_mean_delta_t_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_significant_qso_pairs_npy,
+                               value_significant_qso_pairs_npy)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
@@ -223,6 +228,9 @@ class Settings():
 
     def get_mean_delta_t_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_mean_delta_t_npy)
+
+    def get_significant_qso_pairs_npy(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_significant_qso_pairs_npy)
 
     def get_file_chunk_size(self):
         return self.config_parser.getint(self.section_performance, self.opt_file_chunk_size)

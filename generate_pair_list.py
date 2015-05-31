@@ -71,6 +71,7 @@ class SubChunkHelper:
                 mpi_helper.r_print('total number of pixel pairs in bins:',
                                    self.pair_separation_bins.ar_count.sum().astype(int))
                 self.pair_separation_bins.save(settings.get_estimator_bins())
+                pixel_pairs.significant_qso_pairs.save(settings.get_significant_qso_pairs_npy())
             else:
                 print('no results received.')
 

@@ -5,6 +5,7 @@ import bins_2d
 from flux_accumulator import AccumulatorBase
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 import bin_pixel_pairs
+import significant_qso_pairs
 
 NUM_BINS_X = 50
 NUM_BINS_Y = 50
@@ -57,6 +58,7 @@ class PixelPairs:
         self.cd = cd
         self.radius = radius
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
+        self.significant_qso_pairs = significant_qso_pairs.SignificantQSOPairs()
 
     def find_nearby_pixels2(self, accumulator, qso_angle,
                             spec1_index, spec2_index, delta_t_file):
@@ -204,6 +206,10 @@ class PixelPairs:
         # print ar[:,:,0].max()
         local_bins = bins_2d.Bins2D.from_np_arrays(ar[:, :, 1], ar[:, :, 0], ar[:, :, 2],
                                                    accumulator.get_x_range(), accumulator.get_y_range())
+
+        flux_contribution = np.nanmax(np.abs(local_bins.ar_flux))
+        self.significant_qso_pairs.add_if_larger(spec1_index,spec2_index, flux_contribution)
+
         accumulator += local_bins
         # print accumulator.ar_count.max()
 
