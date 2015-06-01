@@ -19,7 +19,6 @@ from physics_functions.deredden_func import deredden_spectrum
 import sys
 
 i = 233
-global flux_range
 flux_range = None
 
 
@@ -59,6 +58,7 @@ def rolling_weighted_median(ar_data, ar_weights, box_size):
 
 
 def set_flux_range(flux_min, flux_max):
+    global flux_range
     flux_range = (flux_min, flux_max)
 
 
