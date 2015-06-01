@@ -19,6 +19,7 @@ from physics_functions.deredden_func import deredden_spectrum
 import sys
 
 i = 233
+global flux_range
 flux_range = None
 
 
@@ -55,6 +56,7 @@ def rolling_weighted_median(ar_data, ar_weights, box_size):
         end = min(j + box_size_upper, ar_data.size)
         ar_flux_smoothed[j] = weighted.median(ar_data[start:end], ar_weights[start:end])
     return ar_flux_smoothed
+
 
 def set_flux_range(flux_min, flux_max):
     flux_range = (flux_min, flux_max)
@@ -190,7 +192,7 @@ def plot_fits_spectra(spec_sample):
 
         # draw vertical fill for masked values
         axes = plt.gca()
-        axes.set_ylim(-1,2)
+        axes.set_ylim(-1, 2)
         y_min, y_max = axes.get_ylim()
         plt.fill_between(lya_forest_transmittance.ar_z, y_min, y_max, where=ar_transmittance_mask,
                          linewidth=.5, color='red', alpha=0.1)
@@ -210,4 +212,3 @@ if __name__ == '__main__':
 
     spec_sample_1 = read_spectrum_fits.enum_spectra([qso_record_table[i]])
     plot_fits_spectra(spec_sample_1)
-
