@@ -165,7 +165,7 @@ def plot_fits_spectra(spec_sample):
             fitted_mean = (fit_spectrum * ar_mean_flux_for_z_range)[ar_z < qso_z]
             plt.plot(ar_wavelength[ar_z < qso_z], fitted_mean, color='red')
 
-        plt.axvspan(3817, redshift_to_lya_center(qso_z),
+        plt.axvspan(redshift(1040, qso_z), redshift(1200, qso_z),
                     alpha=0.3, facecolor='yellow', edgecolor='red')
 
         for l in qso_line_mask.SpecLines:
