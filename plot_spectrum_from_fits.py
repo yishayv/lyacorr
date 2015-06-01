@@ -19,6 +19,7 @@ from physics_functions.deredden_func import deredden_spectrum
 import sys
 
 i = 233
+flux_range = None
 
 
 # TODO: replace with a more accurate number
@@ -54,6 +55,9 @@ def rolling_weighted_median(ar_data, ar_weights, box_size):
         end = min(j + box_size_upper, ar_data.size)
         ar_flux_smoothed[j] = weighted.median(ar_data[start:end], ar_weights[start:end])
     return ar_flux_smoothed
+
+def set_flux_range(flux_min, flux_max):
+    flux_range = (flux_min, flux_max)
 
 
 def plot_fits_spectra(spec_sample):
@@ -105,6 +109,7 @@ def plot_fits_spectra(spec_sample):
         power_law = lambda x, amp, index: amp * (x ** index)
 
         plt.subplot(2, 1, 1)
+
         ar_flux_err = np.reciprocal(np.sqrt(ar_ivar))
         plt.fill_between(ar_wavelength, ar_flux_correct - ar_flux_err,
                          ar_flux_correct + ar_flux_err, color='gray', linewidth=.3)
@@ -122,10 +127,10 @@ def plot_fits_spectra(spec_sample):
         # ar_flux_smoothed = signal.filtfilt(b=b, a=a, x=ar_flux_correct)
         # ar_flux_smoothed = ap_convolve(ar_flux_correct, Gaussian1DKernel(1), boundary='extend')
 
-        plt.plot(ar_wavelength, ar_flux_smoothed, ms=2, color='blue')
+        # plt.plot(ar_wavelength, ar_flux_smoothed, ms=2, color='blue')
 
         # plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3, color='cyan')
-        # plt.plot(ar_wavelength, ar_flux_correct, ms=2, linewidth=.3, color='blue')
+        plt.plot(ar_wavelength, ar_flux_correct, ms=2, linewidth=.3, color='blue')
         # plt.loglog(spec.ma_wavelength.compressed(),
         # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
         plt.plot(ar_wavelength, fit_spectrum, color='orange')
@@ -148,6 +153,10 @@ def plot_fits_spectra(spec_sample):
                         alpha=0.02, facecolor='cyan', edgecolor='none')
 
         plt.xlim(3e3, 1e4)
+
+        if flux_range:
+            plt.xlim(flux_range[0], flux_range[1])
+
         plt.xlabel(r"$\lambda [\AA]$")
         plt.ylabel(r"$f(\lambda)$ $[10^{-17}erg/s/cm^{2}/\AA]$")
 
@@ -181,6 +190,7 @@ def plot_fits_spectra(spec_sample):
 
         # draw vertical fill for masked values
         axes = plt.gca()
+        axes.set_ylim(-1,2)
         y_min, y_max = axes.get_ylim()
         plt.fill_between(lya_forest_transmittance.ar_z, y_min, y_max, where=ar_transmittance_mask,
                          linewidth=.5, color='red', alpha=0.1)
