@@ -20,8 +20,6 @@ import sys
 
 i = 233
 
-if len(sys.argv) > 1:
-    i = int(sys.argv[1])
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -197,6 +195,9 @@ def plot_fits_spectra(spec_sample):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        i = int(sys.argv[1])
+
     spec_sample_1 = read_spectrum_fits.enum_spectra([qso_record_table[i]])
     plot_fits_spectra(spec_sample_1)
 
