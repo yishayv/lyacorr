@@ -20,6 +20,7 @@ import sys
 
 i = 233
 flux_range = None
+wavelength_range = None
 
 
 # TODO: replace with a more accurate number
@@ -59,7 +60,18 @@ def rolling_weighted_median(ar_data, ar_weights, box_size):
 
 def set_flux_range(flux_min, flux_max):
     global flux_range
-    flux_range = (flux_min, flux_max)
+    if flux_max > flux_min:
+        flux_range = (flux_min, flux_max)
+    else:
+        flux_range = None
+
+
+def set_wavelength_range(wavelength_min, wavelength_max):
+    global wavelength_range
+    if wavelength_max > wavelength_min:
+        wavelength_range = (wavelength_min, wavelength_max)
+    else:
+        wavelength_range = None
 
 
 def plot_fits_spectra(spec_sample):
@@ -112,6 +124,14 @@ def plot_fits_spectra(spec_sample):
 
         plt.subplot(2, 1, 1)
 
+        if flux_range:
+            plt.ylim(flux_range[0], flux_range[1])
+
+        if wavelength_range:
+            plt.xlim(ar_wavelength[0], ar_wavelength[1])
+        else:
+            plt.xlim(3e3, 1e4)
+
         ar_flux_err = np.reciprocal(np.sqrt(ar_ivar))
         plt.fill_between(ar_wavelength, ar_flux_correct - ar_flux_err,
                          ar_flux_correct + ar_flux_err, color='gray', linewidth=.3)
@@ -153,11 +173,6 @@ def plot_fits_spectra(spec_sample):
             plt.axvspan(redshift(l.wavelength / l.width_factor, qso_z),
                         redshift(l.wavelength * l.width_factor, qso_z),
                         alpha=0.02, facecolor='cyan', edgecolor='none')
-
-        plt.xlim(3e3, 1e4)
-
-        if flux_range:
-            plt.xlim(flux_range[0], flux_range[1])
 
         plt.xlabel(r"$\lambda [\AA]$")
         plt.ylabel(r"$f(\lambda)$ $[10^{-17}erg/s/cm^{2}/\AA]$")
