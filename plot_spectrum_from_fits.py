@@ -128,7 +128,7 @@ def plot_fits_spectra(spec_sample):
             plt.ylim(flux_range[0], flux_range[1])
 
         if wavelength_range:
-            plt.xlim(ar_wavelength[0], ar_wavelength[1])
+            plt.xlim(wavelength_range[0], wavelength_range[1])
         else:
             plt.xlim(3e3, 1e4)
 
