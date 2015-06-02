@@ -98,7 +98,8 @@ def plot_fits_spectra(spec_sample):
         # begin PCA fit:
         ar_wavelength_rest = ar_wavelength / (1 + qso_z)
         fit_spectrum, fit_normalization_factor, is_good_fit = \
-            fit_pca.fit(ar_wavelength_rest, ar_flux_correct, ar_ivar, qso_z)
+            fit_pca.fit(ar_wavelength_rest, ar_flux_correct, ar_ivar, qso_z,
+                        boundary_value=np.nan)
         print "good fit:", is_good_fit
 
         lya_forest_transmittance = calc_mean_transmittance.qso_transmittance(qso_data_, fit_spectrum)
@@ -152,10 +153,10 @@ def plot_fits_spectra(spec_sample):
         # plt.plot(ar_wavelength, ar_flux_smoothed, ms=2, color='blue')
 
         # plt.plot(ar_wavelength, ar_flux, ms=2, linewidth=.3, color='cyan')
-        plt.plot(ar_wavelength, ar_flux_correct, ms=2, linewidth=.3, color='blue')
+        plt.plot(ar_wavelength, ar_flux_correct, ms=2, linewidth=.3, color='blue', label='Observed flux')
         # plt.loglog(spec.ma_wavelength.compressed(),
         # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
-        plt.plot(ar_wavelength, fit_spectrum, color='orange')
+        plt.plot(ar_wavelength, fit_spectrum, color='orange', label='Continuum fit')
 
         if os.path.exists(settings.get_mean_transmittance_npy()):
             m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
@@ -163,7 +164,7 @@ def plot_fits_spectra(spec_sample):
             ar_z = ar_wavelength / lya_center - 1
             ar_mean_flux_for_z_range = np.interp(ar_z, m.ar_z, ar_mean_flux_lookup)
             fitted_mean = (fit_spectrum * ar_mean_flux_for_z_range)[ar_z < qso_z]
-            plt.plot(ar_wavelength[ar_z < qso_z], fitted_mean, color='red')
+            plt.plot(ar_wavelength[ar_z < qso_z], fitted_mean, color='red', label='Mean transmission flux')
 
         plt.axvspan(redshift(1040, qso_z), redshift(1200, qso_z),
                     alpha=0.3, facecolor='yellow', edgecolor='red')
@@ -193,6 +194,8 @@ def plot_fits_spectra(spec_sample):
         y_min, y_max = axes.get_ylim()
         plt.fill_between(ar_wavelength, y_min, y_max, where=ar_flux_mask,
                          linewidth=.5, color='red', alpha=0.1)
+
+        plt.legend(loc='best')
 
         plt.subplot(2, 1, 2)
 
