@@ -260,7 +260,7 @@ class ContinuumFitPCA:
 
     def _is_good_fit(self, snr, goodness_of_fit):
         # threshold is based on signal to noise.
-        max_delta_f = self.max_delta_f_per_snr(snr / 1.3) * 1.3 if snr != 0 else 0
+        max_delta_f = self.max_delta_f_per_snr(snr / 1.5) * 1.5 if snr != 0 else 0
 
         delta_f = goodness_of_fit
 

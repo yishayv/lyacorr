@@ -24,7 +24,7 @@ settings = common_settings.Settings()
 force_single_process = settings.get_single_process()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
-z_range = (1.9, 3.5, 0.0002)
+z_range = (1.9, 3.5, 0.0004)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
@@ -218,9 +218,11 @@ def delta_transmittance_chunk(qso_record_table):
     # warning: np.ndarray is not initialized by default. zeroing manually.
     delta_t.zero()
     m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
+    #m = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())
     # for debugging with a small data set:
     # ignore values with less than 20 sample points
     ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_mean_with_minimum_count(20)
+    #ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_median_with_minimum_count(20, weighted=True)
 
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     chunk_weighted_delta_t = 0

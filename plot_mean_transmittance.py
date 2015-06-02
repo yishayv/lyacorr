@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import host_subplot
 
 import common_settings
 import mean_transmittance
@@ -16,7 +17,7 @@ def do_plot():
     ar_z, mean = m.get_weighted_mean_with_minimum_count(1)
     ar_z_med, ar_median = med.get_weighted_median_with_minimum_count(1)
     ar_z_med, ar_unweighted_median = med.get_weighted_median_with_minimum_count(1, weighted=False)
-    low_pass_mean = m.get_low_pass_mean()[1]
+    #low_pass_mean = m.get_low_pass_mean()[1]
 
     fig = plt.figure(figsize=(14, 10))
     ax1 = fig.add_subplot(2, 1, 1)
@@ -33,15 +34,16 @@ def do_plot():
     ax2.set_xlim(x_lim2)
     plt.axis()
 
-    ax3 = fig.add_subplot(2, 1, 2)
+    ax3 = host_subplot(2, 1, 2)
     ax4 = ax3.twinx()
     ax4.set_ylabel(r"$N_{Spectra}$")
-    ax4.plot(m.ar_z, m.ar_count, ':', color='red')
-    ax3.plot(m.ar_z, m.ar_weights, ':', color='green')
-    ax3.plot(m.ar_z, m.ar_total_flux, color='blue')
+    ax3.plot(m.ar_z, m.ar_total_flux, color='blue', label=r"Total flux$\times$ weight")
+    ax3.plot(m.ar_z, m.ar_weights, ':', color='green', label='Total weight')
+    ax4.plot(m.ar_z, m.ar_count, ':', color='red', label='Spectra count')
     ax3.set_xlim(ax1.get_xlim())
     ax3.set_ylabel(r"$\sum_q f_q(z)/C_q(z)$")
     ax3.set_xlabel(r"$z$")
+    ax3.legend(loc='best')
 
     plt.show()
 
