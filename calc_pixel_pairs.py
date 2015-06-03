@@ -122,7 +122,6 @@ class PixelPairs:
         np.square(spec2_distances, out=spec2_distances_sq)
 
         # a matrix of flux products
-        # TODO: add weights for a proper calculation of "xi(i,j)"
         np.outer(spec1_flux, spec2_flux, out=flux_products)
 
         # r|| = abs(r1 - r2)
@@ -140,6 +139,8 @@ class PixelPairs:
         np.logical_and(mask_matrix_parallel, mask_matrix_final, mask_matrix_final)
 
         np.outer(qso1_weights, qso2_weights, out=z_weights)
+        # multiply fluxes by their respective weights
+        np.outer(flux_products, z_weights, out=flux_products)
 
         assert not np.isnan(flux_products).any()
         assert not np.isnan(z_weights).any()
