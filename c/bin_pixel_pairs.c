@@ -242,7 +242,7 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 				else if (flux_product < f_min)
 					bin_f = 0;
 				else
-					bin_f = (int)(f_bin_count*(flux_product - f_min)/(f_max - f_min));
+					bin_f = (int)(f_bin_count*(flux_product + f_min)/(f_max - f_min));
 
 				p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, bin_f);
 				/* MY_DEBUG_PRINT(":::::Adding pixel, %d, %d, %d, weight:%lf\n", 
