@@ -132,7 +132,7 @@ def profile_main():
     mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
     # l_print('angle vector:', x[2])
 
-    pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type='mean')
+    pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type='histogram')
     # divide the work into sub chunks
     # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
     # divide by comm.size to make sub chunk size independent of number of nodes.

@@ -39,8 +39,8 @@ class FluxHistogramBins(AccumulatorBase):
         self.filename = filename
         self.flush()
 
-    def from_3d_array(self, stacked_array):
-        self.ar_flux = stacked_array[:, :, :, 0]
+    def from_3d_array(self, array):
+        self.ar_flux = array
         self.x_count = self.ar_flux.shape[0]
         self.y_count = self.ar_flux.shape[1]
         self.f_count = self.ar_flux.shape[2]
@@ -127,4 +127,5 @@ class FluxHistogramBins(AccumulatorBase):
         (new_bins.x_count, new_bins.y_count, new_bins.f_count, new_bins.filename, new_bins.max_range,
          new_bins.x_range, new_bins.y_range, new_bins.f_min, new_bins.f_max, new_bins.x_bin_size,
          new_bins.y_bin_size, new_bins.pair_count) = metadata
+        new_bins.ar_flux = ar
         return new_bins

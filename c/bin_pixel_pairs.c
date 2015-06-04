@@ -11,6 +11,8 @@
 #include <numpy/arrayobject.h>
 #include <math.h>
 
+/* #define _MY_DEBUG_PRINT */
+
 #ifdef _MY_DEBUG_PRINT
 #define MY_DEBUG_PRINT(...) PySys_WriteStdout(__VA_ARGS__);
 #else
@@ -236,13 +238,15 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 				 * to preserve the quantile value of each intermediate bin.
 				 */
 				if (flux_product > f_max)
-					bin_f = f_bin_count;
+					bin_f = f_bin_count-1;
 				else if (flux_product < f_min)
 					bin_f = 0;
 				else
 					bin_f = (int)(f_bin_count*(flux_product - f_min)/(f_max - f_min));
 
 				p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, bin_f);
+				/* MY_DEBUG_PRINT(":::::Adding pixel, %d, %d, %d, weight:%lf\n", 
+					bin_x, bin_y, bin_f, weight1*weight2); */
 				(*p_current_bin_flux) += weight1 * weight2;
 				(*p_pair_count)++;
 			}
@@ -278,7 +282,7 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	double x_bin_count, y_bin_count, f_bin_count;
 	double f_min, f_max;
 	double pair_count;
-	npy_intp out_dim[3] = { 0 };
+	PyObject* ret_val;
 
 	static char *kwlist[] = { "ar_z1", "ar_z2", "ar_dist1", "ar_dist2",
 		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
@@ -305,18 +309,6 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	}
 	MY_DEBUG_PRINT(":::::After arg parse\n");
 
-	/*
-	 * construct a 3D output array, (x_bin_count) by (y_bin_count) by (flux, counts, weights)
-	 */
-	out_dim[0] = x_bin_count;
-	out_dim[1] = y_bin_count;
-	out_dim[2] = 3;
-	/* out_array = (PyArrayObject *) PyArray_ZEROS(3, out_dim, NPY_DOUBLE, 0); */
-	if (out_array == NULL)
-		return NULL;
-
-	MY_DEBUG_PRINT(":::::Created out array\n");
-
 	bin_pixel_pairs_histogram_loop(in_array_z1, in_array_z2,
 						 in_array_dist1, in_array_dist2,
 						 in_array_flux1, in_array_flux2,
@@ -327,7 +319,8 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 
 	/* Py_INCREF(out_array); */
 	/* return (PyObject *) out_array; */
-	return Py_None;
+	ret_val = PyFloat_FromDouble(pair_count);
+	return ret_val;
 
 	/* in case bad things happen */
 	/*

@@ -217,20 +217,18 @@ class PixelPairs:
             # print accumulator.ar_count.max()
         elif self.accumulator_type == 'histogram':
             # TODO: try to avoid using implementation details of the accumulator interface
-            bin_pixel_pairs.bin_pixel_pairs_histogram(ar_z1=spec1_z, ar_z2=spec2_z,
-                                                      ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                                                      ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-                                                      ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                                                      out=accumulator.ar_flux,
-                                                      qso_angle=qso_angle,
-                                                      x_bin_size=accumulator.get_x_bin_size(),
-                                                      y_bin_size=accumulator.get_y_bin_size(),
-                                                      x_bin_count=accumulator.get_x_count(),
-                                                      y_bin_count=accumulator.get_y_count(),
-                                                      f_min=accumulator.f_min,
-                                                      f_max=accumulator.f_max,
-                                                      f_bin_count=accumulator.f_count,
-                                                      pair_count=accumulator.pair_count)
+            accumulator.pair_count = bin_pixel_pairs.bin_pixel_pairs_histogram(
+                ar_z1=spec1_z, ar_z2=spec2_z, ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                ar_flux1=spec1_flux, ar_flux2=spec2_flux, ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+                out=accumulator.ar_flux,
+                qso_angle=qso_angle,
+                x_bin_size=accumulator.get_x_bin_size(),
+                y_bin_size=accumulator.get_y_bin_size(),
+                x_bin_count=accumulator.get_x_count(),
+                y_bin_count=accumulator.get_y_count(),
+                f_min=accumulator.f_min, f_max=accumulator.f_max,
+                f_bin_count=accumulator.f_count, pair_count=accumulator.pair_count)
+            pass
 
     def apply_to_flux_pairs(self, pairs, pairs_angles, delta_t_file, accumulator):
         """
@@ -272,7 +270,7 @@ class PixelPairs:
         elif self.accumulator_type == 'histogram':
             pair_separation_bins = flux_histogram_bins.FluxHistogramBins(
                 NUM_BINS_X, NUM_BINS_Y, f_count=100, x_range=self.radius, y_range=self.radius,
-                f_min=-1e-3, f_max=1e-3)
+                f_min=-2e-3, f_max=2e-3)
 
         assert pair_separation_bins
 
@@ -280,4 +278,3 @@ class PixelPairs:
         self.apply_to_flux_pairs(pairs, pairs_angles, delta_t_file, pair_separation_bins)
 
         return pair_separation_bins
-
