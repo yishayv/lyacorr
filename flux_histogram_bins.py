@@ -4,21 +4,17 @@ from flux_accumulator import AccumulatorBase
 
 
 class FluxHistogramBins(AccumulatorBase):
-    def __init__(self, x_count, y_count, f_count, x_range, y_range, f_range, f_offset, filename=''):
+    def __init__(self, x_count, y_count, f_count, x_range, y_range, f_min, f_max, filename=''):
         self.ar_flux = np.zeros((x_count, y_count, f_count))
-        self.ar_weights = np.zeros((x_count, y_count, f_count))
-        self.ar_count = np.zeros((x_count, y_count, f_count))
         self.x_count = x_count
         self.y_count = y_count
         self.f_count = f_count
-        self.index_type = ''
-        self.update_index_type()
         self.filename = filename
         self.max_range = np.sqrt(np.square(x_range) + np.square(y_range))
         self.x_range = x_range
         self.y_range = y_range
-        self.f_range = f_range
-        self.f_offset = f_offset
+        self.f_min = f_min
+        self.f_max = f_max
         self.x_bin_size = float(x_range) / x_count
         self.y_bin_size = float(y_range) / y_count
 
@@ -27,39 +23,30 @@ class FluxHistogramBins(AccumulatorBase):
 
     def merge(self, bins2):
         assert self.ar_flux.shape == bins2.ar_flux.shape
-        assert self.ar_weights.shape == bins2.ar_weights.shape
-        assert self.ar_count.shape == bins2.ar_count.shape
         assert self.x_range == bins2.x_range
         assert self.y_range == bins2.y_range
         assert self.x_count == bins2.x_count
         assert self.y_count == bins2.y_count
         assert self.f_count == bins2.f_count
+        assert self.f_min == bins2.f_min
+        assert self.f_max == bins2.f_max
         self.ar_flux += bins2.ar_flux
-        self.ar_weights += bins2.ar_weights
-        self.ar_count += bins2.ar_count
         return self
 
     def save(self, filename):
         self.filename = filename
         self.flush()
 
-    def from_4d_array(self, stacked_array):
+    def from_3d_array(self, stacked_array):
         self.ar_flux = stacked_array[:, :, :, 0]
-        self.ar_count = stacked_array[:, :, :, 1]
-        self.ar_weights = stacked_array[:, :, :, 2]
-        self.x_count = self.ar_count.shape[0]
-        self.y_count = self.ar_count.shape[1]
-        self.f_count= self.ar_count.shape[2]
-        self.update_index_type()
+        self.x_count = self.ar_flux.shape[0]
+        self.y_count = self.ar_flux.shape[1]
+        self.f_count = self.ar_flux.shape[2]
 
     def load(self, filename):
         # TODO: to static
         stacked_array = np.load(filename)
-        self.from_4d_array(stacked_array)
-
-    def update_index_type(self):
-        # choose integer type according to number of bins
-        self.index_type = 'int32' if self.x_count * self.y_count > 32767 else 'int16'
+        self.from_3d_array(stacked_array)
 
     def __radd__(self, other):
         return self.merge(other)
@@ -81,29 +68,24 @@ class FluxHistogramBins(AccumulatorBase):
         new_obj.merge(other)
 
     @classmethod
-    def from_np_arrays(cls, ar_count, ar_flux, ar_weights, x_range, y_range):
+    def from_np_array(cls, ar_flux, x_range, y_range, f_min, f_max):
         """
 
-        :type ar_count: np.array
         :type ar_flux: np.array
-        :type ar_weights: np.array
         """
-        assert ar_count.ndim == ar_flux.ndim == ar_weights.ndim == 3
-        assert ar_count.shape == ar_flux.shape == ar_weights.shape
-        new_bins = cls(ar_count.shape[0], ar_count.shape[1], ar_count.shape[2], x_range, y_range)
-        new_bins.ar_count = ar_count
+        assert ar_flux.ndim == 3
+        new_bins = cls(ar_flux.shape[0], ar_flux.shape[1], ar_flux.shape[2], x_range, y_range, f_min, f_max)
         new_bins.ar_flux = ar_flux
-        new_bins.ar_weights = ar_weights
         return new_bins
 
     def set_filename(self, filename):
         self.filename = filename
 
-    def to_4d_array(self):
-        return np.concatenate((self.ar_flux, self.ar_count, self.ar_weights), axis=3)
+    def as_3d_array(self):
+        return self.ar_flux
 
     def flush(self):
-        np.save(self.filename, self.to_4d_array())
+        np.save(self.filename, self.as_3d_array())
 
     def get_max_range(self):
         return self.max_range

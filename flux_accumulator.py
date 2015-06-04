@@ -14,7 +14,7 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
-    def set_filename(self):
+    def set_filename(self, filename):
         """
         Set filename for saving results.
         :return:

@@ -5,6 +5,7 @@ import bins_2d
 from flux_accumulator import AccumulatorBase
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 import bin_pixel_pairs
+import flux_histogram_bins
 import significant_qso_pairs
 
 NUM_BINS_X = 50
@@ -194,25 +195,38 @@ class PixelPairs:
         if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
             return
 
-        ar = bin_pixel_pairs.bin_pixel_pairs(ar_z1=spec1_z, ar_z2=spec2_z,
-                                             ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                                             ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-                                             ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                                             qso_angle=qso_angle,
-                                             x_bin_size=accumulator.get_x_bin_size(),
-                                             y_bin_size=accumulator.get_y_bin_size(),
-                                             x_bin_count=accumulator.get_x_count(),
-                                             y_bin_count=accumulator.get_y_count())
+        if False:
+            ar = bin_pixel_pairs.bin_pixel_pairs(ar_z1=spec1_z, ar_z2=spec2_z,
+                                                 ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                                                 ar_flux1=spec1_flux, ar_flux2=spec2_flux,
+                                                 ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+                                                 qso_angle=qso_angle,
+                                                 x_bin_size=accumulator.get_x_bin_size(),
+                                                 y_bin_size=accumulator.get_y_bin_size(),
+                                                 x_bin_count=accumulator.get_x_count(),
+                                                 y_bin_count=accumulator.get_y_count())
+            # print ar[:,:,0].max()
+            local_bins = bins_2d.Bins2D.from_np_arrays(ar[:, :, 1], ar[:, :, 0], ar[:, :, 2],
+                                                       accumulator.get_x_range(), accumulator.get_y_range())
 
-        # print ar[:,:,0].max()
-        local_bins = bins_2d.Bins2D.from_np_arrays(ar[:, :, 1], ar[:, :, 0], ar[:, :, 2],
-                                                   accumulator.get_x_range(), accumulator.get_y_range())
+            flux_contribution = np.nanmax(np.abs(local_bins.ar_flux))
+            self.significant_qso_pairs.add_if_larger(spec1_index, spec2_index, flux_contribution)
 
-        flux_contribution = np.nanmax(np.abs(local_bins.ar_flux))
-        self.significant_qso_pairs.add_if_larger(spec1_index,spec2_index, flux_contribution)
-
-        accumulator += local_bins
-        # print accumulator.ar_count.max()
+            accumulator += local_bins
+            # print accumulator.ar_count.max()
+        else:
+            ar_histogram = accumulator.get_array()
+            bin_pixel_pairs.bin_pixel_pairs_histogram(ar_z1=spec1_z, ar_z2=spec2_z,
+                                                      ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                                                      ar_flux1=spec1_flux, ar_flux2=spec2_flux,
+                                                      ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+                                                      out=ar_histogram,
+                                                      qso_angle=qso_angle,
+                                                      x_bin_size=accumulator.get_x_bin_size(),
+                                                      y_bin_size=accumulator.get_y_bin_size(),
+                                                      x_bin_count=accumulator.get_x_count(),
+                                                      y_bin_count=accumulator.get_y_count(),
+                                                      f_min=1e-3, fmax=1e-3, f_bin_count=100)
 
     def apply_to_flux_pairs(self, pairs, pairs_angles, delta_t_file, accumulator):
         """
@@ -248,6 +262,21 @@ class PixelPairs:
         :rtype: bins_2d.Bins2D
         """
         pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
+        pair_separation_bins.set_filename(settings.get_estimator_bins())
+        self.apply_to_flux_pairs(pairs, pairs_angles, delta_t_file, pair_separation_bins)
+        return pair_separation_bins
+
+    def add_qso_pairs_to_histogram_bins(self, pairs, pairs_angles, delta_t_file):
+        """
+
+        :type pairs: np.array
+        :type pairs_angles: np.array
+        :type delta_t_file: NpSpectrumContainer
+        :rtype: flux_histogram_bins.FluxHistogramBins
+        """
+        pair_separation_bins = flux_histogram_bins.FluxHistogramBins(
+            NUM_BINS_X, NUM_BINS_Y, f_count=100, x_range=self.radius, y_range=self.radius,
+            f_min=-1e-3, f_max=1e-3)
         pair_separation_bins.set_filename(settings.get_estimator_bins())
         self.apply_to_flux_pairs(pairs, pairs_angles, delta_t_file, pair_separation_bins)
         return pair_separation_bins
