@@ -179,15 +179,16 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 					 PyArrayObject * out_array, double qso_angle,
 					 double x_bin_size, double y_bin_size,
 					 double x_bin_count, double y_bin_count,
-					 double f_min, double f_max)
+					 double f_min, double f_max,
+					 double f_bin_count)
 {
 	int i, j;
 	int z1_size, z2_size;
 	int bin_x, bin_y, bin_f;
 	int last_dist2_start, first_pair_dist2;
 	double dist1, dist2, flux1, flux2, weight1, weight2;
-	double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
-	double weighted_flux_product;
+	double *p_current_bin_flux;
+	double flux_product;
 
 	/* iterate over the arrays */
 	z1_size = PyArray_DIM(in_array_z1, 0);
@@ -227,21 +228,22 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 				/* pixel is in range */
 				if (!first_pair_dist2)
 					first_pair_dist2 = j;
-					
-				weighted_flux_product = flux1 * flux2 * weight1 * weight2;
-				if (weighted_flux_product > f_max)
-					bin_f = (int)f_max;
-				else if (weighted_flux_product < f_min)
-					bin_f = (int)f_min;
+				
+				/* find the correct bin for the flux product */	
+				flux_product = flux1 * flux2;
+				
+				/* if the value is out of range, we must add it to the minimum/maximum 
+				 * to preserve the quantile value of each intermediate bin.
+				 */
+				if (flux_product > f_max)
+					bin_f = f_bin_count;
+				else if (flux_product < f_min)
+					bin_f = 0;
 				else
-					bin_f = (int)weighted_flux_product;
+					bin_f = (int)(f_bin_count*(flux_product - f_min)/(f_max - f_min));
 
-				p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 0);
-				(*p_current_bin_flux) += flux1 * flux2 * weight1 * weight2;
-				p_current_bin_count = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 1);
-				(*p_current_bin_count) += 1;
-				p_current_bin_weight = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 2);
-				(*p_current_bin_weight) += weight1 * weight2;
+				p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, bin_f);
+				(*p_current_bin_flux) += weight1 * weight2;
 			}
 			else
 			{
@@ -272,14 +274,15 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	PyArrayObject *out_array;
 	double qso_angle;
 	double x_bin_size, y_bin_size;
-	double x_bin_count, y_bin_count;
+	double x_bin_count, y_bin_count, f_bin_count;
 	double f_min, f_max;
 	npy_intp out_dim[3] = { 0 };
 
 	static char *kwlist[] = { "ar_z1", "ar_z2", "ar_dist1", "ar_dist2",
 		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
+		"out",
 		"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
-		"f_min", "f_max",
+		"f_min", "f_max", "f_bin_count",
 		NULL
 	};
 
@@ -287,14 +290,14 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-		(args, kw, "O!O!O!O!O!O!O!O!O!ddddddd:bin_pixel_pairs", kwlist,
+		(args, kw, "O!O!O!O!O!O!O!O!O!dddddddd:bin_pixel_pairs", kwlist,
 		 &PyArray_Type, &in_array_z1, &PyArray_Type, &in_array_z2,
 		 &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 		 &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 		 &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
 		 &PyArray_Type, &out_array,
 		 &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count,
-		 &f_min, &f_max))
+		 &f_min, &f_max, &f_bin_count))
 	{
 		return NULL;
 	}
@@ -318,7 +321,7 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 						 in_array_weights1, in_array_weights2,
 						 out_array, qso_angle,
 						 x_bin_size, y_bin_size, x_bin_count, y_bin_count,
-						 f_min, f_max);
+						 f_min, f_max, f_bin_count);
 
 	/* Py_INCREF(out_array); */
 	/* return (PyObject *) out_array; */
