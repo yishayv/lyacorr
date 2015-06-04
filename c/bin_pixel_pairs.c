@@ -178,7 +178,8 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 					 PyArrayObject * in_array_weights2,
 					 PyArrayObject * out_array, double qso_angle,
 					 double x_bin_size, double y_bin_size,
-					 double x_bin_count, double y_bin_count)
+					 double x_bin_count, double y_bin_count,
+					 double f_min, double f_max)
 {
 	int i, j;
 	int z1_size, z2_size;
@@ -186,7 +187,7 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 	int last_dist2_start, first_pair_dist2;
 	double dist1, dist2, flux1, flux2, weight1, weight2;
 	double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
-	double weighted_flux_product
+	double weighted_flux_product;
 
 	/* iterate over the arrays */
 	z1_size = PyArray_DIM(in_array_z1, 0);
@@ -227,7 +228,7 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 				if (!first_pair_dist2)
 					first_pair_dist2 = j;
 					
-				weighted_flux_product = flux1 * flux2 * weight1 * weight2
+				weighted_flux_product = flux1 * flux2 * weight1 * weight2;
 				if (weighted_flux_product > f_max)
 					bin_f = (int)f_max;
 				else if (weighted_flux_product < f_min)
@@ -272,11 +273,13 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	double qso_angle;
 	double x_bin_size, y_bin_size;
 	double x_bin_count, y_bin_count;
+	double f_min, f_max;
 	npy_intp out_dim[3] = { 0 };
 
 	static char *kwlist[] = { "ar_z1", "ar_z2", "ar_dist1", "ar_dist2",
 		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
 		"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
+		"f_min", "f_max",
 		NULL
 	};
 
@@ -284,13 +287,14 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-		(args, kw, "O!O!O!O!O!O!O!O!O!ddddd:bin_pixel_pairs", kwlist,
+		(args, kw, "O!O!O!O!O!O!O!O!O!ddddddd:bin_pixel_pairs", kwlist,
 		 &PyArray_Type, &in_array_z1, &PyArray_Type, &in_array_z2,
 		 &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 		 &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 		 &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
-		 &PyArray_Type, &out_array
-		 &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
+		 &PyArray_Type, &out_array,
+		 &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count,
+		 &f_min, &f_max))
 	{
 		return NULL;
 	}
@@ -313,11 +317,12 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 						 in_array_flux1, in_array_flux2,
 						 in_array_weights1, in_array_weights2,
 						 out_array, qso_angle,
-						 x_bin_size, y_bin_size, x_bin_count, y_bin_count);
+						 x_bin_size, y_bin_size, x_bin_count, y_bin_count,
+						 f_min, f_max);
 
 	/* Py_INCREF(out_array); */
 	/* return (PyObject *) out_array; */
-	return Py_None
+	return Py_None;
 
 	/* in case bad things happen */
 	/*
@@ -335,7 +340,7 @@ static PyMethodDef PixelPairMethods[] = {
 	{"bin_pixel_pairs", (PyCFunction) bin_pixel_pairs, METH_KEYWORDS,
 	 "bin pixel pairs to a 2d array"},
 	{"bin_pixel_pairs_histogram", (PyCFunction) bin_pixel_pairs_histogram, METH_KEYWORDS,
-	 "create a 3d histogram of 2 displacement axes and flux product"}
+	 "create a 3d histogram of 2 displacement axes and flux product"},
 	{NULL, NULL, 0, NULL}
 };
 
