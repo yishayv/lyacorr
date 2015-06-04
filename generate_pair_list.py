@@ -19,7 +19,6 @@ from data_access.numpy_spectrum_container import NpSpectrumContainer
 import bins_2d
 import mpi_helper
 
-
 settings = common_settings.Settings()
 
 z_start = 1.8
@@ -38,30 +37,28 @@ class SubChunkHelper:
     def add_pairs_in_sub_chunk(self, delta_t_file, local_pair_angles, pairs, pixel_pairs, radius):
         local_pair_separation_bins = \
             pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
-        # l_print(local_qso1 + local_start_index)
-        mpi_helper.l_print('local pair count:', local_pair_separation_bins.ar_count.sum())
-        pair_separation_bins_count = np.zeros(
-            shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
-        pair_separation_bins_flux = np.zeros(
-            shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
-        pair_separation_bins_weights = np.zeros(
-            shape=(comm.size, calc_pixel_pairs.NUM_BINS_X, calc_pixel_pairs.NUM_BINS_Y))
+
+        mpi_helper.l_print('local pair count:', local_pair_separation_bins.get_pair_count())
+        local_pair_separation_bins_array = local_pair_separation_bins.get_data_as_array()
+        local_pair_separation_bins_metadata = local_pair_separation_bins.get_metadata()
+
+        pair_separation_bins_array = np.zeros(
+            shape=(comm.size,) + local_pair_separation_bins_array.shape)
         comm.Barrier()
         mpi_helper.r_print("BEGIN GATHER")
-        comm.Gatherv(local_pair_separation_bins.ar_count, pair_separation_bins_count)
-        comm.Gatherv(local_pair_separation_bins.ar_flux, pair_separation_bins_flux)
-        comm.Gatherv(local_pair_separation_bins.ar_weights, pair_separation_bins_weights)
+        comm.Gatherv(local_pair_separation_bins_array, pair_separation_bins_array)
+        list_pair_separation_bins_metadata = comm.gather(local_pair_separation_bins_metadata)
         mpi_helper.r_print("END_GATHER")
+
         if comm.rank == 0:
-            # TODO: rewrite!
-            list_pair_separation_bins = [bins_2d.Bins2D.from_np_arrays(count, flux, weights, radius, radius)
-                                         for count, flux, weights in
-                                         itertools.izip(pair_separation_bins_count, pair_separation_bins_flux,
-                                                        pair_separation_bins_weights)]
+            list_pair_separation_bins = [
+                local_pair_separation_bins.load_from(ar, metadata)
+                for ar, metadata in itertools.izip(pair_separation_bins_array, list_pair_separation_bins_metadata)]
+
             # initialize bins only if this is the first time we get here
             # for now use a function level static variable
             if not self.pair_separation_bins:
-                self.pair_separation_bins = bins_2d.Bins2D.init_as(list_pair_separation_bins[0])
+                self.pair_separation_bins = local_pair_separation_bins.init_as(local_pair_separation_bins)
 
             # add new results to existing bins
             if list_pair_separation_bins:
@@ -69,7 +66,7 @@ class SubChunkHelper:
                                                    self.pair_separation_bins)
 
                 mpi_helper.r_print('total number of pixel pairs in bins:',
-                                   self.pair_separation_bins.ar_count.sum().astype(int))
+                                   self.pair_separation_bins.get_pair_count())
                 self.pair_separation_bins.save(settings.get_estimator_bins())
                 pixel_pairs.significant_qso_pairs.save(settings.get_significant_qso_pairs_npy())
             else:
@@ -135,7 +132,7 @@ def profile_main():
     mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
     # l_print('angle vector:', x[2])
 
-    pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius)
+    pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type='mean')
     # divide the work into sub chunks
     # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
     # divide by comm.size to make sub chunk size independent of number of nodes.

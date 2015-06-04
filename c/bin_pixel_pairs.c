@@ -180,7 +180,7 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 					 double x_bin_size, double y_bin_size,
 					 double x_bin_count, double y_bin_count,
 					 double f_min, double f_max,
-					 double f_bin_count)
+					 double f_bin_count, double* p_pair_count)
 {
 	int i, j;
 	int z1_size, z2_size;
@@ -244,6 +244,7 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 
 				p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, bin_f);
 				(*p_current_bin_flux) += weight1 * weight2;
+				(*p_pair_count)++;
 			}
 			else
 			{
@@ -276,13 +277,14 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	double x_bin_size, y_bin_size;
 	double x_bin_count, y_bin_count, f_bin_count;
 	double f_min, f_max;
+	double pair_count;
 	npy_intp out_dim[3] = { 0 };
 
 	static char *kwlist[] = { "ar_z1", "ar_z2", "ar_dist1", "ar_dist2",
 		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
 		"out",
 		"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
-		"f_min", "f_max", "f_bin_count",
+		"f_min", "f_max", "f_bin_count", "pair_count",
 		NULL
 	};
 
@@ -290,14 +292,14 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-		(args, kw, "O!O!O!O!O!O!O!O!O!dddddddd:bin_pixel_pairs", kwlist,
+		(args, kw, "O!O!O!O!O!O!O!O!O!ddddddddd:bin_pixel_pairs", kwlist,
 		 &PyArray_Type, &in_array_z1, &PyArray_Type, &in_array_z2,
 		 &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 		 &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 		 &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
 		 &PyArray_Type, &out_array,
 		 &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count,
-		 &f_min, &f_max, &f_bin_count))
+		 &f_min, &f_max, &f_bin_count, &pair_count))
 	{
 		return NULL;
 	}
@@ -321,7 +323,7 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 						 in_array_weights1, in_array_weights2,
 						 out_array, qso_angle,
 						 x_bin_size, y_bin_size, x_bin_count, y_bin_count,
-						 f_min, f_max, f_bin_count);
+						 f_min, f_max, f_bin_count, &pair_count);
 
 	/* Py_INCREF(out_array); */
 	/* return (PyObject *) out_array; */

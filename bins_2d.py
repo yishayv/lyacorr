@@ -156,6 +156,27 @@ class Bins2D(AccumulatorBase):
     def get_y_count(self):
         return self.y_count
 
+    def get_pair_count(self):
+        return self.ar_count.sum()
+
+    def get_data_as_array(self):
+        return self.to_3d_array()
+
+    def get_metadata(self):
+        return [self.x_count, self.y_count, self.index_type,
+                self.filename, self.max_range,
+                self.x_range, self.y_range,
+                self.x_bin_size, self.y_bin_size]
+
+    def load_from(self, ar, metadata):
+        new_bins = self.init_as(self)
+        (new_bins.x_count, new_bins.y_count, new_bins.index_type, new_bins.filename, new_bins.max_range,
+         new_bins.x_range, new_bins.y_range, new_bins.x_bin_size, new_bins.y_bin_size) = metadata
+        new_bins.ar_flux = ar[:, :, 0]
+        new_bins.ar_count = ar[:, :, 1]
+        new_bins.ar_weights = ar[:, :, 2]
+        return new_bins
+
 
 class Expandable1DArray(object):
     def __init__(self, *args, **kwargs):
@@ -189,4 +210,3 @@ class Expandable1DArray(object):
 class Bins2DLists:
     def __init__(self):
         self.bins = [Expandable1DArray() for i in 2500]
-

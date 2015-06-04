@@ -69,3 +69,19 @@ class AccumulatorBase(object):
     @abstractmethod
     def get_y_count(self):
         return
+
+    @abstractmethod
+    def get_pair_count(self):
+        return
+
+    @abstractmethod
+    def get_data_as_array(self):
+        return
+
+    @abstractmethod
+    def get_metadata(self):
+        return
+
+    @abstractmethod
+    def load_from(self, ar, metadata):
+        return
