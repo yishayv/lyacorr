@@ -178,6 +178,8 @@ class Settings():
         with open(self.settings_file_name, 'wb') as configfile:
             self.config_parser.write(configfile)
 
+    # File Paths
+
     def get_plate_dir_list(self):
         return self.config_parser.get(self.section_file_paths, self.opt_plate_dir_list).split(_SEP)
 
@@ -232,6 +234,8 @@ class Settings():
     def get_significant_qso_pairs_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_significant_qso_pairs_npy)
 
+    # Performance
+
     def get_file_chunk_size(self):
         return self.config_parser.getint(self.section_performance, self.opt_file_chunk_size)
 
@@ -243,6 +247,8 @@ class Settings():
 
     def get_profile(self):
         return self.config_parser.getboolean(self.section_performance, self.opt_profile)
+
+    # Data Processing
 
     def get_min_continuum_threshold(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)
@@ -258,6 +264,8 @@ class Settings():
 
     def get_cosmology(self):
         return self.config_parser.get(self.section_data_processing, self.opt_cosmology)
+
+    # Mock Parameters
 
     def get_mock_shell_radius(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_radius)

@@ -1,5 +1,8 @@
-__author__ = 'yishay'
-
+"""
+    Computes the Lyman-alpha forest auto-correlation estimator.
+    The work is split between MPI nodes based on the first QSO in each possible pair.
+    Partial data is gathered and the correlation estimator file is saved after processing each sub-chunk.
+"""
 import cProfile
 import itertools
 

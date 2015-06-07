@@ -1,3 +1,10 @@
+"""
+    This module is responsible for calculating the mean/median transmittance, as well
+    as the delta of each forest from that value.
+    It uses MPI to select different spectra for different nodes, and then combines
+    the results in Rank 0 (root).
+    The spectra are processed in chunks, and gathered to the root rank after each sub-chunk.
+"""
 import itertools
 import pprint
 
@@ -17,7 +24,6 @@ from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmitt
 from mpi_helper import l_print_no_barrier
 from physics_functions.deredden_func import deredden_spectrum
 
-
 lya_center = 1215.67
 
 settings = common_settings.Settings()
@@ -31,6 +37,10 @@ stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted
 
 
 class DeltaTransmittanceAccumulator:
+    """
+        Add delta transmittance data to a single memory mapped file.
+        It is intended to be used as a helper object called by mpi_accumulate.accumulate_over_spectra
+    """
     def __init__(self, num_spectra):
         self.num_spectra = num_spectra
         self.delta_t_file = NpSpectrumContainer(False, num_spectra=self.num_spectra,
@@ -61,6 +71,10 @@ class DeltaTransmittanceAccumulator:
 
 
 class MeanTransmittanceAccumulator:
+    """
+        Accumulate transmittance data into a total weighed mean and/or median.
+        It is intended to be used as a helper object called by mpi_accumulate.accumulate_over_spectra
+    """
     def __init__(self, num_spectra):
         self.m = mean_transmittance.MeanTransmittance(np.arange(*z_range))
         self.med = median_transmittance.MedianTransmittance(np.arange(*z_range))
@@ -287,4 +301,3 @@ def calc_delta_transmittance():
     accumulate_over_spectra(delta_transmittance_chunk,
                             DeltaTransmittanceAccumulator)
     l_print_no_barrier(pprint.pformat(stats))
-
