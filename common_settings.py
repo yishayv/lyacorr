@@ -46,6 +46,8 @@ class Settings():
     opt_fit_snr_stats_npy = 'fit_snr_stats_npy'
     # mean delta_t per redshift
     opt_mean_delta_t_npy = 'mean_delta_t_npy'
+    # median delta_t per redshift
+    opt_median_delta_t_npy = 'median_delta_t_npy'
     # list of QSO pairs with most significant contribution to the correlation estimator.
     opt_significant_qso_pairs_npy = 'significant_qso_pairs_npy'
 
@@ -70,6 +72,10 @@ class Settings():
     opt_continuum_fit_method = 'continuum_fit_method'
     # cosmology (Planck or WMAP[579])
     opt_cosmology = 'cosmology'
+    # enable/disable weighted mean estimator
+    opt_enable_weighted_mean_estimator = 'enable_weighted_mean_estimator'
+    # enabled/disable weighted median estimator
+    opt_enable_weighted_median_estimator = 'enable_weighted_median_estimator'
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
@@ -104,6 +110,7 @@ class Settings():
         value_total_delta_t_npy = '../../data/total_delta_t.npy'
         value_fit_snr_stats_npy = '../../data/fit_snr_stats.npy'
         value_mean_delta_t_npy = '../../data/mean_delta_t.npy'
+        value_median_delta_t_npy = '../../data/median_delta_t.npy'
         value_significant_qso_pairs_npy = '../../data/significant_qso_pairs.npy'
 
         value_file_chunk_size = 10000
@@ -116,6 +123,8 @@ class Settings():
         value_max_forest_redshift = 3.2
         value_continuum_fit_method = 'dot_product'
         value_cosmology = 'Planck13'
+        value_enable_weighted_mean_estimator = True
+        value_enable_weighted_median_estimator = True
 
         value_mock_shell_radius = 150
         value_mock_shell_fractional_width = 0.005
@@ -142,9 +151,9 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_continuum_fit_npy, value_continuum_fit_npy)
         self.config_parser.set(self.section_file_paths, self.opt_continuum_fit_metadata_npy,
                                value_continuum_fit_metadata_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_total_delta_t, value_total_delta_t_npy)
         self.config_parser.set(self.section_file_paths, self.opt_fit_snr_stats_npy, value_fit_snr_stats_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_mean_delta_t_npy_npy, value_mean_delta_t_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_mean_delta_t_npy, value_mean_delta_t_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_median_delta_t_npy, value_median_delta_t_npy)
         self.config_parser.set(self.section_file_paths, self.opt_significant_qso_pairs_npy,
                                value_significant_qso_pairs_npy)
 
@@ -165,6 +174,10 @@ class Settings():
                                str(value_continuum_fit_method))
         self.config_parser.set(self.section_data_processing, self.opt_cosmology,
                                str(value_cosmology))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_mean_estimator,
+                               bool(value_enable_weighted_mean_estimator))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_median_estimator,
+                               bool(value_enable_weighted_median_estimator))
 
         self.config_parser.add_section(self.section_mock_parameters)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
@@ -222,14 +235,14 @@ class Settings():
     def get_continuum_fit_metadata_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_continuum_fit_metadata_npy)
 
-    def get_total_delta_t(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_total_delta_t)
-
     def get_fit_snr_stats(self):
         return self.config_parser.get(self.section_file_paths, self.opt_fit_snr_stats_npy)
 
     def get_mean_delta_t_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_mean_delta_t_npy)
+
+    def get_median_delta_t_npy(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_median_delta_t_npy)
 
     def get_significant_qso_pairs_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_significant_qso_pairs_npy)
@@ -264,6 +277,12 @@ class Settings():
 
     def get_cosmology(self):
         return self.config_parser.get(self.section_data_processing, self.opt_cosmology)
+
+    def get_enable_weighted_mean_estimator(self):
+        return self.config_parser.get(self.section_data_processing, self.opt_enable_weighted_mean_estimator)
+
+    def get_enable_weighted_median_estimator(self):
+        return self.config_parser.get(self.section_data_processing, self.opt_enable_weighted_median_estimator)
 
     # Mock Parameters
 

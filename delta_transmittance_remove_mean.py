@@ -1,10 +1,10 @@
 from astropy import table as table
 import numpy as np
+from scipy import interpolate
 
 import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 from mpi_accumulate import comm
-
 
 settings = common_settings.Settings()
 
@@ -12,22 +12,44 @@ settings = common_settings.Settings()
 def update_mean(delta_t_file):
     n = 0
     ar_z = np.arange(1.9, 3.3, 0.001)
+
+    # weighted mean
     ar_delta_t_sum = np.zeros_like(ar_z)
     ar_delta_t_count = np.zeros_like(ar_z)
     ar_delta_t_weighted = np.zeros_like(ar_z)
+
+    # histogram median
+    delta_t_min, delta_t_max = (0, 1)
+    delta_t_num_buckets = 1000
+    ar_delta_t_histogram = np.zeros(shape=(ar_z, delta_t_num_buckets))
+
     ar_ivar_total = np.zeros_like(ar_z)
     # calculate the weighted sum of the delta transmittance per redshift bin.
     for i in xrange(delta_t_file.num_spectra):
-        ar_wavelength = delta_t_file.get_wavelength(i)
-        ar_flux = delta_t_file.get_flux(i)
-        ar_ivar = delta_t_file.get_ivar(i)
-        if ar_wavelength.size:
-            ar_delta_t = np.interp(ar_z, ar_wavelength, ar_flux, 0, 0)
-            ar_ivar = np.interp(ar_z, ar_wavelength, ar_ivar, 0, 0)
+        ar_z_unbinned = delta_t_file.get_wavelength(i)
+        ar_delta_t_unbinned = delta_t_file.get_flux(i)
+        ar_ivar_unbinned = delta_t_file.get_ivar(i)
+        if ar_z_unbinned.size:
+            f_delta_t = interpolate.interp1d(ar_z_unbinned, ar_delta_t_unbinned,
+                                             kind='nearest', bounds_error=False,
+                                             fill_value=0, assume_sorted=True)
+            ar_delta_t = f_delta_t(ar_z)
+            f_ivar = interpolate.interp1d(ar_z_unbinned, ar_ivar_unbinned,
+                                          kind='nearest', bounds_error=False,
+                                          fill_value=0, assume_sorted=True)
+            ar_ivar = f_ivar(ar_z)
+
             ar_delta_t_sum += ar_delta_t
             ar_delta_t_weighted += ar_delta_t * ar_ivar
             ar_delta_t_count += ar_delta_t != 0
             ar_ivar_total += ar_ivar
+
+            ar_delta_t_clipped = np.clip(ar_delta_t, delta_t_min, delta_t_max)
+            ar_delta_t_buckets = np.ndarray(ar_delta_t_clipped * np.reciprocal(delta_t_max - delta_t_min)
+                                            * delta_t_num_buckets).astype(np.int32)
+            ar_delta_t_buckets = np.clip(ar_delta_t_buckets, 0, delta_t_num_buckets - 1)
+            ar_delta_t_histogram_current = np.bincount(ar_delta_t_buckets, ar_ivar)
+            ar_delta_t_histogram += ar_delta_t_histogram_current
             n += 1
 
     # save intermediate result (the mean delta_t before removal)
@@ -85,10 +107,11 @@ def remove_mean():
 
 def get_weighted_mean_from_file():
     ar_mean_delta_t_table = np.load(settings.get_mean_delta_t_npy())
-    ar_z, ar_delta_t_weighted, ar_ivar_total, ar_delta_t_sum, ar_delta_t_count = np.vsplit(ar_mean_delta_t_table,5)
+    ar_z, ar_delta_t_weighted, ar_ivar_total, ar_delta_t_sum, ar_delta_t_count = np.vsplit(ar_mean_delta_t_table, 5)
     mask = ar_ivar_total != 0
 
     return ar_z[mask], ar_delta_t_weighted[mask] / ar_ivar_total[mask]
+
 
 if __name__ == '__main__':
     remove_mean()

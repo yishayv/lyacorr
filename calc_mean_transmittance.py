@@ -210,12 +210,15 @@ def mean_transmittance_chunk(qso_record_table):
 
         lya_forest_transmittance_binned = qso_transmittance_binned(qso_spec_obj, ar_fit_spectrum)
         if lya_forest_transmittance_binned.ar_transmittance.size:
-            m.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
-                                  lya_forest_transmittance_binned.ar_mask,
-                                  lya_forest_transmittance_binned.ar_ivar)
-            med.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
-                                    lya_forest_transmittance_binned.ar_mask,
-                                    lya_forest_transmittance_binned.ar_ivar)
+            # save mean and/or median according to common settings:
+            if settings.get_enable_weighted_mean_estimator():
+                m.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
+                                      lya_forest_transmittance_binned.ar_mask,
+                                      lya_forest_transmittance_binned.ar_ivar)
+            if settings.get_enable_weighted_median_estimator():
+                med.add_flux_pre_binned(lya_forest_transmittance_binned.ar_transmittance,
+                                        lya_forest_transmittance_binned.ar_mask,
+                                        lya_forest_transmittance_binned.ar_ivar)
             mean_transmittance_chunk.num_spec += 1
 
     l_print_no_barrier("finished chunk", mean_transmittance_chunk.num_spec)
@@ -292,8 +295,11 @@ def calc_mean_transmittance():
     comm.Barrier()
 
     if comm.rank == 0:
-        m.save(settings.get_mean_transmittance_npy())
-        med.save(settings.get_median_transmittance_npy())
+        # decide whether to save mean/median results based on common settings:
+        if settings.get_enable_weighted_mean_estimator():
+            m.save(settings.get_mean_transmittance_npy())
+        if settings.get_enable_weighted_median_estimator():
+            med.save(settings.get_median_transmittance_npy())
 
 
 def calc_delta_transmittance():

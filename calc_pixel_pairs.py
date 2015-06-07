@@ -61,6 +61,7 @@ class PixelPairs:
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
         self.significant_qso_pairs = significant_qso_pairs.SignificantQSOPairs()
         self.accumulator_type = accumulator_type
+        self.ar_mean_delta_t = np.load(settings.get_mean_delta_t_npy())
 
     def find_nearby_pixels2(self, accumulator, qso_angle,
                             spec1_index, spec2_index, delta_t_file):
