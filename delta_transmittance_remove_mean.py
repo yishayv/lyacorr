@@ -21,7 +21,7 @@ def update_mean(delta_t_file):
     # histogram median
     delta_t_min, delta_t_max = (0, 1)
     delta_t_num_buckets = 1000
-    ar_delta_t_histogram = np.zeros(shape=(ar_z, delta_t_num_buckets))
+    ar_delta_t_histogram = np.zeros(shape=(ar_z.size, delta_t_num_buckets))
 
     ar_ivar_total = np.zeros_like(ar_z)
     # calculate the weighted sum of the delta transmittance per redshift bin.
@@ -45,10 +45,10 @@ def update_mean(delta_t_file):
             ar_ivar_total += ar_ivar
 
             ar_delta_t_clipped = np.clip(ar_delta_t, delta_t_min, delta_t_max)
-            ar_delta_t_buckets = np.ndarray(ar_delta_t_clipped * np.reciprocal(delta_t_max - delta_t_min)
-                                            * delta_t_num_buckets).astype(np.int32)
+            ar_delta_t_buckets = (ar_delta_t_clipped * np.reciprocal(delta_t_max - delta_t_min)
+                                  * delta_t_num_buckets).astype(np.int32)
             ar_delta_t_buckets = np.clip(ar_delta_t_buckets, 0, delta_t_num_buckets - 1)
-            ar_delta_t_histogram_current = np.bincount(ar_delta_t_buckets, ar_ivar)
+            ar_delta_t_histogram_current = np.bincount(ar_delta_t_buckets, ar_ivar, minlength=delta_t_num_buckets)
             ar_delta_t_histogram += ar_delta_t_histogram_current
             n += 1
 
@@ -56,27 +56,19 @@ def update_mean(delta_t_file):
     np.save(settings.get_mean_delta_t_npy(), np.vstack((ar_z,
                                                         ar_delta_t_weighted, ar_ivar_total,
                                                         ar_delta_t_sum, ar_delta_t_count)))
+
+    np.save(settings.get_median_delta_t_npy(), np.hstack((np.atleast_2d(ar_z).T, ar_delta_t_histogram)))
     return ar_delta_t_weighted, ar_ivar_total, ar_z, n
 
 
-def remove_mean():
+# noinspection PyShadowingNames
+def remove_mean(delta_t, ar_delta_t_weighted, ar_ivar_total, ar_z):
     """
     Remove the mean of the delta transmittance per redshift bin.
     The change is made in-place.
 
     :return:
     """
-
-    # execute only on rank 0, since this is a simple IO-bound operation.
-    comm.Barrier()
-    if comm.rank != 0:
-        return
-
-    qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
-    delta_t_file = NpSpectrumContainer(readonly=False, create_new=False, num_spectra=len(qso_record_table),
-                                       filename=settings.get_delta_t_npy(), max_wavelength_count=1000)
-
-    ar_delta_t_weighted, ar_ivar_total, ar_z, n = update_mean(delta_t_file)
 
     # remove nan values (redshift bins with a total weight of 0)
     mask = ar_ivar_total != 0
@@ -89,20 +81,20 @@ def remove_mean():
 
     n = 0
     # remove the mean (in-place)
-    for i in xrange(delta_t_file.num_spectra):
-        ar_wavelength = delta_t_file.get_wavelength(i)
-        ar_flux = delta_t_file.get_flux(i)
-        ar_ivar = delta_t_file.get_ivar(i)
+    for i in xrange(delta_t.num_spectra):
+        ar_wavelength = delta_t.get_wavelength(i)
+        ar_flux = delta_t.get_flux(i)
+        ar_ivar = delta_t.get_ivar(i)
         if ar_wavelength.size:
             ar_delta_t_correction = np.interp(ar_wavelength, ar_z_no_nan, ar_weighted_mean_no_nan, 0, 0)
-            delta_t_file.set_wavelength(i, ar_wavelength)
-            delta_t_file.set_flux(i, ar_flux - ar_delta_t_correction)
-            delta_t_file.set_ivar(i, ar_ivar)
+            delta_t.set_wavelength(i, ar_wavelength)
+            delta_t.set_flux(i, ar_flux - ar_delta_t_correction)
+            delta_t.set_ivar(i, ar_ivar)
             n += 1
         else:
-            delta_t_file.set_wavelength(i, empty_array)
-            delta_t_file.set_flux(i, empty_array)
-            delta_t_file.set_ivar(i, empty_array)
+            delta_t.set_wavelength(i, empty_array)
+            delta_t.set_flux(i, empty_array)
+            delta_t.set_ivar(i, empty_array)
 
 
 def get_weighted_mean_from_file():
@@ -114,4 +106,15 @@ def get_weighted_mean_from_file():
 
 
 if __name__ == '__main__':
-    remove_mean()
+    # execute only on rank 0, since this is a simple IO-bound operation.
+    comm.Barrier()
+    if comm.rank != 0:
+        exit()
+
+    qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
+    delta_t_file = NpSpectrumContainer(readonly=False, create_new=False, num_spectra=len(qso_record_table),
+                                       filename=settings.get_delta_t_npy(), max_wavelength_count=1000)
+
+    ar_delta_t_weighted, ar_ivar_total, ar_z, n = update_mean(delta_t_file)
+
+    # remove_mean(delta_t_file, ar_delta_t_weighted, ar_ivar_total, ar_z)

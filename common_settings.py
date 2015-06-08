@@ -32,8 +32,10 @@ class Settings():
     opt_qso_metadata_npy = 'qso_metadata_npy'
     # delta_t array (npy)
     opt_delta_t_npy = 'delta_transmittance_npy'
-    # correlation estimator bins
-    opt_estimator_bins = 'estimator_bins_npy'
+    # correlation estimator bins (weighted mean)
+    opt_mean_estimator_bins = 'mean_estimator_bins_npy'
+    # correlation estimator bins (weighted median)
+    opt_median_estimator_bins = 'median_estimator_bins_npy'
     # sigma squared LSS
     opt_sigma_sq_lss = 'sigma_squared_lss_txt'
     # eta correction function for weights
@@ -102,12 +104,12 @@ class Settings():
         value_qso_metadata_fields = '../../data/QSOs_test_header.csv'
         value_qso_metadata_npy = '../../data/QSO_table.npy'
         value_delta_t_npy = '../../data/delta_t.npy'
-        value_estimator_bins_npy = '../../data/estimator_bins.npy'
+        value_mean_estimator_bins_npy = '../../data/mean_estimator_bins.npy'
+        value_median_estimator_bins_npy = '../../data/median_estimator_bins.npy'
         value_sigma_sq_lss = '../../data/Sigma_sq_LSS.txt'
         value_weight_eta = '../../data/Weight_eta_func.txt'
         value_continuum_fit_npy = '../../data/continuum_fit.npy'
         value_continuum_fit_metadata_npy = '../../data/continuum_fit_metadata.npy'
-        value_total_delta_t_npy = '../../data/total_delta_t.npy'
         value_fit_snr_stats_npy = '../../data/fit_snr_stats.npy'
         value_mean_delta_t_npy = '../../data/mean_delta_t.npy'
         value_median_delta_t_npy = '../../data/median_delta_t.npy'
@@ -145,7 +147,8 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fields, value_qso_metadata_fields)
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_npy, value_qso_metadata_npy)
         self.config_parser.set(self.section_file_paths, self.opt_delta_t_npy, value_delta_t_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_estimator_bins, value_estimator_bins_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_mean_estimator_bins, value_mean_estimator_bins_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_median_estimator_bins, value_median_estimator_bins_npy)
         self.config_parser.set(self.section_file_paths, self.opt_sigma_sq_lss, value_sigma_sq_lss)
         self.config_parser.set(self.section_file_paths, self.opt_weight_eta, value_weight_eta)
         self.config_parser.set(self.section_file_paths, self.opt_continuum_fit_npy, value_continuum_fit_npy)
@@ -220,8 +223,11 @@ class Settings():
     def get_delta_t_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_delta_t_npy)
 
-    def get_estimator_bins(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_estimator_bins)
+    def get_mean_estimator_bins(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_mean_estimator_bins)
+
+    def get_median_estimator_bins(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_median_estimator_bins)
 
     def get_sigma_squared_lss(self):
         return self.config_parser.get(self.section_file_paths, self.opt_sigma_sq_lss)

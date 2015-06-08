@@ -29,8 +29,8 @@ class LinearInterpTable:
     def eval(self, ar_x):
         """
 
-        :type ar_x: np.array
-        :rtype: float64
+        :type ar_x: np.multiarray.ndarray
+        :rtype: np.multiarray.ndarray
         """
         assert np.all(ar_x < self.x_end) & np.all(ar_x > self.x_start), "lookup value out of range"
         ar_index = self._func_value_table.size * (ar_x - self.x_start) / (self.x_end - self.x_start)

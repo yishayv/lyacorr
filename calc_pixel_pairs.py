@@ -78,7 +78,7 @@ class PixelPairs:
         # Note: not using pre_alloc_matrices.zero()
 
         # the maximum distance that can be stored in the accumulator
-        r = np.float32(accumulator.get_max_range())
+        r = float(accumulator.get_max_range())
         range_parallel = np.float32(accumulator.get_x_range())
         range_transverse = np.float32(accumulator.get_y_range())
 
@@ -169,7 +169,7 @@ class PixelPairs:
         # Note: not using pre_alloc_matrices.zero()
 
         # the maximum distance that can be stored in the accumulator
-        r = np.float64(accumulator.get_max_range())
+        r = float(accumulator.get_max_range())
         range_parallel = np.float64(accumulator.get_x_range())
         range_transverse = np.float64(accumulator.get_y_range())
 
@@ -217,6 +217,7 @@ class PixelPairs:
             accumulator += local_bins
             # print accumulator.ar_count.max()
         elif self.accumulator_type == 'histogram':
+            assert isinstance(accumulator, flux_histogram_bins.FluxHistogramBins)
             # TODO: try to avoid using implementation details of the accumulator interface
             accumulator.pair_count = bin_pixel_pairs.bin_pixel_pairs_histogram(
                 ar_z1=spec1_z, ar_z2=spec2_z, ar_dist1=spec1_distances, ar_dist2=spec2_distances,
@@ -268,14 +269,16 @@ class PixelPairs:
         pair_separation_bins = None
         if self.accumulator_type == 'mean':
             pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
+            pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
         elif self.accumulator_type == 'histogram':
             pair_separation_bins = flux_histogram_bins.FluxHistogramBins(
                 NUM_BINS_X, NUM_BINS_Y, f_count=100, x_range=self.radius, y_range=self.radius,
                 f_min=-2e-3, f_max=2e-3)
+            pair_separation_bins.set_filename(settings.get_median_estimator_bins())
 
         assert pair_separation_bins
 
-        pair_separation_bins.set_filename(settings.get_estimator_bins())
+        pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
         self.apply_to_flux_pairs(pairs, pairs_angles, delta_t_file, pair_separation_bins)
 
         return pair_separation_bins

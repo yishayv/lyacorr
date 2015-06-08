@@ -28,6 +28,14 @@ class ComovingDistance:
         return self._distance_function(ar_z, self.cosmology)
 
     def fast_comoving_distance(self, ar_z):
+        """
+        :type ar_z: np.multiarray.ndarray
+        :rtype: np.multiarray.ndarray
+        """
+        """
+        :param ar_z:
+        :return:
+        """
         return self.lookup_table.eval(ar_z)
 
 
