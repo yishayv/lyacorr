@@ -285,10 +285,10 @@ class Settings():
         return self.config_parser.get(self.section_data_processing, self.opt_cosmology)
 
     def get_enable_weighted_mean_estimator(self):
-        return self.config_parser.get(self.section_data_processing, self.opt_enable_weighted_mean_estimator)
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_weighted_mean_estimator)
 
     def get_enable_weighted_median_estimator(self):
-        return self.config_parser.get(self.section_data_processing, self.opt_enable_weighted_median_estimator)
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_weighted_median_estimator)
 
     # Mock Parameters
 

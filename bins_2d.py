@@ -103,7 +103,9 @@ class Bins2D(AccumulatorBase):
 
         :type other: Bins2D
         """
-        return cls(other.x_count, other.y_count, other.x_range, other.y_range)
+        new_obj = cls(other.x_count, other.y_count, other.x_range, other.y_range)
+        new_obj.set_filename(other.filename)
+        return new_obj
 
     @classmethod
     def from_other(cls, other):

@@ -62,8 +62,10 @@ class FluxHistogramBins(AccumulatorBase):
 
         :type other: FluxHistogramBins
         """
-        return cls(other.x_count, other.y_count, other.f_count, other.x_range, other.y_range,
+        new_obj = cls(other.x_count, other.y_count, other.f_count, other.x_range, other.y_range,
                    other.f_min, other.f_max)
+        new_obj.set_filename(other.filename)
+        return new_obj
 
     @classmethod
     def from_other(cls, other):
