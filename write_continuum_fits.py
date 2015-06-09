@@ -66,10 +66,12 @@ def do_continuum_fit_chunk(qso_record_table):
     num_spectra = len(qso_record_table)
     continuum_chunk = ContinuumFitContainer(num_spectra)
 
-    use_existing_mean_transmittance = os.path.exists(settings.get_median_transmittance_npy()) and os.path.exists(
-        settings.get_mean_delta_t_npy())
+    # DISABLED FOR NOW
+    # use_existing_mean_transmittance = os.path.exists(settings.get_median_transmittance_npy()) and os.path.exists(
+    #     settings.get_mean_delta_t_npy())
+    use_existing_mean_transmittance = False
 
-    median_flux_correction_func = False
+    median_flux_correction_func = None
     if use_existing_mean_transmittance:
         # m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
         med = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())

@@ -63,7 +63,8 @@ def profile_main():
         # fit continuum
         ar_rest_wavelength = ar_wavelength / (1 + redshift)
         fit_spectrum, fit_normalization_factor, is_good_fit = \
-            fit_pca.fit(ar_rest_wavelength, ar_flux, ar_ivar, boundary_value=np.nan)
+            fit_pca.fit(ar_rest_wavelength, ar_flux, ar_ivar, qso_redshift=redshift,
+                        boundary_value=np.nan, mean_flux_constraint_func=None)
 
         # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
         # use the same range as in 1404.1801 (2014)
@@ -86,7 +87,7 @@ def profile_main():
         scale = 1
         ar_x = x_unit * ar_dist * scale
         ar_y = y_unit * ar_dist * scale
-        # Note: this is geometric redshift and not redshift
+        # Note: this is the geometric coordinate, not redshift
         ar_z = z_unit * ar_dist * scale
 
         ar_mock_forest_array = mock_forest.get_forest(ar_x, ar_y, ar_z)
