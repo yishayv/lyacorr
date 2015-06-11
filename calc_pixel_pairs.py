@@ -197,8 +197,7 @@ class PixelPairs:
             return
 
         if self.accumulator_type == 'mean':
-            ar = bin_pixel_pairs.bin_pixel_pairs(ar_z1=spec1_z, ar_z2=spec2_z,
-                                                 ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+            ar = bin_pixel_pairs.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
                                                  ar_flux1=spec1_flux, ar_flux2=spec2_flux,
                                                  ar_weights1=qso1_weights, ar_weights2=qso2_weights,
                                                  qso_angle=qso_angle,
@@ -219,7 +218,7 @@ class PixelPairs:
             assert isinstance(accumulator, flux_histogram_bins.FluxHistogramBins)
             # TODO: try to avoid using implementation details of the accumulator interface
             accumulator.pair_count = bin_pixel_pairs.bin_pixel_pairs_histogram(
-                ar_z1=spec1_z, ar_z2=spec2_z, ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                ar_dist1=spec1_distances, ar_dist2=spec2_distances,
                 ar_flux1=spec1_flux, ar_flux2=spec2_flux, ar_weights1=qso1_weights, ar_weights2=qso2_weights,
                 out=accumulator.ar_flux,
                 qso_angle=qso_angle,

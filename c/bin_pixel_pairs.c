@@ -20,9 +20,7 @@
 #endif
 
 static void
-bin_pixel_pairs_loop(PyArrayObject * in_array_z1,
-					 PyArrayObject * in_array_z2,
-					 PyArrayObject * in_array_dist1,
+bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 					 PyArrayObject * in_array_dist2,
 					 PyArrayObject * in_array_flux1,
 					 PyArrayObject * in_array_flux2,
@@ -33,7 +31,7 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_z1,
 					 double x_bin_count, double y_bin_count)
 {
 	int i, j;
-	int z1_size, z2_size;
+	int dist1_size, dist2_size;
 	int bin_x, bin_y;
 	int last_dist2_start, first_pair_dist2;
 	double /* z1, z2, */ dist1, dist2, flux1, flux2, weight1, weight2;
@@ -42,8 +40,8 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_z1,
 	double x_scale, y_scale;
 
 	/* iterate over the arrays */
-	z1_size = PyArray_DIM(in_array_z1, 0);
-	z2_size = PyArray_DIM(in_array_z2, 0);
+	dist1_size = PyArray_DIM(in_array_dist1, 0);
+	dist2_size = PyArray_DIM(in_array_dist2, 0);
 
 	x_scale = 1. / x_bin_size;
 	y_scale = qso_angle / (2. * y_bin_size);
@@ -51,11 +49,10 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_z1,
 
 	dist1 = 1;
 	last_dist2_start = 0;
-	for (i = 0; i < z1_size && dist1; i++)
+	for (i = 0; i < dist1_size && dist1; i++)
 	{
 		/* MY_DEBUG_PRINT(":::::Outside iter, i=%d\n", i); */
 
-		/* z1 = *((double*) PyArray_GETPTR1(in_array_z1, i)); */
 		dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, i));
 		flux1 = *((double *)PyArray_GETPTR1(in_array_flux1, i));
 		weight1 = *((double *)PyArray_GETPTR1(in_array_weights1, i));
@@ -66,9 +63,8 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_z1,
 		 * the same should hold for the current dist1.
 		 */
 		first_pair_dist2 = 0;
-		for (j = last_dist2_start; j < z2_size && dist2; j++)
+		for (j = last_dist2_start; j < dist2_size && dist2; j++)
 		{
-			/* z2 = *((double*) PyArray_GETPTR1(in_array_z2, j)); */
 			dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
 			flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
 			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
@@ -113,8 +109,6 @@ static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args,
 								 PyObject * kw)
 {
 
-	PyArrayObject *in_array_z1;
-	PyArrayObject *in_array_z2;
 	PyArrayObject *in_array_dist1;
 	PyArrayObject *in_array_dist2;
 	PyArrayObject *in_array_flux1;
@@ -127,7 +121,7 @@ static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args,
 	double x_bin_count, y_bin_count;
 	npy_intp out_dim[3] = { 0 };
 
-	static char *kwlist[] = { "ar_z1", "ar_z2", "ar_dist1", "ar_dist2",
+	static char *kwlist[] = { "ar_dist1", "ar_dist2",
 		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
 		"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
 		NULL
@@ -137,8 +131,7 @@ static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args,
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-		(args, kw, "O!O!O!O!O!O!O!O!ddddd:bin_pixel_pairs", kwlist,
-		 &PyArray_Type, &in_array_z1, &PyArray_Type, &in_array_z2,
+		(args, kw, "O!O!O!O!O!O!ddddd:bin_pixel_pairs", kwlist,
 		 &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 		 &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 		 &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
@@ -160,26 +153,17 @@ static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args,
 
 	MY_DEBUG_PRINT(":::::Created out array\n");
 
-	bin_pixel_pairs_loop(in_array_z1, in_array_z2,
-						 in_array_dist1, in_array_dist2,
+	bin_pixel_pairs_loop(in_array_dist1, in_array_dist2,
 						 in_array_flux1, in_array_flux2,
 						 in_array_weights1, in_array_weights2,
 						 out_array, qso_angle,
 						 x_bin_size, y_bin_size, x_bin_count, y_bin_count);
 
-	/* Py_INCREF(out_array); */
 	return (PyObject *) out_array;
-
-	/* in case bad things happen */
-	/*
-	 * fail: Py_XDECREF(out_array); return NULL;
-	 */
 }
 
 static void
-bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
-					 PyArrayObject * in_array_z2,
-					 PyArrayObject * in_array_dist1,
+bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_dist1,
 					 PyArrayObject * in_array_dist2,
 					 PyArrayObject * in_array_flux1,
 					 PyArrayObject * in_array_flux2,
@@ -192,22 +176,26 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 					 double f_bin_count, double* p_pair_count)
 {
 	int i, j;
-	int z1_size, z2_size;
+	int dist1_size, dist2_size;
 	int bin_x, bin_y, bin_f;
 	int last_dist2_start, first_pair_dist2;
 	double dist1, dist2, flux1, flux2, weight1, weight2;
 	double *p_current_bin_flux;
 	double flux_product;
+	double x_scale, y_scale;
 
 	/* iterate over the arrays */
-	z1_size = PyArray_DIM(in_array_z1, 0);
-	z2_size = PyArray_DIM(in_array_z2, 0);
+	dist1_size = PyArray_DIM(in_array_dist1, 0);
+	dist2_size = PyArray_DIM(in_array_dist2, 0);
+
+	x_scale = 1. / x_bin_size;
+	y_scale = qso_angle / (2. * y_bin_size);
 
 	MY_DEBUG_PRINT(":::::Before loop\n");
 
 	dist1 = 1;
 	last_dist2_start = 0;
-	for (i = 0; i < z1_size && dist1; i++)
+	for (i = 0; i < dist1_size && dist1; i++)
 	{
 		/* MY_DEBUG_PRINT(":::::Outside iter, i=%d\n", i); */
 
@@ -221,7 +209,7 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 		 * the same should hold for the current dist1.
 		 */
 		first_pair_dist2 = 0;
-		for (j = last_dist2_start; j < z2_size && dist2; j++)
+		for (j = last_dist2_start; j < dist2_size && dist2; j++)
 		{
 			dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
 			flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
@@ -275,8 +263,6 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_z1,
 static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyObject * kw)
 {
 
-	PyArrayObject *in_array_z1;
-	PyArrayObject *in_array_z2;
 	PyArrayObject *in_array_dist1;
 	PyArrayObject *in_array_dist2;
 	PyArrayObject *in_array_flux1;
@@ -291,7 +277,7 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	double pair_count;
 	PyObject* ret_val;
 
-	static char *kwlist[] = { "ar_z1", "ar_z2", "ar_dist1", "ar_dist2",
+	static char *kwlist[] = { "ar_dist1", "ar_dist2",
 		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
 		"out",
 		"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
@@ -303,8 +289,7 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-		(args, kw, "O!O!O!O!O!O!O!O!O!ddddddddd:bin_pixel_pairs", kwlist,
-		 &PyArray_Type, &in_array_z1, &PyArray_Type, &in_array_z2,
+		(args, kw, "O!O!O!O!O!O!O!ddddddddd:bin_pixel_pairs", kwlist,
 		 &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 		 &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 		 &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
@@ -316,23 +301,15 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	}
 	MY_DEBUG_PRINT(":::::After arg parse\n");
 
-	bin_pixel_pairs_histogram_loop(in_array_z1, in_array_z2,
-						 in_array_dist1, in_array_dist2,
+	bin_pixel_pairs_histogram_loop(in_array_dist1, in_array_dist2,
 						 in_array_flux1, in_array_flux2,
 						 in_array_weights1, in_array_weights2,
 						 out_array, qso_angle,
 						 x_bin_size, y_bin_size, x_bin_count, y_bin_count,
 						 f_min, f_max, f_bin_count, &pair_count);
 
-	/* Py_INCREF(out_array); */
-	/* return (PyObject *) out_array; */
 	ret_val = PyFloat_FromDouble(pair_count);
 	return ret_val;
-
-	/* in case bad things happen */
-	/*
-	 * fail: Py_XDECREF(out_array); return NULL;
-	 */
 }
 
 static void pre_allocate_memory(void)
