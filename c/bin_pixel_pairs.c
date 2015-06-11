@@ -34,17 +34,59 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	int dist1_size, dist2_size;
 	int bin_x, bin_y;
 	int last_dist2_start, first_pair_dist2;
-	double /* z1, z2, */ dist1, dist2, flux1, flux2, weight1, weight2;
+	int max_dist2_index;
+	double dist1, dist2, flux1, flux2, weight1, weight2;
 	double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
 	double weighted_flux1, weighted_flux2;
 	double x_scale, y_scale;
+	double max_dist_for_qso_angle;
 
 	/* iterate over the arrays */
 	dist1_size = PyArray_DIM(in_array_dist1, 0);
 	dist2_size = PyArray_DIM(in_array_dist2, 0);
+	
+	if (dist1_size && dist2_size)
+	{
+		/* if dist1 is nearer, it is more efficient to run the function with 1 and 2 reversed. */
+		dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, 0));
+		dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, 0));
+		if (dist1 < dist2)
+		{
+			bin_pixel_pairs_loop(in_array_dist2,
+					 in_array_dist1,
+					 in_array_flux2,
+					 in_array_flux1,
+					 in_array_weights2,
+					 in_array_weights1,
+					 out_array, qso_angle,
+					 x_bin_size, y_bin_size,
+					 x_bin_count, y_bin_count);
+			return;
+		}
+	}
+	else
+	{
+		return;
+	}
 
 	x_scale = 1. / x_bin_size;
 	y_scale = qso_angle / (2. * y_bin_size);
+	max_dist_for_qso_angle = y_bin_count / y_scale;
+
+	/*
+	 * find the largest index of dist2 for which a transverse distance to the other
+	 * QSO is within range.
+	 */
+	dist2 = 1;
+	for (j = 0; j < dist2_size && dist2; j++)
+	{
+		dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
+		if (dist2 > max_dist_for_qso_angle)
+		{
+			max_dist2_index = j;
+			break;
+		}
+	}
 	
 	MY_DEBUG_PRINT(":::::Before loop\n");
 
@@ -53,23 +95,24 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	for (i = 0; i < dist1_size && dist1; i++)
 	{
 		/* MY_DEBUG_PRINT(":::::Outside iter, i=%d\n", i); */
-
 		dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, i));
 		flux1 = *((double *)PyArray_GETPTR1(in_array_flux1, i));
 		weight1 = *((double *)PyArray_GETPTR1(in_array_weights1, i));
 
-		dist2 = 1;
+		if (dist1 > max_dist_for_qso_angle)
+			break;
+
 		/*
 		 * distance values are ordered, so if any dist2 was too low to be close enough to the previous dist1,
 		 * the same should hold for the current dist1.
 		 */
 		first_pair_dist2 = 0;
-		for (j = last_dist2_start; j < dist2_size && dist2; j++)
+		for (j = last_dist2_start; j < max_dist2_index; j++)
 		{
 			dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
 			flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
 			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
-
+			
 			/* r|| = abs(r1 - r2) */
 			bin_x = (int)(fabs(dist1 - dist2) * x_scale);
 			/* r_ = (r1 + r2)/2 * qso_angle */
