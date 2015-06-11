@@ -78,6 +78,8 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	 * QSO is within range.
 	 */
 	dist2 = 1;
+	/* set initial index to the end of the array. */
+	max_dist2_index = dist2_size;
 	for (j = 0; j < dist2_size && dist2; j++)
 	{
 		dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
