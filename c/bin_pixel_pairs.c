@@ -45,6 +45,7 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 
 	x_scale = 1. / x_bin_size;
 	y_scale = qso_angle / (2. * y_bin_size);
+	
 	MY_DEBUG_PRINT(":::::Before loop\n");
 
 	dist1 = 1;
@@ -216,9 +217,9 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_dist1,
 			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
 
 			/* r|| = abs(r1 - r2) */
-			bin_x = (int)(fabs(dist1 - dist2) / x_bin_size);
+			bin_x = (int)(fabs(dist1 - dist2) * x_scale);
 			/* r_ = (r1 + r2)/2 * qso_angle */
-			bin_y = (int)((dist1 + dist2) * qso_angle / (2. * y_bin_size));
+			bin_y = (int)((dist1 + dist2) * y_scale);
 
 			if ((bin_x < x_bin_count) && (bin_y < y_bin_count))
 			{
