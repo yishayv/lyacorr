@@ -237,6 +237,10 @@ class ContinuumFitPCA:
 
     @classmethod
     def get_goodness_of_fit(cls, ar_flux, ar_flux_fit):
+        """
+        :type ar_flux: np.multiarray.ndarray
+        :type ar_flux_fit: np.multiarray.ndarray
+        """
         # note: we assume standard bins (self.ar_wavelength_bins)
         # get the red part of the spectrum
         ar_red_flux = ar_flux[cls.LY_A_PEAK_INDEX:]
@@ -259,6 +263,10 @@ class ContinuumFitPCA:
         return self._is_good_fit(snr, delta_f)
 
     def _is_good_fit(self, snr, goodness_of_fit):
+        """
+        :type snr: float
+        :type goodness_of_fit: np.multiarray.ndarray
+        """
         # threshold is based on signal to noise.
         max_delta_f = self.max_delta_f_per_snr(snr / 1.5) * 1.5 if snr != 0 else 0
 
