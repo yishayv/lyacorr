@@ -37,7 +37,6 @@ do { \
                                             (l)*PyArray_STRIDES(obj)[3] + \
                                             (m)*PyArray_STRIDES(obj)[4]))
 
-
 inline int get_bin_x(double dist1, double dist2, double x_scale)
 {
 	/* warning: there is no bounds check here for performance reasons */
@@ -75,142 +74,135 @@ int find_largest_index(double max_dist_for_qso_angle, PyArrayObject * in_array_d
 	return max_dist_index;
 }
 
-
 static void
 bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
-                                         PyArrayObject * in_array_dist2,
-                                         PyArrayObject * in_array_flux1,
-                                         PyArrayObject * in_array_flux2,
-                                         PyArrayObject * in_array_weights1,
-                                         PyArrayObject * in_array_weights2,
-                                         PyArrayObject * out_array, double qso_angle,
-                                         double x_bin_size, double y_bin_size,
-                                         double x_bin_count, double y_bin_count)
+		     PyArrayObject * in_array_dist2,
+		     PyArrayObject * in_array_flux1,
+		     PyArrayObject * in_array_flux2,
+		     PyArrayObject * in_array_weights1,
+		     PyArrayObject * in_array_weights2,
+		     PyArrayObject * out_array, double qso_angle,
+		     double x_bin_size, double y_bin_size, double x_bin_count, double y_bin_count)
 {
-        int i, j;
-        int dist1_size, dist2_size;
-        int bin_x, bin_y;
-        int last_dist2_start, first_pair_dist2;
-        int max_dist2_index;
-        double dist1, dist2, flux1, flux2, weight1, weight2;
-        double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
-        double weighted_flux1, weighted_flux2;
-        double x_scale, y_scale;
-        double max_dist_for_qso_angle;
+	int i, j;
+	int dist1_size, dist2_size;
+	int bin_x, bin_y;
+	int last_dist2_start, first_pair_dist2;
+	int max_dist2_index;
+	double dist1, dist2, flux1, flux2, weight1, weight2;
+	double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
+	double weighted_flux1, weighted_flux2;
+	double x_scale, y_scale;
+	double max_dist_for_qso_angle;
 
-        /* iterate over the arrays */
-        dist1_size = PyArray_DIM(in_array_dist1, 0);
-        dist2_size = PyArray_DIM(in_array_dist2, 0);
+	/* iterate over the arrays */
+	dist1_size = PyArray_DIM(in_array_dist1, 0);
+	dist2_size = PyArray_DIM(in_array_dist2, 0);
 
-        if (dist1_size && dist2_size)
-        {
-                /* if dist1 is nearer, it is more efficient to run the function with 1 and 2 reversed. */
-                dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, 0));
-                dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, 0));
-                if (dist1 < dist2)
-                {
-                        bin_pixel_pairs_loop(in_array_dist2,
-                                         in_array_dist1,
-                                         in_array_flux2,
-                                         in_array_flux1,
-                                         in_array_weights2,
-                                         in_array_weights1,
-                                         out_array, qso_angle,
-                                         x_bin_size, y_bin_size,
-                                         x_bin_count, y_bin_count);
-                        return;
-                }
-        }
-        else
-        {
-                return;
-        }
+	if (dist1_size && dist2_size)
+	{
+		/* if dist1 is nearer, it is more efficient to run the function with 1 and 2 reversed. */
+		dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, 0));
+		dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, 0));
+		if (dist1 < dist2)
+		{
+			bin_pixel_pairs_loop(in_array_dist2,
+					     in_array_dist1,
+					     in_array_flux2,
+					     in_array_flux1,
+					     in_array_weights2,
+					     in_array_weights1,
+					     out_array, qso_angle, x_bin_size, y_bin_size, x_bin_count, y_bin_count);
+			return;
+		}
+	} else
+	{
+		return;
+	}
 
-        x_scale = 1. / x_bin_size;
-        y_scale = qso_angle / (2. * y_bin_size);
-        max_dist_for_qso_angle = y_bin_count / y_scale;
+	x_scale = 1. / x_bin_size;
+	y_scale = qso_angle / (2. * y_bin_size);
+	max_dist_for_qso_angle = y_bin_count / y_scale;
 
-        /*
-         * find the largest index of dist2 for which a transverse distance to the other
-         * QSO is within range.
-         */
-        dist2 = 1;
-        /* set initial index to the end of the array. */
-        max_dist2_index = dist2_size;
-        for (j = 0; j < dist2_size && dist2; j++)
-        {
-                dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
-                if (dist2 > max_dist_for_qso_angle)
-                {
-                        max_dist2_index = j;
-                        break;
-                }
-        }
+	/*
+	 * find the largest index of dist2 for which a transverse distance to the other
+	 * QSO is within range.
+	 */
+	dist2 = 1;
+	/* set initial index to the end of the array. */
+	max_dist2_index = dist2_size;
+	for (j = 0; j < dist2_size && dist2; j++)
+	{
+		dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
+		if (dist2 > max_dist_for_qso_angle)
+		{
+			max_dist2_index = j;
+			break;
+		}
+	}
 
-        MY_DEBUG_PRINT(":::::Before loop\n");
+	MY_DEBUG_PRINT(":::::Before loop\n");
 
-        dist1 = 1;
-        last_dist2_start = 0;
-        for (i = 0; i < dist1_size && dist1; i++)
-        {
-                /* MY_DEBUG_PRINT(":::::Outside iter, i=%d\n", i); */
-                dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, i));
-                flux1 = *((double *)PyArray_GETPTR1(in_array_flux1, i));
-                weight1 = *((double *)PyArray_GETPTR1(in_array_weights1, i));
+	dist1 = 1;
+	last_dist2_start = 0;
+	for (i = 0; i < dist1_size && dist1; i++)
+	{
+		/* MY_DEBUG_PRINT(":::::Outside iter, i=%d\n", i); */
+		dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, i));
+		flux1 = *((double *)PyArray_GETPTR1(in_array_flux1, i));
+		weight1 = *((double *)PyArray_GETPTR1(in_array_weights1, i));
 
-                if (dist1 > max_dist_for_qso_angle)
-                        break;
+		if (dist1 > max_dist_for_qso_angle)
+			break;
 
-                weighted_flux1 = flux1 * weight1;
+		weighted_flux1 = flux1 * weight1;
 
-                /*
-                 * distance values are ordered, so if any dist2 was too low to be close enough to the previous dist1,
-                 * the same should hold for the current dist1.
-                 */
-                first_pair_dist2 = 0;
-                for (j = last_dist2_start; j < max_dist2_index; j++)
-                {
-                        dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
-                        flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
-                        weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
+		/*
+		 * distance values are ordered, so if any dist2 was too low to be close enough to the previous dist1,
+		 * the same should hold for the current dist1.
+		 */
+		first_pair_dist2 = 0;
+		for (j = last_dist2_start; j < max_dist2_index; j++)
+		{
+			dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
+			flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
+			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
 
-                        /* r|| = abs(r1 - r2) */
-                        bin_x = (int)(fabs(dist1 - dist2) * x_scale);
-                        /* r_ = (r1 + r2)/2 * qso_angle */
-                        bin_y = (int)((dist1 + dist2) * y_scale);
+			/* r|| = abs(r1 - r2) */
+			bin_x = (int)(fabs(dist1 - dist2) * x_scale);
+			/* r_ = (r1 + r2)/2 * qso_angle */
+			bin_y = (int)((dist1 + dist2) * y_scale);
 
-                        if ((bin_x < x_bin_count) && (bin_y < y_bin_count))
-                        {
-                                /* pixel is in range */
-                                if (!first_pair_dist2)
-                                        first_pair_dist2 = j;
+			if ((bin_x < x_bin_count) && (bin_y < y_bin_count))
+			{
+				/* pixel is in range */
+				if (!first_pair_dist2)
+					first_pair_dist2 = j;
 
-	                        weighted_flux2 = flux2 * weight2;
+				weighted_flux2 = flux2 * weight2;
 
-                                p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 0);
-                                (*p_current_bin_flux) += weighted_flux1 * weighted_flux2;
-                                p_current_bin_count = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 1);
-                                (*p_current_bin_count) += 1;
-                                p_current_bin_weight = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 2);
-                                (*p_current_bin_weight) += weight1 * weight2;
-                        }
-                        else
-                        {
-                                /*
-                                 * in flat geometry we cannot move in and out of range more than once.
-                                 */
-                                if (first_pair_dist2)
-                                        break;
-                        }
-                }
-                if (first_pair_dist2)
-                        last_dist2_start = first_pair_dist2;
-        }
+				p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 0);
+				(*p_current_bin_flux) += weighted_flux1 * weighted_flux2;
+				p_current_bin_count = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 1);
+				(*p_current_bin_count) += 1;
+				p_current_bin_weight = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, 2);
+				(*p_current_bin_weight) += weight1 * weight2;
+			} else
+			{
+				/*
+				 * in flat geometry we cannot move in and out of range more than once.
+				 */
+				if (first_pair_dist2)
+					break;
+			}
+		}
+		if (first_pair_dist2)
+			last_dist2_start = first_pair_dist2;
+	}
 }
 
 /* wrapped function */
-static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args,
-								 PyObject * kw)
+static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args, PyObject * kw)
 {
 
 	PyArrayObject *in_array_dist1;
@@ -235,11 +227,11 @@ static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args,
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-		(args, kw, "O!O!O!O!O!O!ddddd:bin_pixel_pairs", kwlist,
-		 &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
-		 &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
-		 &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
-		 &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
+	    (args, kw, "O!O!O!O!O!O!ddddd:bin_pixel_pairs", kwlist,
+	     &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
+	     &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
+	     &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
+	     &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
 	{
 		return NULL;
 	}
@@ -258,26 +250,24 @@ static PyObject *bin_pixel_pairs(PyObject * self, PyObject * args,
 	MY_DEBUG_PRINT(":::::Created out array\n");
 
 	bin_pixel_pairs_loop(in_array_dist1, in_array_dist2,
-						 in_array_flux1, in_array_flux2,
-						 in_array_weights1, in_array_weights2,
-						 out_array, qso_angle,
-						 x_bin_size, y_bin_size, x_bin_count, y_bin_count);
+			     in_array_flux1, in_array_flux2,
+			     in_array_weights1, in_array_weights2,
+			     out_array, qso_angle, x_bin_size, y_bin_size, x_bin_count, y_bin_count);
 
 	return (PyObject *) out_array;
 }
 
 static void
 bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_dist1,
-					 PyArrayObject * in_array_dist2,
-					 PyArrayObject * in_array_flux1,
-					 PyArrayObject * in_array_flux2,
-					 PyArrayObject * in_array_weights1,
-					 PyArrayObject * in_array_weights2,
-					 PyArrayObject * out_array, double qso_angle,
-					 double x_bin_size, double y_bin_size,
-					 double x_bin_count, double y_bin_count,
-					 double f_min, double f_max,
-					 double f_bin_count, double* p_pair_count)
+			       PyArrayObject * in_array_dist2,
+			       PyArrayObject * in_array_flux1,
+			       PyArrayObject * in_array_flux2,
+			       PyArrayObject * in_array_weights1,
+			       PyArrayObject * in_array_weights2,
+			       PyArrayObject * out_array, double qso_angle,
+			       double x_bin_size, double y_bin_size,
+			       double x_bin_count, double y_bin_count,
+			       double f_min, double f_max, double f_bin_count, double *p_pair_count)
 {
 	int i, j;
 	int dist1_size, dist2_size;
@@ -329,27 +319,26 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_dist1,
 				/* pixel is in range */
 				if (!first_pair_dist2)
 					first_pair_dist2 = j;
-				
-				/* find the correct bin for the flux product */	
+
+				/* find the correct bin for the flux product */
 				flux_product = flux1 * flux2;
-				
+
 				/* if the value is out of range, we must add it to the minimum/maximum 
 				 * to preserve the quantile value of each intermediate bin.
 				 */
 				if (flux_product > f_max)
-					bin_f = f_bin_count-1;
+					bin_f = f_bin_count - 1;
 				else if (flux_product < f_min)
 					bin_f = 0;
 				else
-					bin_f = (int)(f_bin_count*(flux_product - f_min)/(f_max - f_min));
+					bin_f = (int)(f_bin_count * (flux_product - f_min) / (f_max - f_min));
 
 				p_current_bin_flux = (double *)PyArray_GETPTR3(out_array, bin_x, bin_y, bin_f);
 				/* MY_DEBUG_PRINT(":::::Adding pixel, %d, %d, %d, weight:%lf\n", 
-					bin_x, bin_y, bin_f, weight1*weight2); */
+				   bin_x, bin_y, bin_f, weight1*weight2); */
 				(*p_current_bin_flux) += weight1 * weight2;
 				(*p_pair_count)++;
-			}
-			else
+			} else
 			{
 				/*
 				 * in flat geometry we cannot move in and out of range more than once.
@@ -379,7 +368,7 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 	double x_bin_count, y_bin_count, f_bin_count;
 	double f_min, f_max;
 	double pair_count;
-	PyObject* ret_val;
+	PyObject *ret_val;
 
 	static char *kwlist[] = { "ar_dist1", "ar_dist2",
 		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
@@ -393,45 +382,44 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-		(args, kw, "O!O!O!O!O!O!O!ddddddddd:bin_pixel_pairs", kwlist,
-		 &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
-		 &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
-		 &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
-		 &PyArray_Type, &out_array,
-		 &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count,
-		 &f_min, &f_max, &f_bin_count, &pair_count))
+	    (args, kw, "O!O!O!O!O!O!O!ddddddddd:bin_pixel_pairs", kwlist,
+	     &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
+	     &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
+	     &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
+	     &PyArray_Type, &out_array,
+	     &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count, &f_min, &f_max, &f_bin_count,
+	     &pair_count))
 	{
 		return NULL;
 	}
 	MY_DEBUG_PRINT(":::::After arg parse\n");
 
 	bin_pixel_pairs_histogram_loop(in_array_dist1, in_array_dist2,
-						 in_array_flux1, in_array_flux2,
-						 in_array_weights1, in_array_weights2,
-						 out_array, qso_angle,
-						 x_bin_size, y_bin_size, x_bin_count, y_bin_count,
-						 f_min, f_max, f_bin_count, &pair_count);
+				       in_array_flux1, in_array_flux2,
+				       in_array_weights1, in_array_weights2,
+				       out_array, qso_angle,
+				       x_bin_size, y_bin_size, x_bin_count, y_bin_count, f_min, f_max, f_bin_count,
+				       &pair_count);
 
 	ret_val = PyFloat_FromDouble(pair_count);
 	return ret_val;
 }
 
 static void
-bin_pixel_quads_loop(	PyArrayObject * in_array_dist1,
-			PyArrayObject * in_array_dist2,
-			PyArrayObject * in_array_flux1,
-			PyArrayObject * in_array_flux2,
-			PyArrayObject * in_array_weights1,
-			PyArrayObject * in_array_weights2,
-			PyArrayObject * in_array_dist3,
-			PyArrayObject * in_array_dist4,
-			PyArrayObject * in_array_flux3,
-			PyArrayObject * in_array_flux4,
-			PyArrayObject * in_array_weights3,
-			PyArrayObject * in_array_weights4,
-			PyArrayObject * out_array, double qso_angle,
-			double x_bin_size, double y_bin_size,
-			double x_bin_count, double y_bin_count)
+bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
+		     PyArrayObject * in_array_dist2,
+		     PyArrayObject * in_array_flux1,
+		     PyArrayObject * in_array_flux2,
+		     PyArrayObject * in_array_weights1,
+		     PyArrayObject * in_array_weights2,
+		     PyArrayObject * in_array_dist3,
+		     PyArrayObject * in_array_dist4,
+		     PyArrayObject * in_array_flux3,
+		     PyArrayObject * in_array_flux4,
+		     PyArrayObject * in_array_weights3,
+		     PyArrayObject * in_array_weights4,
+		     PyArrayObject * out_array, double qso_angle,
+		     double x_bin_size, double y_bin_size, double x_bin_count, double y_bin_count)
 {
 	int i, j, k, l;
 	int dist1_size, dist2_size, dist3_size, dist4_size;
@@ -451,10 +439,10 @@ bin_pixel_quads_loop(	PyArrayObject * in_array_dist1,
 	dist2_size = PyArray_DIM(in_array_dist2, 0);
 	dist3_size = PyArray_DIM(in_array_dist3, 0);
 	dist4_size = PyArray_DIM(in_array_dist4, 0);
-	
+
 	if (!dist1_size || !dist2_size || !dist3_size || !dist4_size)
 		return;
-	
+
 	/* if dist1 is nearer, it is more efficient to run the loops with 1 and 2 reversed. */
 	dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, 0));
 	dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, 0));
@@ -488,7 +476,7 @@ bin_pixel_quads_loop(	PyArrayObject * in_array_dist1,
 	max_dist2_index = find_largest_index(max_dist_for_qso_angle, in_array_dist2, dist2_size);
 	max_dist3_index = find_largest_index(max_dist_for_qso_angle, in_array_dist3, dist3_size);
 	max_dist4_index = find_largest_index(max_dist_for_qso_angle, in_array_dist4, dist4_size);
-	
+
 	MY_DEBUG_PRINT(":::::Before loop\n");
 
 	last_dist2_start = 0;
@@ -511,10 +499,10 @@ bin_pixel_quads_loop(	PyArrayObject * in_array_dist1,
 			dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
 			flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
 			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
-			
+
 			bin_x_a = get_bin_x(dist1, dist2, x_scale);
 			bin_y_a = get_bin_y(dist1, dist2, y_scale);
-			
+
 			weighted_flux2 = flux2 * weight2;
 
 			if ((bin_x_a < x_bin_count) && (bin_y_a < y_bin_count))
@@ -546,24 +534,24 @@ bin_pixel_quads_loop(	PyArrayObject * in_array_dist1,
 						{
 							weighted_flux4 = flux4 * weight4;
 
-							p_current_bin_flux = 
-								(double *)PyArray_GETPTR5(out_array, 
-									bin_x_a, bin_y_a,
-									bin_x_b, bin_y_b, 0);
-							(*p_current_bin_flux) += (weighted_flux1 * weighted_flux2) *
-								(weighted_flux3 * weighted_flux4);
-							p_current_bin_count = 
-								(double *)PyArray_GETPTR5(out_array, 
-									bin_x_a, bin_y_a,
-									bin_x_b, bin_y_b, 1);
+							p_current_bin_flux =
+							    (double *)PyArray_GETPTR5(out_array,
+										      bin_x_a, bin_y_a, bin_x_b,
+										      bin_y_b, 0);
+							(*p_current_bin_flux) +=
+							    (weighted_flux1 * weighted_flux2) * (weighted_flux3 *
+												 weighted_flux4);
+							p_current_bin_count =
+							    (double *)PyArray_GETPTR5(out_array, bin_x_a, bin_y_a,
+										      bin_x_b, bin_y_b, 1);
 							(*p_current_bin_count) += 1;
-							p_current_bin_weight = 
-								(double *)PyArray_GETPTR5(out_array, 
-									bin_x_a, bin_y_a,
-									bin_x_b, bin_y_b, 2);
-							(*p_current_bin_weight) += (weight1 * weight2) * (weight3 * weight4);
-						}
-						else
+							p_current_bin_weight =
+							    (double *)PyArray_GETPTR5(out_array,
+										      bin_x_a, bin_y_a, bin_x_b,
+										      bin_y_b, 2);
+							(*p_current_bin_weight) +=
+							    (weight1 * weight2) * (weight3 * weight4);
+						} else
 						{
 							if (first_pair_dist4)
 								break;
@@ -572,8 +560,7 @@ bin_pixel_quads_loop(	PyArrayObject * in_array_dist1,
 					if (first_pair_dist4)
 						last_dist4_start = first_pair_dist4;
 				}
-			}
-			else
+			} else
 			{
 				/*
 				 * in flat geometry we cannot move in and out of range more than once.
@@ -586,7 +573,6 @@ bin_pixel_quads_loop(	PyArrayObject * in_array_dist1,
 			last_dist2_start = first_pair_dist2;
 	}
 }
-
 
 static void pre_allocate_memory(void)
 {
