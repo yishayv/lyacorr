@@ -99,25 +99,18 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	dist1_size = PyArray_DIM(in_array_dist1, 0);
 	dist2_size = PyArray_DIM(in_array_dist2, 0);
 
-	if (dist1_size && dist2_size)
-	{
-		/* if dist1 is nearer, it is more efficient to run the function with 1 and 2 reversed. */
-		dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, 0));
-		dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, 0));
-		if (dist1 < dist2)
-		{
-			bin_pixel_pairs_loop(in_array_dist2,
-					     in_array_dist1,
-					     in_array_flux2,
-					     in_array_flux1,
-					     in_array_weights2,
-					     in_array_weights1,
-					     out_array, qso_angle, x_bin_size, y_bin_size, x_bin_count, y_bin_count);
-			return;
-		}
-	} else
-	{
+	if (!dist1_size || !dist2_size)
 		return;
+
+	/* if dist1 is nearer, it is more efficient to run the function with 1 and 2 reversed. */
+	dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, 0));
+	dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, 0));
+	if (dist1 < dist2)
+	{
+		SWAP(double, dist1, dist2);
+		SWAP(PyArrayObject *, in_array_dist1, in_array_dist2);
+		SWAP(PyArrayObject *, in_array_flux1, in_array_flux2);
+		SWAP(PyArrayObject *, in_array_weights1, in_array_weights2);
 	}
 
 	x_scale = 1. / x_bin_size;
@@ -128,18 +121,8 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	 * find the largest index of dist2 for which a transverse distance to the other
 	 * QSO is within range.
 	 */
-	dist2 = 1;
 	/* set initial index to the end of the array. */
-	max_dist2_index = dist2_size;
-	for (j = 0; j < dist2_size && dist2; j++)
-	{
-		dist2 = *((double *)PyArray_GETPTR1(in_array_dist2, j));
-		if (dist2 > max_dist_for_qso_angle)
-		{
-			max_dist2_index = j;
-			break;
-		}
-	}
+	max_dist2_index = find_largest_index(max_dist_for_qso_angle, in_array_dist2, dist2_size);
 
 	MY_DEBUG_PRINT(":::::Before loop\n");
 
@@ -168,10 +151,8 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 			flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
 			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
 
-			/* r|| = abs(r1 - r2) */
-			bin_x = (int)(fabs(dist1 - dist2) * x_scale);
-			/* r_ = (r1 + r2)/2 * qso_angle */
-			bin_y = (int)((dist1 + dist2) * y_scale);
+			bin_x = get_bin_x(dist1, dist2, x_scale);
+			bin_y = get_bin_y(dist1, dist2, y_scale);
 
 			if ((bin_x < x_bin_count) && (bin_y < y_bin_count))
 			{
