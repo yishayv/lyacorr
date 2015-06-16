@@ -510,7 +510,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 					weighted_flux3 = flux3 * weight3;
 
 					first_pair_dist4 = 0;
-					for (l = last_dist4_start; l < max_dist2_index; l++)
+					for (l = last_dist4_start; l < max_dist4_index; l++)
 					{
 						dist4 = *((double *)PyArray_GETPTR1(in_array_dist4, l));
 						flux4 = *((double *)PyArray_GETPTR1(in_array_flux4, l));
