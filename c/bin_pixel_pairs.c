@@ -65,7 +65,7 @@ int find_largest_index(double max_dist_for_qso_angle, PyArrayObject * in_array_d
 		dist = *((double *)PyArray_GETPTR1(in_array_dist, j));
 		if (dist > max_dist_for_qso_angle)
 		{
-			return j;
+			return j + 1;
 		}
 	}
 	/* got to the end of the array. simply return the size of the array. */
@@ -122,7 +122,7 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	 * QSO is within range.
 	 */
 	/* set initial index to the end of the array. */
-	max_dist_for_qso_angle = y_bin_count / y_scale;
+	max_dist_for_qso_angle = (y_bin_count + 1) * y_bin_size / sin(qso_angle);
 	max_dist2_index = find_largest_index(max_dist_for_qso_angle, in_array_dist2, dist2_size);
 
 	MY_DEBUG_PRINT("max_dist2_index: %d, dist2_size: %d\n", max_dist2_index, dist2_size);
@@ -585,5 +585,4 @@ PyMODINIT_FUNC initbin_pixel_pairs(void)
 	import_array();
 
 	pre_allocate_memory();
-	return;
 }

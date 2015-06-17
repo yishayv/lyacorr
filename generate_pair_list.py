@@ -19,7 +19,6 @@ from data_access.read_spectrum_fits import QSORecord
 from physics_functions import comoving_distance
 import calc_pixel_pairs
 from data_access.numpy_spectrum_container import NpSpectrumContainer
-import bins_2d
 import mpi_helper
 
 settings = common_settings.Settings()
@@ -131,6 +130,15 @@ def profile_main():
 
     # remove pairs of the same QSO.
     local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[1] != local_qso_pairs_with_unity[0]]
+
+    # remove pairs of the same QSO, which have different [plate,mjd,fiber]
+    # assume that QSOs within roughly 1 arc-second (5e-6 rads) are the same object.
+    local_qso_pairs = local_qso_pairs[np.abs(local_qso_pair_angles[local_qso_pairs[:, 0]] -
+                                             local_qso_pair_angles[local_qso_pairs[:, 1]]) > 5e-6]
+
+    mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
+                       local_qso_pairs.shape[0] - ar_distance.size)
+
     # l_print(pairs)
     mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
     # l_print('angle vector:', x[2])
