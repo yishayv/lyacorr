@@ -137,7 +137,7 @@ def profile_main():
                                              local_qso_pair_angles[local_qso_pairs[:, 1]]) > 5e-6]
 
     mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
-                       local_qso_pairs.shape[0] - ar_distance.size)
+                       local_qso_pairs.shape[0] - chunk_sizes[comm.rank])
 
     # l_print(pairs)
     mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
