@@ -129,12 +129,11 @@ def profile_main():
     mpi_helper.l_print('angle vector size:', local_qso_pair_angles.size)
 
     # remove pairs of the same QSO.
-    local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[1] != local_qso_pairs_with_unity[0]]
+    # local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[1] != local_qso_pairs_with_unity[0]]
 
     # remove pairs of the same QSO, which have different [plate,mjd,fiber]
-    # assume that QSOs within roughly 1 arc-second (5e-6 rads) are the same object.
-    local_qso_pairs = local_qso_pairs[np.abs(local_qso_pair_angles[local_qso_pairs[:, 0]] -
-                                             local_qso_pair_angles[local_qso_pairs[:, 1]]) > 5e-6]
+    # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
+    local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pair_angles > 5e-5]
 
     mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
                        local_qso_pairs.shape[0] - chunk_sizes[comm.rank])
