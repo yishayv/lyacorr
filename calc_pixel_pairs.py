@@ -135,14 +135,14 @@ class PixelPairs:
         np.add(spec1_distances[:, None], spec2_distances, out=r_transverse)
         np.multiply(r_transverse, qso_angle / 2. / accumulator.get_y_bin_size(), out=r_transverse)
 
-        # mask all elements that too far apart
+        # mask all elements that are too far apart
         np.less(r_parallel, range_parallel, out=mask_matrix_parallel)
         np.less(r_transverse, range_transverse, out=mask_matrix_final)
         np.logical_and(mask_matrix_parallel, mask_matrix_final, mask_matrix_final)
 
         np.outer(qso1_weights, qso2_weights, out=z_weights)
         # multiply fluxes by their respective weights
-        np.outer(flux_products, z_weights, out=flux_products)
+        np.multiply(flux_products, z_weights, out=flux_products)
 
         assert not np.isnan(flux_products).any()
         assert not np.isnan(z_weights).any()
