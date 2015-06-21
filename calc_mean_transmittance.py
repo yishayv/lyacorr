@@ -22,7 +22,7 @@ from data_access.qso_data import QSOData
 from physics_functions import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 from mpi_helper import l_print_no_barrier
-from physics_functions.deredden_func import deredden_spectrum
+from physics_functions.deredden_func import DereddenSpectrum
 
 lya_center = 1215.67
 
@@ -34,7 +34,7 @@ z_range = (1.9, 3.5, 0.0004)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
-
+deredden_spectrum = DereddenSpectrum()
 
 class DeltaTransmittanceAccumulator:
     """
@@ -106,7 +106,7 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
     ar_wavelength = qso_spec_obj.ar_wavelength
     ar_flux = qso_spec_obj.ar_flux
     # extinction correction:
-    ar_flux = deredden_spectrum(ar_wavelength, ar_flux, qso_rec.extinction_g)
+    ar_flux = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, qso_rec.extinction_g)
     # TODO: adjust pipeline variance for extinction
     ar_ivar = qso_spec_obj.ar_ivar
     assert ar_flux.size == ar_ivar.size

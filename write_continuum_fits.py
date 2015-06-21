@@ -12,7 +12,7 @@ from mpi_accumulate import accumulate_over_spectra
 from data_access import read_spectrum_hdf5
 import common_settings
 from mpi_helper import l_print_no_barrier
-from physics_functions.deredden_func import deredden_spectrum
+from physics_functions.deredden_func import DereddenSpectrum
 from delta_transmittance_remove_mean import get_weighted_mean_from_file
 
 
@@ -25,6 +25,7 @@ fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (1.9, 3.5, 0.0001)
 stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
+deredden_spectrum = DereddenSpectrum()
 
 
 class ContinuumAccumulator:
@@ -95,7 +96,7 @@ def do_continuum_fit_chunk(qso_record_table):
         assert ar_flux.size == ar_ivar.size
 
         # extinction correction:
-        ar_flux = deredden_spectrum(ar_wavelength, ar_flux, qso_rec.extinction_g)
+        ar_flux = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, qso_rec.extinction_g)
         # TODO: adjust pipeline variance for extinction
 
         if not ar_ivar.sum() > 0 or not np.any(np.isfinite(ar_flux)):
