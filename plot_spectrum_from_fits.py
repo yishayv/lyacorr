@@ -16,7 +16,8 @@ import qso_line_mask
 import continuum_fit
 import calc_mean_transmittance
 import mean_transmittance
-from physics_functions.deredden_func import deredden_spectrum
+from physics_functions.deredden_func import DereddenSpectrum
+from physics_functions.spectrum_calibration import SpectrumCalibration
 import sys
 
 i = 232
@@ -44,6 +45,8 @@ def plot_v_mark(wavelength):
 
 settings = common_settings.Settings()
 qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
+deredden_spectrum = DereddenSpectrum()
+spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
 
 
 def rolling_weighted_median(ar_data, ar_weights, box_size):
@@ -78,9 +81,9 @@ class PlotSpectrum():
 
         # create the wavelength series for the measurements
         self.ar_wavelength = np.array(qso_data_.ar_wavelength)
-        # use selected spectrum
-        self.ar_flux = qso_data_.ar_flux
-        self.ar_ivar = qso_data_.ar_ivar
+
+        # flux calibration:
+        self.ar_flux, self.ar_ivar = deredden_spectrum.apply_correction(qso_data_.ar_flux, qso_data_.ar_ivar)
         # we assume the wavelength range in the input file is correct
         assert self.ar_wavelength.size == self.ar_flux.size
 
