@@ -23,6 +23,7 @@ from physics_functions import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 from mpi_helper import l_print_no_barrier
 from physics_functions.deredden_func import DereddenSpectrum
+from physics_functions.spectrum_calibration import SpectrumCalibration
 
 lya_center = 1215.67
 
@@ -35,12 +36,15 @@ ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
 deredden_spectrum = DereddenSpectrum()
+spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
+
 
 class DeltaTransmittanceAccumulator:
     """
         Add delta transmittance data to a single memory mapped file.
         It is intended to be used as a helper object called by mpi_accumulate.accumulate_over_spectra
     """
+
     def __init__(self, num_spectra):
         self.num_spectra = num_spectra
         self.delta_t_file = NpSpectrumContainer(False, num_spectra=self.num_spectra,
@@ -75,6 +79,7 @@ class MeanTransmittanceAccumulator:
         Accumulate transmittance data into a total weighed mean and/or median.
         It is intended to be used as a helper object called by mpi_accumulate.accumulate_over_spectra
     """
+
     def __init__(self, num_spectra):
         self.m = mean_transmittance.MeanTransmittance(np.arange(*z_range))
         self.med = median_transmittance.MedianTransmittance(np.arange(*z_range))
@@ -101,14 +106,18 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
     :type qso_spec_obj: QSOData
     :return:
     """
-    qso_rec = qso_spec_obj.qso_rec
+
+    # flux correction:
+    corrected_qso_data = spectrum_calibration.apply_correction(qso_spec_obj)
+
+    qso_rec = corrected_qso_data.qso_rec
     z = qso_rec.z
-    ar_wavelength = qso_spec_obj.ar_wavelength
-    ar_flux = qso_spec_obj.ar_flux
+    ar_wavelength = corrected_qso_data.ar_wavelength
+    ar_flux = corrected_qso_data.ar_flux
     # extinction correction:
     ar_flux = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, qso_rec.extinction_g)
     # TODO: adjust pipeline variance for extinction
-    ar_ivar = qso_spec_obj.ar_ivar
+    ar_ivar = corrected_qso_data.ar_ivar
     assert ar_flux.size == ar_ivar.size
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]), np.array([]))
 

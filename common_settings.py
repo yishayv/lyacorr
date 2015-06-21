@@ -52,6 +52,8 @@ class Settings():
     opt_median_delta_t_npy = 'median_delta_t_npy'
     # list of QSO pairs with most significant contribution to the correlation estimator.
     opt_significant_qso_pairs_npy = 'significant_qso_pairs_npy'
+    # photometric correction to SDSS spectra.
+    opt_tp_correction_hdf5 = 'tp_correction_hdf5'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
@@ -114,6 +116,7 @@ class Settings():
         value_mean_delta_t_npy = '../../data/mean_delta_t.npy'
         value_median_delta_t_npy = '../../data/median_delta_t.npy'
         value_significant_qso_pairs_npy = '../../data/significant_qso_pairs.npy'
+        value_tp_correction_hdf5 = '../../data/tp_correction/tpcorr.hdf5'
 
         value_file_chunk_size = 10000
         value_mpi_num_sub_chunks = 1440
@@ -159,6 +162,7 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_median_delta_t_npy, value_median_delta_t_npy)
         self.config_parser.set(self.section_file_paths, self.opt_significant_qso_pairs_npy,
                                value_significant_qso_pairs_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_tp_correction_hdf5, value_tp_correction_hdf5)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
@@ -252,6 +256,9 @@ class Settings():
 
     def get_significant_qso_pairs_npy(self):
         return self.config_parser.get(self.section_file_paths, self.opt_significant_qso_pairs_npy)
+
+    def get_tp_correction_hdf5(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_tp_correction_hdf5)
 
     # Performance
 

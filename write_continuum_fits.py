@@ -1,6 +1,5 @@
 import itertools
 import pprint
-import os.path
 import cProfile
 
 import numpy as np
@@ -14,7 +13,7 @@ import common_settings
 from mpi_helper import l_print_no_barrier
 from physics_functions.deredden_func import DereddenSpectrum
 from delta_transmittance_remove_mean import get_weighted_mean_from_file
-
+from physics_functions.spectrum_calibration import SpectrumCalibration
 
 MAX_WAVELENGTH_COUNT = 4992
 
@@ -26,7 +25,7 @@ fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (1.9, 3.5, 0.0001)
 stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
 deredden_spectrum = DereddenSpectrum()
-
+spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
 
 class ContinuumAccumulator:
     def __init__(self, num_spectra):
@@ -87,11 +86,14 @@ def do_continuum_fit_chunk(qso_record_table):
 
     for n in xrange(len(qso_record_table)):
         current_qso_data = spectra.return_spectrum(n)
-        current_qso_index = current_qso_data.qso_rec.index
-        ar_wavelength = current_qso_data.ar_wavelength
-        ar_flux = current_qso_data.ar_flux
-        ar_ivar = current_qso_data.ar_ivar
-        qso_rec = current_qso_data.qso_rec
+
+        # flux correction
+        corrected_qso_data = spectrum_calibration.apply_correction(current_qso_data)
+
+        ar_wavelength = corrected_qso_data.ar_wavelength
+        ar_flux = corrected_qso_data.ar_flux
+        ar_ivar = corrected_qso_data.ar_ivar
+        qso_rec = corrected_qso_data.qso_rec
         z = qso_rec.z
         assert ar_flux.size == ar_ivar.size
 
@@ -139,4 +141,3 @@ if settings.get_profile():
     cProfile.runctx('profile_main()', globals(), locals(), filename='write_continuum_fits.prof', sort=2)
 else:
     profile_main()
-
