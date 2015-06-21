@@ -98,8 +98,7 @@ def do_continuum_fit_chunk(qso_record_table):
         assert ar_flux.size == ar_ivar.size
 
         # extinction correction:
-        ar_flux = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, qso_rec.extinction_g)
-        # TODO: adjust pipeline variance for extinction
+        ar_flux, ar_ivar = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, ar_ivar, qso_rec.extinction_g)
 
         if not ar_ivar.sum() > 0 or not np.any(np.isfinite(ar_flux)):
             # no useful data

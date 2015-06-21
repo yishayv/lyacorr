@@ -107,17 +107,17 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
     :return:
     """
 
+    qso_rec = qso_spec_obj.qso_rec
+    z = qso_rec.z
+
     # flux correction:
+    # TODO: unify this code with the one in write_continuum_fits.py
     corrected_qso_data = spectrum_calibration.apply_correction(qso_spec_obj)
 
-    qso_rec = corrected_qso_data.qso_rec
-    z = qso_rec.z
     ar_wavelength = corrected_qso_data.ar_wavelength
-    ar_flux = corrected_qso_data.ar_flux
     # extinction correction:
-    ar_flux = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, qso_rec.extinction_g)
-    # TODO: adjust pipeline variance for extinction
-    ar_ivar = corrected_qso_data.ar_ivar
+    ar_flux, ar_ivar = deredden_spectrum.apply_correction(ar_wavelength, corrected_qso_data.ar_flux,
+                                                          corrected_qso_data.ar_ivar, qso_rec.extinction_g)
     assert ar_flux.size == ar_ivar.size
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]), np.array([]))
 
