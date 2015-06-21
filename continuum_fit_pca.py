@@ -275,7 +275,7 @@ class ContinuumFitPCA:
         # in addition to a max_delta_f value, avoid suspicious over-fitting and very low SNR values
         is_good_fit_result = 0.02 < delta_f < max_delta_f and snr > 0.5
 
-        bin_x = np.clip(snr * 50 / 15, 0, 49)
+        bin_x = np.clip(snr * 50 / 30, 0, 49)
         bin_y = np.clip(delta_f * 50 / 1., 0, 49)
         self.snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
         return is_good_fit_result
