@@ -88,6 +88,9 @@ def do_continuum_fit_chunk(qso_record_table):
         current_qso_data = spectra.return_spectrum(n)
 
         # flux correction
+        if not spectrum_calibration.is_correction_available(current_qso_data):
+            continue
+
         corrected_qso_data = spectrum_calibration.apply_correction(current_qso_data)
 
         ar_wavelength = corrected_qso_data.ar_wavelength

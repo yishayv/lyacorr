@@ -43,7 +43,7 @@ class SpectrumCalibration:
             print "No flux correction for QSO:", qso_rec
             return qso_data
 
-    def is_correction_avaliable(self, qso_data):
+    def is_correction_available(self, qso_data):
         """
 
         :type qso_data: QSOData
