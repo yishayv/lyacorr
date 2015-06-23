@@ -268,7 +268,7 @@ class ContinuumFitPCA:
         :type goodness_of_fit: np.multiarray.ndarray
         """
         # threshold is based on signal to noise.
-        max_delta_f = self.max_delta_f_per_snr(snr / 1.5) * 1.5 if snr != 0 else 0
+        max_delta_f = self.max_delta_f_per_snr(snr) if snr != 0 else 0
 
         delta_f = goodness_of_fit
 
@@ -323,7 +323,8 @@ class ContinuumFitPCA:
 
     @staticmethod
     def max_delta_f_per_snr(snr):
-        return snr ** (-1.5) / 3.6 + 0.05
+	# approximate a fixed quantile of spectra as a function of SNR.
+        return ((snr/1.5) ** (-1.5) / 3.6 + 0.05)*1.5
 
 
 class ContinuumFitContainer(object):
