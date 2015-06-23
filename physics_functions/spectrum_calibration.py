@@ -40,4 +40,16 @@ class SpectrumCalibration:
             new_qso_data = QSOData(qso_rec, qso_data.ar_wavelength, corrected_flux, corrected_ivar)
             return new_qso_data
         else:
+            print "No flux correction for QSO:", qso_rec
             return qso_data
+
+    def is_correction_avaliable(self, qso_data):
+        """
+
+        :type qso_data: QSOData
+        :rtype QSOData
+        """
+        qso_rec = qso_data.qso_rec
+        # Read the target's throughput correction vector
+        tpcorr_key = '%s/%s/%s' % (qso_rec.plate, qso_rec.mjd, qso_rec.fiberID)
+        return tpcorr_key in self.tpcorr
