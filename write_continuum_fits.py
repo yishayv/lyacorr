@@ -14,6 +14,7 @@ from mpi_helper import l_print_no_barrier
 from physics_functions.deredden_func import DereddenSpectrum
 from delta_transmittance_remove_mean import get_weighted_mean_from_file
 from physics_functions.spectrum_calibration import SpectrumCalibration
+from physics_functions.remove_mw_lines import MWLines
 
 MAX_WAVELENGTH_COUNT = 4992
 
@@ -23,9 +24,12 @@ settings = common_settings.Settings()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (1.9, 3.5, 0.0001)
-stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
+stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'no_flux_calibration': 0, 'no_mw_lines': 0,
+         'accepted': 0}
 deredden_spectrum = DereddenSpectrum()
 spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
+mw_lines = MWLines()
+
 
 class ContinuumAccumulator:
     def __init__(self, num_spectra):
@@ -89,6 +93,7 @@ def do_continuum_fit_chunk(qso_record_table):
 
         # flux correction
         if not spectrum_calibration.is_correction_available(current_qso_data):
+            stats['no_flux_calibration'] += 1
             continue
 
         corrected_qso_data = spectrum_calibration.apply_correction(current_qso_data)
@@ -99,6 +104,13 @@ def do_continuum_fit_chunk(qso_record_table):
         qso_rec = corrected_qso_data.qso_rec
         z = qso_rec.z
         assert ar_flux.size == ar_ivar.size
+
+        # try to correct lines
+        ar_flux, ar_ivar, is_corrected = mw_lines.apply_correction(ar_wavelength, ar_flux, ar_ivar, qso_rec.ra,
+                                                                   qso_rec.dec)
+        if not is_corrected:
+            stats['no_mw_lines'] += 1
+            continue
 
         # extinction correction:
         ar_flux, ar_ivar = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, ar_ivar, qso_rec.extinction_g)
