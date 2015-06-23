@@ -1,6 +1,7 @@
 import itertools
 import pprint
 import cProfile
+from collections import Counter
 
 import numpy as np
 from mpi4py import MPI
@@ -24,8 +25,9 @@ settings = common_settings.Settings()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (1.9, 3.5, 0.0001)
-stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'no_flux_calibration': 0, 'no_mw_lines': 0,
-         'accepted': 0}
+local_stats = Counter(
+    {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'no_flux_calibration': 0, 'no_mw_lines': 0,
+     'accepted': 0})
 deredden_spectrum = DereddenSpectrum()
 spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
 mw_lines = MWLines()
@@ -93,7 +95,7 @@ def do_continuum_fit_chunk(qso_record_table):
 
         # flux correction
         if not spectrum_calibration.is_correction_available(current_qso_data):
-            stats['no_flux_calibration'] += 1
+            local_stats['no_flux_calibration'] += 1
             continue
 
         corrected_qso_data = spectrum_calibration.apply_correction(current_qso_data)
@@ -109,7 +111,7 @@ def do_continuum_fit_chunk(qso_record_table):
         ar_flux, ar_ivar, is_corrected = mw_lines.apply_correction(ar_wavelength, ar_flux, ar_ivar, qso_rec.ra,
                                                                    qso_rec.dec)
         if not is_corrected:
-            stats['no_mw_lines'] += 1
+            local_stats['no_mw_lines'] += 1
             continue
 
         # extinction correction:
@@ -117,7 +119,7 @@ def do_continuum_fit_chunk(qso_record_table):
 
         if not ar_ivar.sum() > 0 or not np.any(np.isfinite(ar_flux)):
             # no useful data
-            stats['empty'] += 1
+            local_stats['empty'] += 1
             continue
 
         fit_spectrum, fit_normalization_factor, is_good_fit = \
@@ -125,7 +127,7 @@ def do_continuum_fit_chunk(qso_record_table):
                         mean_flux_constraint_func=median_flux_correction_func)
 
         if not is_good_fit:
-            stats['bad_fit'] += 1
+            local_stats['bad_fit'] += 1
             l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
             continue
 
@@ -133,7 +135,7 @@ def do_continuum_fit_chunk(qso_record_table):
         continuum_chunk.set_flux(n, fit_spectrum)
         # TODO: find a way to estimate error, or create a file without ivar values.
 
-        stats['accepted'] += 1
+        local_stats['accepted'] += 1
 
     l_print_no_barrier("offset =", start_offset)
     return continuum_chunk.as_np_array(), continuum_chunk.as_object()
@@ -141,10 +143,13 @@ def do_continuum_fit_chunk(qso_record_table):
 
 def profile_main():
     accumulate_over_spectra(do_continuum_fit_chunk, ContinuumAccumulator)
-    l_print_no_barrier(pprint.pformat(stats))
+    l_print_no_barrier(pprint.pformat(local_stats))
 
     snr_stats_list = comm.gather(fit_pca.snr_stats)
+    stats_list = comm.gather(local_stats)
     if comm.rank == 0:
+        total_stats = sum(stats_list[1:], stats_list[0])
+        print pprint.pformat(total_stats)
         snr_stats = np.zeros_like(snr_stats_list[0])
         for i in snr_stats_list:
             snr_stats += i
