@@ -54,6 +54,10 @@ class Settings():
     opt_significant_qso_pairs_npy = 'significant_qso_pairs_npy'
     # photometric correction to SDSS spectra.
     opt_tp_correction_hdf5 = 'tp_correction_hdf5'
+    # stacked spectra for Milky-Way line removal
+    opt_mw_stacked_spectra_fits = 'mw_stacked_spectra_fits'
+    # mapping from pixel ID to group ID for Milky-Way line removal
+    opt_mw_pixel_to_group_mapping_fits = 'mw_pixel_to_group_mapping_fits'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
@@ -117,6 +121,8 @@ class Settings():
         value_median_delta_t_npy = '../../data/median_delta_t.npy'
         value_significant_qso_pairs_npy = '../../data/significant_qso_pairs.npy'
         value_tp_correction_hdf5 = '../../data/tp_correction/tpcorr.hdf5'
+        value_mw_stacked_spectra_fits = '../../data/MW_lines/coor_bins.fits'
+        value_mw_pixel_to_group_mapping_fits = '../../data/MW_lines/maps.fits'
 
         value_file_chunk_size = 10000
         value_mpi_num_sub_chunks = 1440
@@ -163,6 +169,9 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_significant_qso_pairs_npy,
                                value_significant_qso_pairs_npy)
         self.config_parser.set(self.section_file_paths, self.opt_tp_correction_hdf5, value_tp_correction_hdf5)
+        self.config_parser.set(self.section_file_paths, self.opt_mw_stacked_spectra_fits, value_mw_stacked_spectra_fits)
+        self.config_parser.set(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits,
+                               value_mw_pixel_to_group_mapping_fits)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
@@ -259,6 +268,12 @@ class Settings():
 
     def get_tp_correction_hdf5(self):
         return self.config_parser.get(self.section_file_paths, self.opt_tp_correction_hdf5)
+
+    def get_mw_stacked_spectra_fits(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_mw_stacked_spectra_fits)
+
+    def get_mw_pixel_to_group_mapping_fits(self):
+        return self.config_parser.get(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits)
 
     # Performance
 

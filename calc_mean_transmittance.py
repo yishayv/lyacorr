@@ -7,6 +7,7 @@
 """
 import itertools
 import pprint
+from collections import Counter
 
 import numpy as np
 from scipy import interpolate
@@ -22,8 +23,7 @@ from data_access.qso_data import QSOData
 from physics_functions import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 from mpi_helper import l_print_no_barrier
-from physics_functions.deredden_func import DereddenSpectrum
-from physics_functions.spectrum_calibration import SpectrumCalibration
+from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
 lya_center = 1215.67
 
@@ -34,9 +34,8 @@ fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (1.9, 3.5, 0.0004)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
-stats = {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0}
-deredden_spectrum = DereddenSpectrum()
-spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
+local_stats = Counter({'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
+pre_process_spectrum = PreProcessSpectrum()
 
 
 class DeltaTransmittanceAccumulator:
@@ -112,21 +111,21 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
     qso_rec = qso_spec_obj.qso_rec
     z = qso_rec.z
 
-    # flux correction:
-    # TODO: unify this code with the one in write_continuum_fits.py
-    if not spectrum_calibration.is_correction_available(qso_spec_obj):
+    pre_processed_qso_data, result_string = pre_process_spectrum.apply(qso_spec_obj)
+
+    if result_string != 'processed':
+        # error during pre-processing. log statistics of error causes.
+        local_stats[result_string] += 1
         return empty_result
 
-    corrected_qso_data = spectrum_calibration.apply_correction(qso_spec_obj)
+    ar_wavelength = pre_processed_qso_data.ar_wavelength
+    ar_flux = pre_processed_qso_data.ar_flux
+    ar_ivar = pre_processed_qso_data.ar_ivar
 
-    ar_wavelength = corrected_qso_data.ar_wavelength
-    # extinction correction:
-    ar_flux, ar_ivar = deredden_spectrum.apply_correction(ar_wavelength, corrected_qso_data.ar_flux,
-                                                          corrected_qso_data.ar_ivar, qso_rec.extinction_g)
     assert ar_flux.size == ar_ivar.size
 
     if not ar_fit_spectrum.size:
-        stats['bad_fit'] += 1
+        local_stats['bad_fit'] += 1
         l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
         return empty_result
 
@@ -134,7 +133,7 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
 
     if not ar_ivar.sum() > 0 or not np.any(np.isfinite(ar_flux)):
         # no useful data
-        stats['empty'] += 1
+        local_stats['empty'] += 1
         return empty_result
 
     # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
@@ -157,17 +156,17 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
 
     # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
     if ar_wavelength_masked.size < 50:
-        stats['low_count'] += 1
+        local_stats['low_count'] += 1
         l_print_no_barrier("skipped QSO (low pixel count): ", qso_rec)
         return empty_result
 
     fit_min_value = ar_fit_spectrum_masked.min()
     if fit_min_value < min_continuum_threshold:
-        stats['low_continuum'] += 1
+        local_stats['low_continuum'] += 1
         l_print_no_barrier("skipped QSO (low continuum) :", qso_rec)
         return empty_result
 
-    stats['accepted'] += 1
+    local_stats['accepted'] += 1
     l_print_no_barrier("accepted QSO", qso_rec)
 
     ar_rel_transmittance = ar_flux / ar_fit_spectrum
@@ -248,11 +247,11 @@ def delta_transmittance_chunk(qso_record_table):
     # warning: np.ndarray is not initialized by default. zeroing manually.
     delta_t.zero()
     m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
-    #m = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())
+    # m = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())
     # for debugging with a small data set:
     # ignore values with less than 20 sample points
     ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_mean_with_minimum_count(20)
-    #ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_median_with_minimum_count(20, weighted=True)
+    # ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_median_with_minimum_count(20, weighted=True)
 
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     chunk_weighted_delta_t = 0
@@ -304,10 +303,13 @@ mean_transmittance_chunk.num_spec = 0
 def calc_mean_transmittance():
     m, med = accumulate_over_spectra(mean_transmittance_chunk, MeanTransmittanceAccumulator)
     l_print_no_barrier("-------- END MEAN TRANSMITTANCE -------------")
-    l_print_no_barrier(pprint.pformat(stats))
+    l_print_no_barrier(pprint.pformat(local_stats))
     comm.Barrier()
 
+    stats_list = comm.gather(local_stats)
     if comm.rank == 0:
+        total_stats = sum(stats_list, Counter())
+        print pprint.pformat(total_stats)
         # decide whether to save mean/median results based on common settings:
         if settings.get_enable_weighted_mean_estimator():
             m.save(settings.get_mean_transmittance_npy())
@@ -319,4 +321,4 @@ def calc_delta_transmittance():
     comm.Barrier()
     accumulate_over_spectra(delta_transmittance_chunk,
                             DeltaTransmittanceAccumulator)
-    l_print_no_barrier(pprint.pformat(stats))
+    l_print_no_barrier(pprint.pformat(local_stats))

@@ -12,10 +12,8 @@ from mpi_accumulate import accumulate_over_spectra
 from data_access import read_spectrum_hdf5
 import common_settings
 from mpi_helper import l_print_no_barrier
-from physics_functions.deredden_func import DereddenSpectrum
 from delta_transmittance_remove_mean import get_weighted_mean_from_file
-from physics_functions.spectrum_calibration import SpectrumCalibration
-from physics_functions.remove_mw_lines import MWLines
+from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
 MAX_WAVELENGTH_COUNT = 4992
 
@@ -28,9 +26,7 @@ z_range = (1.9, 3.5, 0.0001)
 local_stats = Counter(
     {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'no_flux_calibration': 0, 'no_mw_lines': 0,
      'accepted': 0})
-deredden_spectrum = DereddenSpectrum()
-spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
-mw_lines = MWLines()
+pre_process_spectrum = PreProcessSpectrum()
 
 
 class ContinuumAccumulator:
@@ -93,29 +89,19 @@ def do_continuum_fit_chunk(qso_record_table):
     for n in xrange(len(qso_record_table)):
         current_qso_data = spectra.return_spectrum(n)
 
-        # flux correction
-        if not spectrum_calibration.is_correction_available(current_qso_data):
-            local_stats['no_flux_calibration'] += 1
+        pre_processed_qso_data, result_string = pre_process_spectrum.apply(current_qso_data)
+
+        if result_string != 'processed':
+            # error during pre-processing. log statistics of error causes.
+            local_stats[result_string] += 1
             continue
 
-        corrected_qso_data = spectrum_calibration.apply_correction(current_qso_data)
-
-        ar_wavelength = corrected_qso_data.ar_wavelength
-        ar_flux = corrected_qso_data.ar_flux
-        ar_ivar = corrected_qso_data.ar_ivar
-        qso_rec = corrected_qso_data.qso_rec
+        ar_wavelength = pre_processed_qso_data.ar_wavelength
+        ar_flux = pre_processed_qso_data.ar_flux
+        ar_ivar = pre_processed_qso_data.ar_ivar
+        qso_rec = pre_processed_qso_data.qso_rec
         z = qso_rec.z
         assert ar_flux.size == ar_ivar.size
-
-        # try to correct lines
-        ar_flux, ar_ivar, is_corrected = mw_lines.apply_correction(ar_wavelength, ar_flux, ar_ivar, qso_rec.ra,
-                                                                   qso_rec.dec)
-        if not is_corrected:
-            local_stats['no_mw_lines'] += 1
-            continue
-
-        # extinction correction:
-        ar_flux, ar_ivar = deredden_spectrum.apply_correction(ar_wavelength, ar_flux, ar_ivar, qso_rec.extinction_g)
 
         if not ar_ivar.sum() > 0 or not np.any(np.isfinite(ar_flux)):
             # no useful data
@@ -148,7 +134,7 @@ def profile_main():
     snr_stats_list = comm.gather(fit_pca.snr_stats)
     stats_list = comm.gather(local_stats)
     if comm.rank == 0:
-        total_stats = sum(stats_list[1:], stats_list[0])
+        total_stats = sum(stats_list, Counter())
         print pprint.pformat(total_stats)
         snr_stats = np.zeros_like(snr_stats_list[0])
         for i in snr_stats_list:

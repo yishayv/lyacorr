@@ -1,11 +1,13 @@
-# code to Yishay
-
 import numpy as np
 import pyfits
 import healpy as hp
 
+import common_settings
 
-def load_spectra(path="../../data/MW_lines/coor_bins.fits"):
+settings = common_settings.Settings()
+
+
+def load_spectra(path):
     """
     function loads the .fits file of the stacked spectra
     """
@@ -29,11 +31,13 @@ def load_spectra(path="../../data/MW_lines/coor_bins.fits"):
 class MWLines:
     def __init__(self):
         # convert pixel ID to group ID
-        pixel_id, group_id = self.load_metadata()
+        pixel_id, group_id = self.load_metadata(settings.get_mw_pixel_to_group_mapping_fits())
         assert pixel_id.size == group_id.size
         unique_group_id = np.unique(group_id)
-        assert np.all(unique_group_id == np.append(np.arange(unique_group_id.size - 1),
-                                                   10000)), "group IDs must be consecutive integers starting from 0, or 10000"
+        assert np.all(
+            unique_group_id == np.append(
+                np.arange(unique_group_id.size - 1),
+                [10000])), "group IDs must be consecutive integers starting from 0, or 10000"
         assert np.setdiff1d(
             pixel_id, np.arange(pixel_id.size)).size == 0, "pixel IDs must be consecutive integers starting from 0"
 
@@ -41,9 +45,9 @@ class MWLines:
         # if the pixel_id list is unsorted, assign each pixel's group ID to its pixel offset in fast_group_id.
         self.fast_group_id[pixel_id.astype(int)] = group_id[np.arange(pixel_id.size)]
         # for now load all data to memory on init (~10mb)
-        self.ar_wl, self.ar_spectra = load_spectra()
+        self.ar_wl, self.ar_spectra = load_spectra(settings.get_mw_stacked_spectra_fits())
 
-    def load_metadata(self, path="../../data/MW_lines/maps.fits"):
+    def load_metadata(self, path):
         """
         function loads the metadata which contains the connection between pixel ID to group ID
         """
