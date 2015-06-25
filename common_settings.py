@@ -7,9 +7,10 @@ _SEP = ':'
 class Settings():
     def __init__(self):
         self.config_parser = ConfigParser.SafeConfigParser()
-        if not os.path.exists(self.settings_file_name):
+        effective_settings_file_name = os.getenv('LYACORR_CONF_FILE', self.settings_file_name)
+        if not os.path.exists(effective_settings_file_name):
             self.write_default_settings()
-        self.config_parser.read(self.settings_file_name)
+        self.config_parser.read(effective_settings_file_name)
 
     settings_file_name = 'lyacorr.rc'
 
@@ -207,73 +208,85 @@ class Settings():
         with open(self.settings_file_name, 'wb') as configfile:
             self.config_parser.write(configfile)
 
+    def get_env_expanded_path(self, section, key):
+        value = self.config_parser.get(section, key)
+        return os.path.expandvars(os.path.expanduser(value))
+
+    def get_env_expanded_option(self, section, key):
+        value = self.config_parser.get(section, key)
+        return os.path.expandvars(value)
+
+    def get_env_expanded_multiple_paths(self, section, key):
+        return [os.path.expanduser(i) for i in
+                self.config_parser.get(section, key).split(_SEP)]
+
     # File Paths
 
     def get_plate_dir_list(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_plate_dir_list).split(_SEP)
+        return self.get_env_expanded_multiple_paths(self.section_file_paths, self.opt_plate_dir_list)
 
     def get_pca_continuum_tables(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_pca_continuum_tables).split(_SEP)
+        return self.get_env_expanded_multiple_paths(self.section_file_paths, self.opt_pca_continuum_tables)
 
     def get_qso_spectra_hdf5(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_qso_spectra_hdf5)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_spectra_hdf5)
 
     def get_mean_transmittance_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_mean_transmittance_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_mean_transmittance_npy)
 
     def get_median_transmittance_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_median_transmittance_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_median_transmittance_npy)
 
     def get_qso_metadata_fits(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_qso_metadata_fits)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_metadata_fits)
 
     def get_qso_metadata_fields(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_qso_metadata_fields)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_metadata_fields)
 
     def get_qso_metadata_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_qso_metadata_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_metadata_npy)
 
     def get_delta_t_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_delta_t_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_delta_t_npy)
 
     def get_mean_estimator_bins(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_mean_estimator_bins)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_mean_estimator_bins)
 
     def get_median_estimator_bins(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_median_estimator_bins)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_median_estimator_bins)
 
     def get_sigma_squared_lss(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_sigma_sq_lss)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_sigma_sq_lss)
 
     def get_weight_eta(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_weight_eta)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_weight_eta)
 
     def get_continuum_fit_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_continuum_fit_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_continuum_fit_npy)
 
     def get_continuum_fit_metadata_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_continuum_fit_metadata_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_continuum_fit_metadata_npy)
 
     def get_fit_snr_stats(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_fit_snr_stats_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_fit_snr_stats_npy)
 
     def get_mean_delta_t_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_mean_delta_t_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_mean_delta_t_npy)
 
     def get_median_delta_t_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_median_delta_t_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_median_delta_t_npy)
 
     def get_significant_qso_pairs_npy(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_significant_qso_pairs_npy)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_significant_qso_pairs_npy)
 
     def get_tp_correction_hdf5(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_tp_correction_hdf5)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_tp_correction_hdf5)
 
     def get_mw_stacked_spectra_fits(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_mw_stacked_spectra_fits)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_mw_stacked_spectra_fits)
 
     def get_mw_pixel_to_group_mapping_fits(self):
-        return self.config_parser.get(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits)
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits)
 
     # Performance
 
