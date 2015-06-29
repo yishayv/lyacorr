@@ -85,6 +85,12 @@ class Settings():
     opt_enable_weighted_mean_estimator = 'enable_weighted_mean_estimator'
     # enabled/disable weighted median estimator
     opt_enable_weighted_median_estimator = 'enable_weighted_median_estimator'
+    # enable MW line correction
+    opt_enable_mw_line_correction = 'enable_mw_line_correction'
+    # enable spectrum flux correction
+    opt_enable_spectrum_flux_correction = 'enable_spectrum_flux_correction'
+    # enable extinction correction
+    opt_enable_extinction_correction = 'enable_extinction_correction'
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
@@ -137,6 +143,9 @@ class Settings():
         value_cosmology = 'Planck13'
         value_enable_weighted_mean_estimator = True
         value_enable_weighted_median_estimator = True
+        value_enable_mw_line_correction = True
+        value_enable_spectrum_flux_correction = True
+        value_enable_extinction_correction = True
 
         value_mock_shell_radius = 150
         value_mock_shell_fractional_width = 0.005
@@ -195,6 +204,12 @@ class Settings():
                                bool(value_enable_weighted_mean_estimator))
         self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_median_estimator,
                                bool(value_enable_weighted_median_estimator))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_mw_line_correction,
+                               bool(value_enable_mw_line_correction))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_spectrum_flux_correction,
+                               bool(value_enable_spectrum_flux_correction))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_extinction_correction,
+                               bool(value_enable_extinction_correction))
 
         self.config_parser.add_section(self.section_mock_parameters)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
@@ -324,6 +339,15 @@ class Settings():
 
     def get_enable_weighted_median_estimator(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_weighted_median_estimator)
+
+    def get_enable_mw_line_correction(self):
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mw_line_correction)
+
+    def get_enable_spectrum_flux_correction(self):
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_spectrum_flux_correction)
+
+    def get_enable_extinction_correction(self):
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_extinction_correction)
 
     # Mock Parameters
 

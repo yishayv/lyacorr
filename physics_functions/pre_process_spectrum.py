@@ -21,11 +21,14 @@ class PreProcessSpectrum:
         """
 
         # flux correction
-        if not self.spectrum_calibration.is_correction_available(qso_data):
-            result_string = 'no_flux_calibration'
-            return qso_data, result_string
+        if settings.get_enable_spectrum_flux_correction():
+            if not self.spectrum_calibration.is_correction_available(qso_data):
+                result_string = 'no_flux_calibration'
+                return qso_data, result_string
 
-        corrected_qso_data = self.spectrum_calibration.apply_correction(qso_data)
+            corrected_qso_data = self.spectrum_calibration.apply_correction(qso_data)
+        else:
+            corrected_qso_data = qso_data
 
         ar_wavelength = corrected_qso_data.ar_wavelength
         ar_flux = corrected_qso_data.ar_flux
@@ -35,15 +38,17 @@ class PreProcessSpectrum:
         assert ar_flux.size == ar_ivar.size
 
         # try to correct lines
-        ar_flux, ar_ivar, is_corrected = self.mw_lines.apply_correction(ar_wavelength, ar_flux, ar_ivar, qso_rec.ra,
-                                                                        qso_rec.dec)
-        if not is_corrected:
-            result_string = 'no_mw_lines'
-            return qso_data, result_string
+        if settings.get_enable_mw_line_correction():
+            ar_flux, ar_ivar, is_corrected = self.mw_lines.apply_correction(
+                ar_wavelength, ar_flux, ar_ivar, qso_rec.ra, qso_rec.dec)
+            if not is_corrected:
+                result_string = 'no_mw_lines'
+                return qso_data, result_string
 
         # extinction correction:
-        ar_flux, ar_ivar = self.deredden_spectrum.apply_correction(ar_wavelength, ar_flux, ar_ivar,
-                                                                   qso_rec.extinction_g)
+        if settings.get_enable_extinction_correction():
+            ar_flux, ar_ivar = self.deredden_spectrum.apply_correction(
+                ar_wavelength, ar_flux, ar_ivar, qso_rec.extinction_g)
 
         new_qso_data = qso_data
         new_qso_data.ar_flux = ar_flux
