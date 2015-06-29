@@ -7,12 +7,12 @@ _SEP = ':'
 class Settings():
     def __init__(self):
         self.config_parser = ConfigParser.SafeConfigParser()
-        effective_settings_file_name = os.getenv('LYACORR_CONF_FILE', self.settings_file_name)
-        if not os.path.exists(effective_settings_file_name):
+        self.effective_settings_file_name = os.getenv('LYACORR_CONF_FILE', self.default_settings_file_name)
+        if not os.path.exists(self.effective_settings_file_name):
             self.write_default_settings()
-        self.config_parser.read(effective_settings_file_name)
+        self.config_parser.read(self.effective_settings_file_name)
 
-    settings_file_name = 'lyacorr.rc'
+    default_settings_file_name = 'lyacorr.rc'
 
     section_file_paths = 'FilePaths'
     # list of paths, separated by comma
@@ -205,7 +205,7 @@ class Settings():
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_core_radius, value_mock_core_radius)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_resolution, value_mock_resolution)
 
-        with open(self.settings_file_name, 'wb') as configfile:
+        with open(self.effective_settings_file_name, 'wb') as configfile:
             self.config_parser.write(configfile)
 
     def get_env_expanded_path(self, section, key):
