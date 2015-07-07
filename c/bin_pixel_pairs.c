@@ -51,14 +51,14 @@ static inline double get_bin_y(double dist1, double dist2, double y_scale)
 	return (dist1 + dist2) * y_scale;
 }
 
-int find_largest_index(double max_dist_for_qso_angle, PyArrayObject * in_array_dist, int dist_size)
+long find_largest_index(double max_dist_for_qso_angle, PyArrayObject * in_array_dist, long dist_size)
 {
 	/*
 	 * find the largest index of dist2 for which a transverse distance to the other
 	 * QSO is within range.
 	 */
 	double dist;
-	int j;
+	long j;
 
 	for (j = 0; j < dist_size; j++)
 	{
@@ -82,11 +82,11 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 		     PyArrayObject * out_array, double qso_angle,
 		     double x_bin_size, double y_bin_size, double x_bin_count, double y_bin_count)
 {
-	int i, j;
-	int dist1_size, dist2_size;
+	long i, j;
+	long dist1_size, dist2_size;
 	int bin_x, bin_y;
-	int last_dist2_start, first_pair_dist2;
-	int max_dist1_index, max_dist2_index;
+	long last_dist2_start, first_pair_dist2;
+	long max_dist1_index, max_dist2_index;
 	double f_bin_x, f_bin_y;
 	double dist1, dist2, flux1, flux2, weight1, weight2;
 	double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
@@ -108,7 +108,7 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	{
 		MY_DEBUG_PRINT("SWAPPING 1,2\n");
 		SWAP(double, dist1, dist2);
-		SWAP(int, dist1_size, dist2_size);
+		SWAP(long, dist1_size, dist2_size);
 		SWAP(PyArrayObject *, in_array_dist1, in_array_dist2);
 		SWAP(PyArrayObject *, in_array_flux1, in_array_flux2);
 		SWAP(PyArrayObject *, in_array_weights1, in_array_weights2);
@@ -261,10 +261,10 @@ bin_pixel_pairs_histogram_loop(PyArrayObject * in_array_dist1,
 			       double x_bin_count, double y_bin_count,
 			       double f_min, double f_max, double f_bin_count, double *p_pair_count)
 {
-	int i, j;
-	int dist1_size, dist2_size;
+	long i, j;
+	long dist1_size, dist2_size;
 	int bin_x, bin_y, bin_f;
-	int last_dist2_start, first_pair_dist2;
+	long last_dist2_start, first_pair_dist2;
 	double dist1, dist2, flux1, flux2, weight1, weight2;
 	double *p_current_bin_flux;
 	double flux_product;
@@ -413,11 +413,11 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		     PyArrayObject * out_array, double qso_angle,
 		     double x_bin_size, double y_bin_size, double x_bin_count, double y_bin_count)
 {
-	int i, j, k, l;
-	int dist1_size, dist2_size, dist3_size, dist4_size;
+	long i, j, k, l;
+	long dist1_size, dist2_size, dist3_size, dist4_size;
 	int bin_x_a, bin_y_a, bin_x_b, bin_y_b;
-	int last_dist2_start, first_pair_dist2, last_dist4_start, first_pair_dist4;
-	int max_dist1_index, max_dist2_index, max_dist3_index, max_dist4_index;
+	long last_dist2_start, first_pair_dist2, last_dist4_start, first_pair_dist4;
+	long max_dist1_index, max_dist2_index, max_dist3_index, max_dist4_index;
 	double dist1, dist2, dist3, dist4;
 	double flux1, flux2, flux3, flux4;
 	double weight1, weight2, weight3, weight4;
@@ -443,7 +443,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	if (dist1 < dist2)
 	{
 		SWAP(double, dist1, dist2);
-		SWAP(int, dist1_size, dist2_size);
+		SWAP(long, dist1_size, dist2_size);
 		SWAP(PyArrayObject *, in_array_dist1, in_array_dist2);
 		SWAP(PyArrayObject *, in_array_flux1, in_array_flux2);
 		SWAP(PyArrayObject *, in_array_weights1, in_array_weights2);
@@ -452,7 +452,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	if (dist3 < dist4)
 	{
 		SWAP(double, dist3, dist4);
-		SWAP(int, dist3_size, dist4_size);
+		SWAP(long, dist3_size, dist4_size);
 		SWAP(PyArrayObject *, in_array_dist3, in_array_dist4);
 		SWAP(PyArrayObject *, in_array_flux3, in_array_flux4);
 		SWAP(PyArrayObject *, in_array_weights3, in_array_weights4);
