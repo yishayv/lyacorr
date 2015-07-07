@@ -10,7 +10,6 @@ import astropy.table as table
 import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 
-
 settings = common_settings.Settings()
 
 
@@ -280,7 +279,6 @@ class ContinuumFitPCA:
         self.snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
         return is_good_fit_result
 
-
     def regulate_mean_flux_2nd_order_residual(self, params, ar_flux, ar_fit, ar_data_mask):
         ar_regulated_fit = self.mean_flux_2nd_order_correction(params, ar_fit[ar_data_mask],
                                                                self.delta_wavelength[ar_data_mask],
@@ -323,8 +321,8 @@ class ContinuumFitPCA:
 
     @staticmethod
     def max_delta_f_per_snr(snr):
-	# approximate a fixed quantile of spectra as a function of SNR.
-        return ((snr/1.5) ** (-1.5) / 3.6 + 0.05)*1.5
+        # approximate a fixed quantile of spectra as a function of SNR.
+        return ((snr / 1.5) ** (-1.5) / 3.6 + 0.05) * 1.5
 
 
 class ContinuumFitContainer(object):
@@ -416,4 +414,3 @@ class ContinuumFitContainerFiles(ContinuumFitContainer):
 
     def save(self):
         np.save(settings.get_continuum_fit_metadata_npy(), self.continuum_fit_metadata)
-
