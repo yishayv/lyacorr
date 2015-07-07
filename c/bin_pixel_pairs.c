@@ -454,7 +454,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		return;
 	for (dim_index=0; dim_index<4; dim_index++)
 	{
-		estimator_shape[i] = PyArray_DIM(in_array_estimator, dim_index);
+		estimator_shape[dim_index] = PyArray_DIM(in_array_estimator, dim_index);
 	}
 	if (estimator_shape[0] != x_bin_count ||
 	    estimator_shape[1] != y_bin_count ||
@@ -608,6 +608,72 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	}
 }
 
+
+/* wrapped function */
+static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw)
+{
+	
+	PyArrayObject *in_array_dist1;
+	PyArrayObject *in_array_dist2;
+	PyArrayObject *in_array_flux1;
+	PyArrayObject *in_array_flux2;
+	PyArrayObject *in_array_weights1;
+	PyArrayObject *in_array_weights2;
+	PyArrayObject *in_array_dist3;
+	PyArrayObject *in_array_dist4;
+	PyArrayObject *in_array_flux3;
+	PyArrayObject *in_array_flux4;
+	PyArrayObject *in_array_weights3;
+	PyArrayObject *in_array_weights4;
+	PyArrayObject *in_array_estimator;
+	PyArrayObject *out_array;
+	double qso_angle;
+	double x_bin_size, y_bin_size;
+	double x_bin_count, y_bin_count;
+	
+	static char *kwlist[] = { "ar_dist1", "ar_dist2",
+		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
+		"ar_dist3", "ar_dist4",
+		"ar_flux3", "ar_flux4", "ar_weights3", "ar_weights4",
+		"ar_est",
+		"out",
+		"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
+		"f_min", "f_max", "f_bin_count",
+		NULL
+	};
+	
+	MY_DEBUG_PRINT(":::::Function Start\n");
+	
+	/* parse numpy array arguments */
+	if (!PyArg_ParseTupleAndKeywords
+	    (args, kw, "O!O!O!O!O!O!O!O!O!O!O!O!O!O!dddddd:bin_pixel_pairs", kwlist,
+	     &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
+	     &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
+	     &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
+	     &PyArray_Type, &in_array_dist3, &PyArray_Type, &in_array_dist4,
+	     &PyArray_Type, &in_array_flux3, &PyArray_Type, &in_array_flux4,
+	     &PyArray_Type, &in_array_weights3, &PyArray_Type, &in_array_weights4,
+	     &PyArray_Type, &in_array_estimator,
+	     &PyArray_Type, &out_array,
+	     &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
+	{
+		return NULL;
+	}
+	MY_DEBUG_PRINT(":::::After arg parse\n");
+	
+	bin_pixel_quads_loop(in_array_dist1, in_array_dist2,
+			in_array_flux1, in_array_flux2,
+			in_array_weights1, in_array_weights2,
+			in_array_dist3, in_array_dist4,
+			in_array_flux3, in_array_flux4,
+			in_array_weights3, in_array_weights4,
+			in_array_estimator,
+			out_array, qso_angle,
+			x_bin_size, y_bin_size, x_bin_count, y_bin_count);
+	
+	return NULL;
+}
+
 static void pre_allocate_memory(void)
 {
 	;
@@ -619,6 +685,8 @@ static PyMethodDef PixelPairMethods[] = {
 	 "bin pixel pairs to a 2d array"},
 	{"bin_pixel_pairs_histogram", (PyCFunction) bin_pixel_pairs_histogram, METH_KEYWORDS,
 	 "create a 3d histogram of 2 displacement axes and flux product"},
+	{"bin_pixel_quads", (PyCFunction) bin_pixel_quads, METH_KEYWORDS,
+	 "calculate the covariance matrix, given a pre-calculated correlation estimator array"},
 	{NULL, NULL, 0, NULL}
 };
 
