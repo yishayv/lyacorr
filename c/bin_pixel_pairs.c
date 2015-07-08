@@ -72,6 +72,19 @@ long find_largest_index(double max_dist_for_qso_angle, PyArrayObject * in_array_
 	return dist_size;
 }
 
+int compare_array_shape(PyArrayObject * array, long ndim, long * shape)
+{
+	int i;
+	if (PyArray_NDIM(array) != ndim)
+		return 0;
+	for (i=0; i < ndim; i++)
+	{
+		if (PyArray_DIM(array, i) != shape[i])
+			return 0;
+	}
+	return 1;
+}
+
 static void
 bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 		     PyArrayObject * in_array_dist2,
@@ -416,7 +429,6 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		     double x_bin_size, double y_bin_size, double x_bin_count, double y_bin_count)
 {
 	long i, j, k, l;
-	int dim_index;
 	long dist1_size, dist2_size, dist3_size, dist4_size;
 	int bin_x_a, bin_y_a, bin_x_b, bin_y_b;
 	long last_dist2_start, first_pair_dist2, last_dist4_start, first_pair_dist4;
@@ -429,8 +441,10 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	double x_scale, y_scale12, y_scale34;
 	double max_dist_for_qso_angle12, max_dist_for_qso_angle34;
 	double est_12, est_34, cov_term_12, cov_term_34;
-	long estimator_shape[5];
+	long estimator_shape[2], out_array_shape[5];
 
+	MY_DEBUG_PRINT("Inside bin_pixels_quad_loop()\n");
+	
 	/* get array sizes */
 	dist1_size = PyArray_DIM(in_array_dist1, 0);
 	dist2_size = PyArray_DIM(in_array_dist2, 0);
@@ -438,33 +452,19 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	dist4_size = PyArray_DIM(in_array_dist4, 0);
 	
 	/* verify that the estimator array has the correct shape */
-	if (PyArray_NDIM(in_array_estimator)!= 2)
+	estimator_shape[0] = x_bin_count;
+	estimator_shape[1] = y_bin_count;
+	if (!compare_array_shape(in_array_estimator, 2, estimator_shape))
 		return;
-	for (dim_index=0; dim_index<2; dim_index++)
-	{
-		estimator_shape[dim_index] = PyArray_DIM(in_array_estimator, dim_index);
-	}
-	if (estimator_shape[0] != x_bin_count ||
-	    estimator_shape[1] != y_bin_count)
-	{
-		return;
-	}
-
+	
 	/* verify that the output array has the correct shape */
-	if (PyArray_NDIM(in_array_estimator)!= 5)
+	out_array_shape[0] = x_bin_count;
+	out_array_shape[1] = y_bin_count;
+	out_array_shape[2] = x_bin_count;
+	out_array_shape[3] = y_bin_count;
+	out_array_shape[4] = 3;
+	if (!compare_array_shape(out_array, 5, out_array_shape))
 		return;
-	for (dim_index=0; dim_index<4; dim_index++)
-	{
-		estimator_shape[dim_index] = PyArray_DIM(in_array_estimator, dim_index);
-	}
-	if (estimator_shape[0] != x_bin_count ||
-	    estimator_shape[1] != y_bin_count ||
-	    estimator_shape[2] != x_bin_count ||
-	    estimator_shape[3] != y_bin_count ||
-	    estimator_shape[4] != 3)
-	{
-		return;
-	}
 	
 	if (!dist1_size || !dist2_size || !dist3_size || !dist4_size)
 		return;
