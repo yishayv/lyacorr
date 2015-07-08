@@ -128,8 +128,8 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 	max_dist1_index = find_largest_index(max_dist_for_qso_angle, in_array_dist1, dist1_size);
 	max_dist2_index = find_largest_index(max_dist_for_qso_angle, in_array_dist2, dist2_size);
 
-	MY_DEBUG_PRINT("max_dist1_index: %d, dist1_size: %d\n", max_dist1_index, dist1_size);
-	MY_DEBUG_PRINT("max_dist2_index: %d, dist2_size: %d\n", max_dist2_index, dist2_size);
+	MY_DEBUG_PRINT("max_dist1_index: %ld, dist1_size: %ld\n", max_dist1_index, dist1_size);
+	MY_DEBUG_PRINT("max_dist2_index: %ld, dist2_size: %ld\n", max_dist2_index, dist2_size);
 
 	MY_DEBUG_PRINT(":::::Before loop\n");
 
@@ -374,7 +374,7 @@ static PyObject *bin_pixel_pairs_histogram(PyObject * self, PyObject * args, PyO
 
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-	    (args, kw, "O!O!O!O!O!O!O!ddddddddd:bin_pixel_pairs", kwlist,
+	    (args, kw, "O!O!O!O!O!O!O!ddddddddd:bin_pixel_pairs_histogram", kwlist,
 	     &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 	     &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 	     &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
@@ -635,9 +635,11 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 	double x_bin_count, y_bin_count;
 	
 	static char *kwlist[] = { "ar_dist1", "ar_dist2",
-		"ar_flux1", "ar_flux2", "ar_weights1", "ar_weights2",
+		"ar_flux1", "ar_flux2",
+		"ar_weights1", "ar_weights2",
 		"ar_dist3", "ar_dist4",
-		"ar_flux3", "ar_flux4", "ar_weights3", "ar_weights4",
+		"ar_flux3", "ar_flux4",
+		"ar_weights3", "ar_weights4",
 		"ar_est",
 		"out",
 		"qso_angle12", "qso_angle34",
@@ -649,7 +651,7 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 	
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-	    (args, kw, "O!O!O!O!O!O!O!O!O!O!O!O!O!O!dddddd:bin_pixel_pairs", kwlist,
+	    (args, kw, "O!O!O!O!O!O!O!O!O!O!O!O!O!O!dddddd:bin_pixel_quads", kwlist,
 	     &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 	     &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 	     &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,

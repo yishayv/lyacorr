@@ -23,8 +23,8 @@ class CovarianceMatrix:
         self.cd = cd
         self.radius = radius
         self.significant_qso_pairs = significant_qso_pairs.SignificantQSOPairs()
-        self.covariance = np.zeros((50, 50, 50, 50, 3))
-        ar_est_bins = bins_2d.Bins2D(1,1,1,1)
+        self.ar_covariance = np.zeros((50, 50, 50, 50, 3))
+        ar_est_bins = bins_2d.Bins2D(1, 1, 1, 1)
         ar_est_bins.load(settings.get_mean_estimator_bins())
         self.ar_est = ar_est_bins.ar_flux / ar_est_bins.ar_weights
 
@@ -32,7 +32,10 @@ class CovarianceMatrix:
                  spec1_index, spec2_index, spec3_index, spec4_index, delta_t_file):
         """
         Find all pixel pairs in QSO1,QSO2 that are closer than radius r
-        :type qso_angle: float64
+        :type qso_angle12: float64
+        :type qso_angle34: float64
+        :type max_range_parallel: float64
+        :type max_range_transverse: float64
         :type spec1_index: int
         :type spec2_index: int
         :type spec3_index: int
@@ -88,17 +91,20 @@ class CovarianceMatrix:
         if spec3_distances[0] > r + spec4_distances[-1] or spec4_distances[0] > r + spec3_distances[-1]:
             return
 
-        ar = bin_pixel_pairs.bin_pixel_quads(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                                             ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-                                             ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                                             ar_dist3=spec3_distances, ar_dist4=spec4_distances,
-                                             ar_flux3=spec3_flux, ar_flux4=spec4_flux,
-                                             ar_weights3=qso3_weights, ar_weights4=qso4_weights,
-                                             qso_angle12=qso_angle12,
-                                             qso_angle34=qso_angle34,
-                                             ar_est=self.ar_est,
-                                             out=self.covariance,
-                                             x_bin_size=50,
-                                             y_bin_size=50,
-                                             x_bin_count=50,
-                                             y_bin_count=50)
+        ar_est = self.ar_est.copy()
+        ar_covariance = self.ar_covariance.copy()
+        bin_pixel_pairs.bin_pixel_quads(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                                        ar_flux1=spec1_flux, ar_flux2=spec2_flux,
+                                        ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+                                        ar_dist3=spec3_distances, ar_dist4=spec4_distances,
+                                        ar_flux3=spec3_flux, ar_flux4=spec4_flux,
+                                        ar_weights3=qso3_weights, ar_weights4=qso4_weights,
+                                        ar_est=ar_est,
+                                        out=ar_covariance,
+                                        qso_angle12=qso_angle12,
+                                        qso_angle34=qso_angle34,
+                                        x_bin_size=50,
+                                        y_bin_size=50,
+                                        x_bin_count=50,
+                                        y_bin_count=50
+                                        )
