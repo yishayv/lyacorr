@@ -4,6 +4,7 @@ import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 import bin_pixel_pairs
 import significant_qso_pairs
+import bins_2d
 
 NUM_BINS_X = 50
 NUM_BINS_Y = 50
@@ -13,7 +14,7 @@ settings = common_settings.Settings()
 
 
 class CovarianceMatrix:
-    def __init__(self, cd, radius, accumulator_type):
+    def __init__(self, cd, radius):
         """
         initialize persistent objects
         :type cd: comoving_distance.ComovingDistance
@@ -22,8 +23,10 @@ class CovarianceMatrix:
         self.cd = cd
         self.radius = radius
         self.significant_qso_pairs = significant_qso_pairs.SignificantQSOPairs()
-        self.accumulator_type = accumulator_type
         self.covariance = np.zeros((50, 50, 50, 50, 3))
+        ar_est_bins = bins_2d.Bins2D(1,1,1,1)
+        ar_est_bins.load(settings.get_mean_estimator_bins())
+        self.ar_est = ar_est_bins.ar_flux / ar_est_bins.ar_weights
 
     def add_quad(self, qso_angle12, qso_angle34, max_range_parallel, max_range_transverse,
                  spec1_index, spec2_index, spec3_index, spec4_index, delta_t_file):
@@ -44,7 +47,7 @@ class CovarianceMatrix:
         # r = float(accumulator.get_max_range())
         # range_parallel = np.float64(accumulator.get_x_range())
         # range_transverse = np.float64(accumulator.get_y_range())
-        r = np.sqrt(np.square(max_range_parallel, np.square(max_range_transverse)))
+        r = np.sqrt(np.square(max_range_parallel) + np.square(max_range_transverse))
 
         spec1_z = delta_t_file.get_wavelength(spec1_index)
         spec2_z = delta_t_file.get_wavelength(spec2_index)
@@ -92,6 +95,7 @@ class CovarianceMatrix:
                                              ar_flux3=spec3_flux, ar_flux4=spec4_flux,
                                              ar_weights3=qso3_weights, ar_weights4=qso4_weights,
                                              qso_angle12=qso_angle12,
+                                             qso_angle34=qso_angle34,
                                              ar_est=self.ar_est,
                                              out=self.covariance,
                                              x_bin_size=50,

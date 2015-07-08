@@ -19,6 +19,7 @@ from data_access.read_spectrum_fits import QSORecord
 from physics_functions import comoving_distance
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 import mpi_helper
+import calc_covariance
 
 settings = common_settings.Settings()
 
@@ -99,6 +100,9 @@ def profile_main():
     max_angular_separation = radius / (cd.comoving_distance(1.9) / u.radian)
     mpi_helper.r_print('maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree))
 
+    # create a CovarianceMatrix instance:
+    cov = calc_covariance.CovarianceMatrix(cd=cd, radius=radius)
+
     # print ar_list
     coord_set = coord.SkyCoord(ra=ar_ra * u.degree, dec=ar_dec * u.degree,
                                distance=ar_distance * u.Mpc)
@@ -167,7 +171,15 @@ def profile_main():
 
         comm.Scatter(random_sample, local_random_sample)
 
+        # reshape the local array to form pairs of pairs
+        local_random_sample = local_random_sample.reshape((local_random_sample.shape[0] / 2, 2, 3))
         mpi_helper.l_print(local_random_sample)
+        for quad in local_random_sample:
+            cov.add_quad(qso_angle12=quad[0, 2], qso_angle34=quad[1, 2],
+                         max_range_parallel=radius, max_range_transverse=radius,
+                         spec1_index=quad[0, 0], spec2_index=quad[0, 1],
+                         spec3_index=quad[1, 0], spec4_index=quad[1, 1],
+                         delta_t_file=delta_t_file)
 
         iteration_number += 1
 

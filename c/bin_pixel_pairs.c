@@ -411,7 +411,8 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		     PyArrayObject * in_array_weights3,
 		     PyArrayObject * in_array_weights4,
 		     PyArrayObject * in_array_estimator,
-		     PyArrayObject * out_array, double qso_angle,
+		     PyArrayObject * out_array,
+		     double qso_angle12, double qso_angle34,
 		     double x_bin_size, double y_bin_size, double x_bin_count, double y_bin_count)
 {
 	long i, j, k, l;
@@ -425,8 +426,8 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	double weight1, weight2, weight3, weight4;
 	double weighted_flux1, weighted_flux2, weighted_flux3, weighted_flux4;
 	double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
-	double x_scale, y_scale;
-	double max_dist_for_qso_angle;
+	double x_scale, y_scale12, y_scale34;
+	double max_dist_for_qso_angle12, max_dist_for_qso_angle34;
 	double est_12, est_34, cov_term_12, cov_term_34;
 	long estimator_shape[5];
 
@@ -492,17 +493,19 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	}
 
 	x_scale = 1. / x_bin_size;
-	y_scale = qso_angle / (2. * y_bin_size);
-	max_dist_for_qso_angle = y_bin_count / y_scale;
+	y_scale12 = qso_angle12 / (2. * y_bin_size);
+	y_scale34 = qso_angle34 / (2. * y_bin_size);
+	max_dist_for_qso_angle12 = y_bin_count / y_scale12;
+	max_dist_for_qso_angle34 = y_bin_count / y_scale34;
 
 	/*
 	 * find the largest index of dist1(,2,3,4) for which a transverse distance to the other
 	 * QSO is within range.
 	 */
-	max_dist1_index = find_largest_index(max_dist_for_qso_angle, in_array_dist1, dist1_size);
-	max_dist2_index = find_largest_index(max_dist_for_qso_angle, in_array_dist2, dist2_size);
-	max_dist3_index = find_largest_index(max_dist_for_qso_angle, in_array_dist3, dist3_size);
-	max_dist4_index = find_largest_index(max_dist_for_qso_angle, in_array_dist4, dist4_size);
+	max_dist1_index = find_largest_index(max_dist_for_qso_angle12, in_array_dist1, dist1_size);
+	max_dist2_index = find_largest_index(max_dist_for_qso_angle12, in_array_dist2, dist2_size);
+	max_dist3_index = find_largest_index(max_dist_for_qso_angle34, in_array_dist3, dist3_size);
+	max_dist4_index = find_largest_index(max_dist_for_qso_angle34, in_array_dist4, dist4_size);
 
 	MY_DEBUG_PRINT(":::::Before loop\n");
 
@@ -528,7 +531,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
 
 			bin_x_a = get_bin_x(dist1, dist2, x_scale);
-			bin_y_a = get_bin_y(dist1, dist2, y_scale);
+			bin_y_a = get_bin_y(dist1, dist2, y_scale12);
 
 			weighted_flux2 = flux2 * weight2;
 			if ((bin_x_a < x_bin_count) && (bin_y_a < y_bin_count))
@@ -558,7 +561,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 						weight4 = *((double *)PyArray_GETPTR1(in_array_weights4, l));
 
 						bin_x_b = get_bin_x(dist3, dist4, x_scale);
-						bin_y_b = get_bin_y(dist3, dist4, y_scale);
+						bin_y_b = get_bin_y(dist3, dist4, y_scale34);
 						
 						if ((bin_x_b < x_bin_count) && (bin_y_b < y_bin_count))
 						{
@@ -627,7 +630,7 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 	PyArrayObject *in_array_weights4;
 	PyArrayObject *in_array_estimator;
 	PyArrayObject *out_array;
-	double qso_angle;
+	double qso_angle12, qso_angle34;
 	double x_bin_size, y_bin_size;
 	double x_bin_count, y_bin_count;
 	
@@ -637,8 +640,8 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 		"ar_flux3", "ar_flux4", "ar_weights3", "ar_weights4",
 		"ar_est",
 		"out",
-		"qso_angle", "x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
-		"f_min", "f_max", "f_bin_count",
+		"qso_angle12", "qso_angle34",
+		"x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
 		NULL
 	};
 	
@@ -655,7 +658,8 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 	     &PyArray_Type, &in_array_weights3, &PyArray_Type, &in_array_weights4,
 	     &PyArray_Type, &in_array_estimator,
 	     &PyArray_Type, &out_array,
-	     &qso_angle, &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
+	     &qso_angle12, &qso_angle34,
+	     &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
 	{
 		return NULL;
 	}
@@ -668,7 +672,8 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 			in_array_flux3, in_array_flux4,
 			in_array_weights3, in_array_weights4,
 			in_array_estimator,
-			out_array, qso_angle,
+			out_array,
+			qso_angle12, qso_angle34,
 			x_bin_size, y_bin_size, x_bin_count, y_bin_count);
 	
 	return NULL;
