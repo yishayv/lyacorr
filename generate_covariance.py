@@ -4,7 +4,6 @@
     Partial data is gathered and the correlation estimator file is saved after processing each sub-chunk.
 """
 import cProfile
-import itertools
 
 import numpy as np
 from astropy import coordinates as coord
@@ -32,55 +31,12 @@ cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
 comm = MPI.COMM_WORLD
 
 
-class SubChunkHelper:
-    def __init__(self):
-        self.pair_separation_bins = None
-
-    def add_pairs_in_sub_chunk(self, delta_t_file, local_pair_angles, pairs, pixel_pairs, radius):
-        local_pair_separation_bins = \
-            pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
-
-        mpi_helper.l_print('local pair count:', local_pair_separation_bins.get_pair_count())
-        local_pair_separation_bins_array = local_pair_separation_bins.get_data_as_array()
-        local_pair_separation_bins_metadata = local_pair_separation_bins.get_metadata()
-
-        pair_separation_bins_array = np.zeros(
-            shape=(comm.size,) + local_pair_separation_bins_array.shape)
-        comm.Barrier()
-        mpi_helper.r_print("BEGIN GATHER")
-        comm.Gatherv(local_pair_separation_bins_array, pair_separation_bins_array)
-        list_pair_separation_bins_metadata = comm.gather(local_pair_separation_bins_metadata)
-        mpi_helper.r_print("END_GATHER")
-
-        if comm.rank == 0:
-            list_pair_separation_bins = [
-                local_pair_separation_bins.load_from(ar, metadata)
-                for ar, metadata in itertools.izip(pair_separation_bins_array, list_pair_separation_bins_metadata)]
-
-            # initialize bins only if this is the first time we get here
-            # for now use a function level static variable
-            if not self.pair_separation_bins:
-                self.pair_separation_bins = local_pair_separation_bins.init_as(local_pair_separation_bins)
-
-            # add new results to existing bins
-            if list_pair_separation_bins:
-                self.pair_separation_bins = reduce(lambda x, y: x + y, list_pair_separation_bins,
-                                                   self.pair_separation_bins)
-
-                mpi_helper.r_print('total number of pixel pairs in bins:',
-                                   self.pair_separation_bins.get_pair_count())
-                self.pair_separation_bins.flush()
-                pixel_pairs.significant_qso_pairs.save(settings.get_significant_qso_pairs_npy())
-            else:
-                print('no results received.')
-
-
 def gather_concatenate_big_array(local_array, sum_axis=0, max_nbytes=2 ** 31 - 1):
     global_nbytes = comm.allgather(local_array.nbytes)
     if (local_array.shape[0] > 0):
         assert np.take(local_array, [0],
                        axis=sum_axis).nbytes <= max_nbytes, "array elements must not be larger than max_nbytes"
-    mpi_helper.l_print("global_nbytes", global_nbytes)
+    mpi_helper.r_print("global_nbytes", global_nbytes)
     if np.array(global_nbytes).sum() > max_nbytes:  # 2 ** 31):
         # split the array along the summation axis
         axis_end = local_array.shape[sum_axis]
@@ -94,7 +50,7 @@ def gather_concatenate_big_array(local_array, sum_axis=0, max_nbytes=2 ** 31 - 1
     else:
         global_array_list = comm.gather(local_array)
         if comm.rank == 0:
-            mpi_helper.r_print(global_array_list)
+            # mpi_helper.r_print(global_array_list)
             global_array = np.concatenate(global_array_list)
     return global_array if comm.rank == 0 else None
 
@@ -105,6 +61,7 @@ def profile_main():
     # print 'minimum distance', min_distance, 'Mpc/rad'
 
     # initialize data sources
+    mpi_helper.l_print("Loading QSO record table")
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
     delta_t_file = NpSpectrumContainer(True, num_spectra=len(qso_record_table), filename=settings.get_delta_t_npy(),
                                        max_wavelength_count=1000)
@@ -137,7 +94,7 @@ def profile_main():
 
     local_start_index = chunk_offsets[comm.rank]
     local_end_index = local_start_index + chunk_sizes[comm.rank]
-    mpi_helper.l_print('matching objects in range:', local_start_index, 'to', local_end_index)
+    mpi_helper.l_print('Matching objects in range:', local_start_index, 'to', local_end_index)
     # each node matches a range of objects against the full list.
     count = matching.search_around_sky(coord_set[local_start_index:local_end_index],
                                        coord_set,
@@ -151,35 +108,36 @@ def profile_main():
                                             count[1],
                                             count[2].to(u.rad).value))
 
-    mpi_helper.l_print('number of QSO pairs (including identity pairs):', count[0].size)
+    mpi_helper.l_print('Number of QSO pairs (including identity pairs):', count[0].size)
 
     # remove pairs of the same QSO, which have different [plate,mjd,fiber]
     # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
     local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[2] > 5e-5]
 
-    mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
+    mpi_helper.l_print('Total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
                        local_qso_pairs.shape[0] - chunk_sizes[comm.rank])
 
     # l_print(pairs)
-    mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
+    mpi_helper.l_print('Number of QSO pairs:', local_qso_pairs.shape[0])
     # l_print('angle vector:', x[2])
 
     assert settings.get_enable_weighted_mean_estimator(), "covariance requires mean correlation estimator"
     assert not settings.get_enable_weighted_median_estimator(), "covariance requires mean correlation estimator"
 
     # gather all the qso pairs to rank 0
+    mpi_helper.r_print("Gathering QSO pairs")
     global_qso_pairs_list = gather_concatenate_big_array(local_qso_pairs, sum_axis=0)
 
     # initialize variable for non-zero ranks
     random_sample = None
-    sample_chunk_size = 200
+    sample_chunk_size = 20
     local_random_sample = np.zeros((sample_chunk_size, 3))
     local_random_sample = local_random_sample.reshape((local_random_sample.shape[0] / 2, 2, 3))
 
     if comm.rank == 0:
         global_qso_pairs = np.concatenate(global_qso_pairs_list, axis=0)
         mpi_helper.r_print(
-            "Gathered qso pairs, count={0}".format(global_qso_pairs.shape[0]))
+            "Gathered QSO pairs, count={0}".format(global_qso_pairs.shape[0]))
 
     iteration_number = 0
     while True:
@@ -207,7 +165,7 @@ def profile_main():
         partial_covariances_list = comm.gather(cov.ar_covariance)
         if comm.rank == 0:
             ar_covariance = sum(partial_covariances_list, np.zeros((50, 50, 50, 50, 3)))
-            print ar_covariance.sum(axis=(0, 1, 2, 3))
+            mpi_helper.r_print("Partial Covariance Stats:", ar_covariance.sum(axis=(0, 1, 2, 3)))
 
         iteration_number += 1
 
