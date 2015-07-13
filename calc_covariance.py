@@ -91,14 +91,21 @@ class CovarianceMatrix:
         if spec3_distances[0] > r + spec4_distances[-1] or spec4_distances[0] > r + spec3_distances[-1]:
             return
 
+        # reduce size of spectra by a factor
+        reduce_factor = 10
+        mask1 = np.random.choice(spec1_z.size, spec1_z.size/reduce_factor, replace=False)
+        mask2 = np.random.choice(spec2_z.size, spec2_z.size/reduce_factor, replace=False)
+        mask3 = np.random.choice(spec3_z.size, spec3_z.size/reduce_factor, replace=False)
+        mask4 = np.random.choice(spec4_z.size, spec4_z.size/reduce_factor, replace=False)
+
         ar_est = self.ar_est.copy()
         ar_covariance = self.ar_covariance.copy()
-        bin_pixel_pairs.bin_pixel_quads(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                                        ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-                                        ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                                        ar_dist3=spec3_distances, ar_dist4=spec4_distances,
-                                        ar_flux3=spec3_flux, ar_flux4=spec4_flux,
-                                        ar_weights3=qso3_weights, ar_weights4=qso4_weights,
+        bin_pixel_pairs.bin_pixel_quads(ar_dist1=spec1_distances[mask1], ar_dist2=spec2_distances[mask2],
+                                        ar_flux1=spec1_flux[mask1], ar_flux2=spec2_flux[mask2],
+                                        ar_weights1=qso1_weights[mask1], ar_weights2=qso2_weights[mask2],
+                                        ar_dist3=spec3_distances[mask3], ar_dist4=spec4_distances[mask4],
+                                        ar_flux3=spec3_flux[mask3], ar_flux4=spec4_flux[mask4],
+                                        ar_weights3=qso3_weights[mask3], ar_weights4=qso4_weights[mask4],
                                         ar_est=ar_est,
                                         out=ar_covariance,
                                         qso_angle12=qso_angle12,

@@ -678,7 +678,10 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 			qso_angle12, qso_angle34,
 			x_bin_size, y_bin_size, x_bin_count, y_bin_count);
 	
-	return NULL;
+	MY_DEBUG_PRINT(":::::After loop end\n")
+	
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 static void pre_allocate_memory(void)

@@ -119,24 +119,19 @@ def profile_main():
                                        coord_set,
                                        max_angular_separation)
 
-    # search around sky returns indices in the input lists.
-    # each node should add its offset to get the QSO index in the original list (only for x[0]).
-    # qso2 which contains the unmodified index to the full list of QSOs.
-    # the third vector is a count so we can keep a reference to the angles vector.
+    # search around sky returns indices for the input lists.
+    # each node should add its offset to get the QSO index in the original list (only for x[0]),
+    # so that each item contains the unmodified index to the full list of QSOs.
+    # the third vector element is the angle between each pair.
     local_qso_pairs_with_unity = np.vstack((count[0] + local_start_index,
                                             count[1],
-                                            np.arange(count[0].size)))
+                                            count[2].to(u.rad).value))
 
-    local_qso_pair_angles = count[2].to(u.rad).value
     mpi_helper.l_print('number of QSO pairs (including identity pairs):', count[0].size)
-    mpi_helper.l_print('angle vector size:', local_qso_pair_angles.size)
-
-    # remove pairs of the same QSO.
-    # local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[1] != local_qso_pairs_with_unity[0]]
 
     # remove pairs of the same QSO, which have different [plate,mjd,fiber]
     # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
-    local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pair_angles > 5e-5]
+    local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[2] > 5e-5]
 
     mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
                        local_qso_pairs.shape[0] - chunk_sizes[comm.rank])
@@ -151,28 +146,32 @@ def profile_main():
     # gather all the qso pairs to rank 0
     global_qso_pairs_list = comm.gather(local_qso_pairs)
 
-
     # initialize variable for non-zero ranks
     random_sample = None
     sample_chunk_size = 200
-    local_random_sample = np.zeros((sample_chunk_size, 3), dtype=int)
+    local_random_sample = np.zeros((sample_chunk_size, 3))
+    local_random_sample = local_random_sample.reshape((local_random_sample.shape[0] / 2, 2, 3))
+
+    if comm.rank == 0:
+        global_qso_pairs = np.concatenate(global_qso_pairs_list, axis=0)
+        mpi_helper.r_print(
+            "Gathered qso pairs, count={0}".format(global_qso_pairs.shape[0]))
 
     iteration_number = 0
     while True:
         # set chunk size
         if comm.rank == 0:
-            global_qso_pairs = np.concatenate(global_qso_pairs_list, axis=0)
             mpi_helper.r_print(
-                "Iteration {0}: Gathered qso pair, count={1}".format(iteration_number, global_qso_pairs.shape[0]))
+                "Iteration {0}".format(iteration_number))
             # create a random sample of pairs
-            random_sample = global_qso_pairs[np.random.randint(
-                0, global_qso_pairs.shape[0], sample_chunk_size * comm.size)]
+            random_sample_indices = np.random.randint(
+                0, global_qso_pairs.shape[0], sample_chunk_size * comm.size)
+            random_sample = global_qso_pairs[random_sample_indices]
             mpi_helper.r_print("random sample size:", random_sample.size)
 
         comm.Scatter(random_sample, local_random_sample)
 
         # reshape the local array to form pairs of pairs
-        local_random_sample = local_random_sample.reshape((local_random_sample.shape[0] / 2, 2, 3))
         mpi_helper.l_print(local_random_sample)
         for quad in local_random_sample:
             cov.add_quad(qso_angle12=quad[0, 2], qso_angle34=quad[1, 2],
