@@ -169,6 +169,7 @@ def profile_main():
             op=MPI.SUM, root=0)
         if comm.rank == 0:
             mpi_helper.r_print("Partial Covariance Stats:", global_ar_covariance.sum(axis=(0, 1, 2, 3)))
+            np.save(settings.get_correlation_estimator_covariance_npy(), global_ar_covariance)
 
         iteration_number += 1
 

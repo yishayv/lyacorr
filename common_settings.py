@@ -59,6 +59,8 @@ class Settings():
     opt_mw_stacked_spectra_fits = 'mw_stacked_spectra_fits'
     # mapping from pixel ID to group ID for Milky-Way line removal
     opt_mw_pixel_to_group_mapping_fits = 'mw_pixel_to_group_mapping_fits'
+    # covariance matrix output
+    opt_correlation_estimator_covariance_npy = 'correlation_estimator_covariance_npy'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
@@ -130,6 +132,7 @@ class Settings():
         value_tp_correction_hdf5 = '../../data/tp_correction/tpcorr.hdf5'
         value_mw_stacked_spectra_fits = '../../data/MW_lines/coor_bins.fits'
         value_mw_pixel_to_group_mapping_fits = '../../data/MW_lines/maps.fits'
+        value_correlation_estimator_covariance_npy = '../../data/covariance.npy'
 
         value_file_chunk_size = 10000
         value_mpi_num_sub_chunks = 1440
@@ -182,6 +185,8 @@ class Settings():
         self.config_parser.set(self.section_file_paths, self.opt_mw_stacked_spectra_fits, value_mw_stacked_spectra_fits)
         self.config_parser.set(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits,
                                value_mw_pixel_to_group_mapping_fits)
+        self.config_parser.set(self.section_file_paths, self.opt_correlation_estimator_covariance_npy,
+                               value_correlation_estimator_covariance_npy)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
@@ -302,6 +307,9 @@ class Settings():
 
     def get_mw_pixel_to_group_mapping_fits(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits)
+
+    def get_correlation_estimator_covariance_npy(self):
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_correlation_estimator_covariance_npy)
 
     # Performance
 
