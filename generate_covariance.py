@@ -75,6 +75,30 @@ class SubChunkHelper:
                 print('no results received.')
 
 
+def gather_concatenate_big_array(local_array, sum_axis=0, max_nbytes=2 ** 31 - 1):
+    global_nbytes = comm.allgather(local_array.nbytes)
+    if (local_array.shape[0] > 0):
+        assert np.take(local_array, [0],
+                       axis=sum_axis).nbytes <= max_nbytes, "array elements must not be larger than max_nbytes"
+    mpi_helper.l_print("global_nbytes", global_nbytes)
+    if np.array(global_nbytes).sum() > max_nbytes:  # 2 ** 31):
+        # split the array along the summation axis
+        axis_end = local_array.shape[sum_axis]
+        axis_split_point = axis_end // 2
+        local_array_first_part = np.take(local_array, np.arange(0, axis_split_point), axis=sum_axis)
+        local_array_last_part = np.take(local_array, np.arange(axis_split_point, axis_end), axis=sum_axis)
+        global_array_first_part = gather_concatenate_big_array(local_array_first_part, sum_axis, max_nbytes)
+        global_array_last_part = gather_concatenate_big_array(local_array_last_part, sum_axis, max_nbytes)
+        if comm.rank == 0:
+            global_array = np.concatenate((global_array_first_part, global_array_last_part), axis=sum_axis)
+    else:
+        global_array_list = comm.gather(local_array)
+        if comm.rank == 0:
+            mpi_helper.r_print(global_array_list)
+            global_array = np.concatenate(global_array_list)
+    return global_array if comm.rank == 0 else None
+
+
 def profile_main():
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
@@ -144,7 +168,7 @@ def profile_main():
     assert not settings.get_enable_weighted_median_estimator(), "covariance requires mean correlation estimator"
 
     # gather all the qso pairs to rank 0
-    global_qso_pairs_list = comm.gather(local_qso_pairs)
+    global_qso_pairs_list = gather_concatenate_big_array(local_qso_pairs, sum_axis=0)
 
     # initialize variable for non-zero ranks
     random_sample = None
@@ -183,7 +207,7 @@ def profile_main():
         partial_covariances_list = comm.gather(cov.ar_covariance)
         if comm.rank == 0:
             ar_covariance = sum(partial_covariances_list, np.zeros((50, 50, 50, 50, 3)))
-            print ar_covariance.sum(axis=(0,1,2,3))
+            print ar_covariance.sum(axis=(0, 1, 2, 3))
 
         iteration_number += 1
 
