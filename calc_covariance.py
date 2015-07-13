@@ -99,7 +99,6 @@ class CovarianceMatrix:
         mask4 = np.random.choice(spec4_z.size, spec4_z.size/reduce_factor, replace=False)
 
         ar_est = self.ar_est.copy()
-        ar_covariance = self.ar_covariance.copy()
         bin_pixel_pairs.bin_pixel_quads(ar_dist1=spec1_distances[mask1], ar_dist2=spec2_distances[mask2],
                                         ar_flux1=spec1_flux[mask1], ar_flux2=spec2_flux[mask2],
                                         ar_weights1=qso1_weights[mask1], ar_weights2=qso2_weights[mask2],
@@ -107,7 +106,7 @@ class CovarianceMatrix:
                                         ar_flux3=spec3_flux[mask3], ar_flux4=spec4_flux[mask4],
                                         ar_weights3=qso3_weights[mask3], ar_weights4=qso4_weights[mask4],
                                         ar_est=ar_est,
-                                        out=ar_covariance,
+                                        out=self.ar_covariance,
                                         qso_angle12=qso_angle12,
                                         qso_angle34=qso_angle34,
                                         x_bin_size=50,

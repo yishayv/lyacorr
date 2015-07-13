@@ -167,18 +167,23 @@ def profile_main():
             random_sample_indices = np.random.randint(
                 0, global_qso_pairs.shape[0], sample_chunk_size * comm.size)
             random_sample = global_qso_pairs[random_sample_indices]
-            mpi_helper.r_print("random sample size:", random_sample.size)
+            mpi_helper.r_print("random sample shape:", random_sample.shape)
 
         comm.Scatter(random_sample, local_random_sample)
 
         # reshape the local array to form pairs of pairs
-        mpi_helper.l_print(local_random_sample)
+        mpi_helper.l_print(local_random_sample.shape)
         for quad in local_random_sample:
             cov.add_quad(qso_angle12=quad[0, 2], qso_angle34=quad[1, 2],
                          max_range_parallel=radius, max_range_transverse=radius,
                          spec1_index=quad[0, 0], spec2_index=quad[0, 1],
                          spec3_index=quad[1, 0], spec4_index=quad[1, 1],
                          delta_t_file=delta_t_file)
+
+        partial_covariances_list = comm.gather(cov.ar_covariance)
+        if comm.rank == 0:
+            ar_covariance = sum(partial_covariances_list, np.zeros((50, 50, 50, 50, 3)))
+            print ar_covariance.sum(axis=(0,1,2,3))
 
         iteration_number += 1
 
