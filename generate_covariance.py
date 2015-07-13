@@ -162,10 +162,13 @@ def profile_main():
                          spec3_index=quad[1, 0], spec4_index=quad[1, 1],
                          delta_t_file=delta_t_file)
 
-        partial_covariances_list = comm.gather(cov.ar_covariance)
+        global_ar_covariance = np.zeros((50, 50, 50, 50, 3))
+        comm.Reduce(
+            [cov.ar_covariance, MPI.DOUBLE],
+            [global_ar_covariance, MPI.DOUBLE],
+            op=MPI.SUM, root=0)
         if comm.rank == 0:
-            ar_covariance = sum(partial_covariances_list, np.zeros((50, 50, 50, 50, 3)))
-            mpi_helper.r_print("Partial Covariance Stats:", ar_covariance.sum(axis=(0, 1, 2, 3)))
+            mpi_helper.r_print("Partial Covariance Stats:", global_ar_covariance.sum(axis=(0, 1, 2, 3)))
 
         iteration_number += 1
 
