@@ -495,8 +495,8 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	x_scale = 1. / x_bin_size;
 	y_scale12 = qso_angle12 / (2. * y_bin_size);
 	y_scale34 = qso_angle34 / (2. * y_bin_size);
-	max_dist_for_qso_angle12 = y_bin_count / y_scale12;
-	max_dist_for_qso_angle34 = y_bin_count / y_scale34;
+	max_dist_for_qso_angle12 = (y_bin_count + 1) * y_bin_size / sin(qso_angle12);
+	max_dist_for_qso_angle34 = (y_bin_count + 1) * y_bin_size / sin(qso_angle34);
 
 	/*
 	 * find the largest index of dist1(,2,3,4) for which a transverse distance to the other
