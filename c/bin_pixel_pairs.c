@@ -431,6 +431,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	long i, j, k, l;
 	long dist1_size, dist2_size, dist3_size, dist4_size;
 	int bin_x_a, bin_y_a, bin_x_b, bin_y_b;
+	double f_bin_x_a, f_bin_y_a, f_bin_x_b, f_bin_y_b;
 	long last_dist2_start, first_pair_dist2, last_dist4_start, first_pair_dist4;
 	long max_dist1_index, max_dist2_index, max_dist3_index, max_dist4_index;
 	double dist1, dist2, dist3, dist4;
@@ -530,11 +531,11 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 			flux2 = *((double *)PyArray_GETPTR1(in_array_flux2, j));
 			weight2 = *((double *)PyArray_GETPTR1(in_array_weights2, j));
 
-			bin_x_a = get_bin_x(dist1, dist2, x_scale);
-			bin_y_a = get_bin_y(dist1, dist2, y_scale12);
+			f_bin_x_a = get_bin_x(dist1, dist2, x_scale);
+			f_bin_y_a = get_bin_y(dist1, dist2, y_scale12);
 
 			weighted_flux2 = flux2 * weight2;
-			if ((bin_x_a < x_bin_count) && (bin_y_a < y_bin_count))
+			if ((f_bin_x_a < x_bin_count) && (f_bin_y_a < y_bin_count))
 			{
 				/* pixel is in range */
 				if (!first_pair_dist2)
@@ -560,11 +561,17 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 						flux4 = *((double *)PyArray_GETPTR1(in_array_flux4, l));
 						weight4 = *((double *)PyArray_GETPTR1(in_array_weights4, l));
 
-						bin_x_b = get_bin_x(dist3, dist4, x_scale);
-						bin_y_b = get_bin_y(dist3, dist4, y_scale34);
+						f_bin_x_b = get_bin_x(dist3, dist4, x_scale);
+						f_bin_y_b = get_bin_y(dist3, dist4, y_scale34);
 						
-						if ((bin_x_b < x_bin_count) && (bin_y_b < y_bin_count))
+						if ((f_bin_x_b < x_bin_count) && (f_bin_y_b < y_bin_count))
 						{
+							/* convert bins to integers */
+							bin_x_a = f_bin_x_a;
+							bin_y_a = f_bin_y_a;
+							bin_x_b = f_bin_x_b;
+							bin_y_b = f_bin_y_b;
+							
 							weighted_flux4 = flux4 * weight4;
 
 							est_34 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_b, bin_y_b));

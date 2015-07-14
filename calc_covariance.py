@@ -109,8 +109,8 @@ class CovarianceMatrix:
                                         out=self.ar_covariance,
                                         qso_angle12=qso_angle12,
                                         qso_angle34=qso_angle34,
-                                        x_bin_size=50,
-                                        y_bin_size=50,
+                                        x_bin_size=max_range_parallel/50,
+                                        y_bin_size=max_range_transverse/50,
                                         x_bin_count=50,
                                         y_bin_count=50
                                         )

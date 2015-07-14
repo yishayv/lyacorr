@@ -126,7 +126,7 @@ def profile_main():
 
     # gather all the qso pairs to rank 0
     mpi_helper.r_print("Gathering QSO pairs")
-    global_qso_pairs_list = gather_concatenate_big_array(local_qso_pairs, sum_axis=0)
+    global_qso_pairs = gather_concatenate_big_array(local_qso_pairs, sum_axis=0)
 
     # initialize variable for non-zero ranks
     random_sample = None
@@ -135,7 +135,6 @@ def profile_main():
     local_random_sample = local_random_sample.reshape((local_random_sample.shape[0] / 2, 2, 3))
 
     if comm.rank == 0:
-        global_qso_pairs = np.concatenate(global_qso_pairs_list, axis=0)
         mpi_helper.r_print(
             "Gathered QSO pairs, count={0}".format(global_qso_pairs.shape[0]))
 
