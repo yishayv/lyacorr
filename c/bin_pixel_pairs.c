@@ -576,7 +576,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 
 							est_34 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_b, bin_y_b));
 							
-							cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 - est_12);
+							cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 - est_34);
 							
 							p_current_bin_flux =
 							    (double *)PyArray_GETPTR5(out_array,
