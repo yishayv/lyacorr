@@ -541,6 +541,9 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 				if (!first_pair_dist2)
 					first_pair_dist2 = j;
 
+				bin_x_a = f_bin_x_a;
+				bin_y_a = f_bin_y_a;
+
 				est_12 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_y_a));
 				
 				cov_term_12 = (weighted_flux1 * weighted_flux2) * (flux1 * flux2 - est_12);
@@ -567,8 +570,6 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 						if ((f_bin_x_b < x_bin_count) && (f_bin_y_b < y_bin_count))
 						{
 							/* convert bins to integers */
-							bin_x_a = f_bin_x_a;
-							bin_y_a = f_bin_y_a;
 							bin_x_b = f_bin_x_b;
 							bin_y_b = f_bin_y_b;
 							
