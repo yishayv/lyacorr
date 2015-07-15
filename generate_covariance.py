@@ -145,8 +145,13 @@ def profile_main():
             mpi_helper.r_print(
                 "Iteration {0}".format(iteration_number))
             # create a random sample of pairs
-            random_sample_indices = np.random.randint(
-                0, global_qso_pairs.shape[0], sample_chunk_size * comm.size)
+            # random_sample_indices = np.random.randint(
+            #     0, global_qso_pairs.shape[0], sample_chunk_size * comm.size)
+            ar_probabilities = 1/global_qso_pairs[:,2]
+            # normalize probability vector
+            ar_probabilities /= ar_probabilities.sum()
+            random_sample_indices = np.random.choice(np.arange(global_qso_pairs.shape[0]),
+                                                     sample_chunk_size * comm.size, p=ar_probabilities)
             random_sample = global_qso_pairs[random_sample_indices]
             mpi_helper.r_print("random sample shape:", random_sample.shape)
 
