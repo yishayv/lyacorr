@@ -537,7 +537,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 			weighted_flux2 = flux2 * weight2;
 			if ((f_bin_x_a < x_bin_count) && (f_bin_y_a < y_bin_count))
 			{
-				/* pixel is in range */
+				/* pixel is in range of parallel separation */
 				if (!first_pair_dist2)
 					first_pair_dist2 = j;
 
@@ -569,6 +569,10 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 						
 						if ((f_bin_x_b < x_bin_count) && (f_bin_y_b < y_bin_count))
 						{
+							/* pixel is in range of parallel separation */
+							if (!first_pair_dist4)
+								first_pair_dist4 = l;
+
 							/* convert bins to integers */
 							bin_x_b = f_bin_x_b;
 							bin_y_b = f_bin_y_b;

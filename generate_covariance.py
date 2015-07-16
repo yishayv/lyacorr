@@ -130,7 +130,7 @@ def profile_main():
 
     # initialize variable for non-zero ranks
     random_sample = None
-    sample_chunk_size = 20
+    sample_chunk_size = 40000
     local_random_sample = np.zeros((sample_chunk_size, 3))
     local_random_sample = local_random_sample.reshape((local_random_sample.shape[0] / 2, 2, 3))
 

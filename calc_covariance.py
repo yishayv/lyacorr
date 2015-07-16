@@ -22,7 +22,6 @@ class CovarianceMatrix:
         """
         self.cd = cd
         self.radius = radius
-        self.significant_qso_pairs = significant_qso_pairs.SignificantQSOPairs()
         self.ar_covariance = np.zeros((50, 50, 50, 50, 3))
         ar_est_bins = bins_2d.Bins2D(1, 1, 1, 1)
         ar_est_bins.load(settings.get_mean_estimator_bins())
@@ -98,7 +97,7 @@ class CovarianceMatrix:
         mask3 = np.random.choice(spec3_z.size, spec3_z.size/reduce_factor, replace=False)
         mask4 = np.random.choice(spec4_z.size, spec4_z.size/reduce_factor, replace=False)
 
-        ar_est = self.ar_est.copy()
+        ar_est = self.ar_est
         bin_pixel_pairs.bin_pixel_quads(ar_dist1=spec1_distances[mask1], ar_dist2=spec2_distances[mask2],
                                         ar_flux1=spec1_flux[mask1], ar_flux2=spec2_flux[mask2],
                                         ar_weights1=qso1_weights[mask1], ar_weights2=qso2_weights[mask2],
