@@ -56,6 +56,11 @@ def gather_concatenate_big_array(local_array, sum_axis=0, max_nbytes=2 ** 31 - 1
 
 
 def profile_main():
+    local_array = np.array([[1., 2], [3, 4], [5, 6], [7, 8], [9., 10]]) if comm.rank == 0 else np.array(
+        [[20, 21], [22, 23]])
+    temp1 = gather_concatenate_big_array(local_array, sum_axis=0,
+                                         max_nbytes=48)
+    mpi_helper.r_print(temp1)
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
     # print 'minimum distance', min_distance, 'Mpc/rad'
@@ -160,11 +165,16 @@ def profile_main():
         # reshape the local array to form pairs of pairs
         mpi_helper.l_print(local_random_sample.shape)
         for quad in local_random_sample:
-            cov.add_quad(qso_angle12=quad[0, 2], qso_angle34=quad[1, 2],
+            cov.add_quad(qso_angle12=quad[0, 2], qso_angle34=quad[0, 2],
                          max_range_parallel=radius, max_range_transverse=radius,
                          spec1_index=quad[0, 0], spec2_index=quad[0, 1],
-                         spec3_index=quad[1, 0], spec4_index=quad[1, 1],
+                         spec3_index=quad[0, 0], spec4_index=quad[0, 1],
                          delta_t_file=delta_t_file)
+            # cov.add_quad(qso_angle12=quad[0, 2], qso_angle34=quad[1, 2],
+            #              max_range_parallel=radius, max_range_transverse=radius,
+            #              spec1_index=quad[0, 0], spec2_index=quad[0, 1],
+            #              spec3_index=quad[1, 0], spec4_index=quad[1, 1],
+            #              delta_t_file=delta_t_file)
 
         global_ar_covariance = np.zeros((50, 50, 50, 50, 3))
         comm.Reduce(

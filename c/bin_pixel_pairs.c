@@ -201,7 +201,7 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 					break;
 			}
 		}
-		if (first_pair_dist2)
+		if (first_pair_dist2 > last_dist2_start)
 			last_dist2_start = first_pair_dist2;
 	}
 }
@@ -546,7 +546,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 
 				est_12 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_y_a));
 				
-				cov_term_12 = (weighted_flux1 * weighted_flux2) * (flux1 * flux2 - est_12);
+				cov_term_12 = (weighted_flux1 * weighted_flux2) * (flux1 * flux2 - 0*est_12);
 				
 				last_dist4_start = 0;
 				for (k = 0; k < max_dist3_index; k++)
@@ -577,11 +577,14 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 							bin_x_b = f_bin_x_b;
 							bin_y_b = f_bin_y_b;
 							
+							/*if (bin_x_b==3 && bin_y_b==20)
+								__builtin_debugtrap();*/
+							
 							weighted_flux4 = flux4 * weight4;
 
 							est_34 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_b, bin_y_b));
 							
-							cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 - est_34);
+							cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 - 0*est_34);
 							
 							p_current_bin_flux =
 							    (double *)PyArray_GETPTR5(out_array,
