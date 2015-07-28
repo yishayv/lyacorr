@@ -2,3 +2,6 @@
 *.prof
 *.lprof
 *.c~
+*.so
+*.so.dSYM
+*.dSYM

@@ -437,11 +437,13 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	double dist1, dist2, dist3, dist4;
 	double flux1, flux2, flux3, flux4;
 	double weight1, weight2, weight3, weight4;
-	double weighted_flux1, weighted_flux2, weighted_flux3, weighted_flux4;
+	/*double weighted_flux1, weighted_flux2, weighted_flux3, weighted_flux4;*/
+	double weights_12, weights_34;
 	double *p_current_bin_flux, *p_current_bin_weight, *p_current_bin_count;
 	double x_scale, y_scale12, y_scale34;
 	double max_dist_for_qso_angle12, max_dist_for_qso_angle34;
-	double est_12, est_34, cov_term_12, cov_term_34;
+	/*double est_12, est_34, cov_term_12, cov_term_34;*/
+	double est_13, est_24, est_14, est_23;
 	long estimator_shape[2], out_array_shape[5];
 
 	MY_DEBUG_PRINT("Inside bin_pixels_quad_loop()\n");
@@ -518,7 +520,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		flux1 = *((double *)PyArray_GETPTR1(in_array_flux1, i));
 		weight1 = *((double *)PyArray_GETPTR1(in_array_weights1, i));
 
-		weighted_flux1 = flux1 * weight1;
+		/*weighted_flux1 = flux1 * weight1;*/
 
 		/*
 		 * distance values are ordered, so if any dist2 was too low to be close enough to the previous dist1,
@@ -534,7 +536,9 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 			f_bin_x_a = get_bin_x(dist1, dist2, x_scale);
 			f_bin_y_a = get_bin_y(dist1, dist2, y_scale12);
 
-			weighted_flux2 = flux2 * weight2;
+			/*weighted_flux2 = flux2 * weight2;*/
+			weights12 = weight1 * weight2;
+
 			if ((f_bin_x_a < x_bin_count) && (f_bin_y_a < y_bin_count))
 			{
 				/* pixel is in range of parallel separation */
@@ -546,7 +550,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 
 				est_12 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_y_a));
 				
-				cov_term_12 = (weighted_flux1 * weighted_flux2) * (flux1 * flux2 - est_12);
+				/*cov_term_12 = (weighted_flux1 * weighted_flux2) * (flux1 * flux2 /*- est_12//);*/
 				
 				last_dist4_start = 0;
 				for (k = 0; k < max_dist3_index; k++)
@@ -555,7 +559,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 					flux3 = *((double *)PyArray_GETPTR1(in_array_flux3, k));
 					weight3 = *((double *)PyArray_GETPTR1(in_array_weights3, k));
 
-					weighted_flux3 = flux3 * weight3;
+					/*weighted_flux3 = flux3 * weight3;*/
 
 					first_pair_dist4 = 0;
 					for (l = last_dist4_start; l < max_dist4_index; l++)
@@ -577,18 +581,23 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 							bin_x_b = f_bin_x_b;
 							bin_y_b = f_bin_y_b;
 							
-							weighted_flux4 = flux4 * weight4;
+							/*weighted_flux4 = flux4 * weight4;*/
+							weights34 = weight3 * weight4;
 
-							est_34 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_b, bin_y_b));
+							/*est_34 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_b, bin_y_b));*/
+							est_13 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_x_b));
+							est_13 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_x_b));
+							est_13 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_x_b));
+							est_13 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_x_b));
 							
-							cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 - est_34);
+							/*cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 /*- est_34//);*/
 							
 							p_current_bin_flux =
 							    (double *)PyArray_GETPTR5(out_array,
 										      bin_x_a, bin_y_a, bin_x_b,
 										      bin_y_b, 0);
 							(*p_current_bin_flux) +=
-								cov_term_12 * cov_term_34;
+								(weights12*weights34)*(estd_flucov_term_12 * cov_term_34;
 							
 							p_current_bin_count =
 							    (double *)PyArray_GETPTR5(out_array, bin_x_a, bin_y_a,
