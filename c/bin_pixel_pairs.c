@@ -201,7 +201,7 @@ bin_pixel_pairs_loop(PyArrayObject * in_array_dist1,
 					break;
 			}
 		}
-		if (first_pair_dist2)
+		if (first_pair_dist2 > last_dist2_start)
 			last_dist2_start = first_pair_dist2;
 	}
 }
@@ -425,7 +425,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		     PyArrayObject * in_array_weights4,
 		     PyArrayObject * in_array_estimator,
 		     PyArrayObject * out_array,
-		     double qso_angle12, double qso_angle34,
+		     PyArrayObject * in_array_qso_angles,
 		     double x_bin_size, double y_bin_size, double x_bin_count, double y_bin_count)
 {
 	long i, j, k, l;
@@ -445,6 +445,8 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	/*double est_12, est_34, cov_term_12, cov_term_34;*/
 	double est_13, est_24, est_14, est_23;
 	long estimator_shape[2], out_array_shape[5];
+	/* the order of qso_angles is: 1-2, 1-3, 1-4, 2-3, 2-4, 3-4 */
+	double qso_angles[6];
 
 	MY_DEBUG_PRINT("Inside bin_pixels_quad_loop()\n");
 	
@@ -471,6 +473,11 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 	
 	if (!dist1_size || !dist2_size || !dist3_size || !dist4_size)
 		return;
+	
+	for (i = 0; i < 6; i++)
+	{
+		qso_angles[i] = *((double *)PyArray_GETPTR1(in_array_qso_angles, i));
+	}
 
 	/* if dist1 is nearer, it is more efficient to run the loops with 1 and 2 reversed. */
 	dist1 = *((double *)PyArray_GETPTR1(in_array_dist1, 0));
@@ -484,6 +491,8 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		SWAP(PyArrayObject *, in_array_dist1, in_array_dist2);
 		SWAP(PyArrayObject *, in_array_flux1, in_array_flux2);
 		SWAP(PyArrayObject *, in_array_weights1, in_array_weights2);
+		SWAP(double, qso_angles[1], qso_angles[3]);
+		SWAP(double, qso_angles[2], qso_angles[4]);
 	}
 	/* the same applies to 3 and 4. */
 	if (dist3 < dist4)
@@ -493,13 +502,15 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 		SWAP(PyArrayObject *, in_array_dist3, in_array_dist4);
 		SWAP(PyArrayObject *, in_array_flux3, in_array_flux4);
 		SWAP(PyArrayObject *, in_array_weights3, in_array_weights4);
+		SWAP(double, qso_angles[1], qso_angles[2]);
+		SWAP(double, qso_angles[3], qso_angles[4]);
 	}
 
 	x_scale = 1. / x_bin_size;
-	y_scale12 = qso_angle12 / (2. * y_bin_size);
-	y_scale34 = qso_angle34 / (2. * y_bin_size);
-	max_dist_for_qso_angle12 = (y_bin_count + 1) * y_bin_size / sin(qso_angle12);
-	max_dist_for_qso_angle34 = (y_bin_count + 1) * y_bin_size / sin(qso_angle34);
+	y_scale12 = qso_angles[0] / (2. * y_bin_size);
+	y_scale34 = qso_angles[5] / (2. * y_bin_size);
+	max_dist_for_qso_angle12 = (y_bin_count + 1) * y_bin_size / sin(qso_angles[0]);
+	max_dist_for_qso_angle34 = (y_bin_count + 1) * y_bin_size / sin(qso_angles[5]);
 
 	/*
 	 * find the largest index of dist1(,2,3,4) for which a transverse distance to the other
@@ -537,7 +548,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 			f_bin_y_a = get_bin_y(dist1, dist2, y_scale12);
 
 			/*weighted_flux2 = flux2 * weight2;*/
-			weights12 = weight1 * weight2;
+			weights_12 = weight1 * weight2;
 
 			if ((f_bin_x_a < x_bin_count) && (f_bin_y_a < y_bin_count))
 			{
@@ -550,7 +561,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 
 				est_12 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_y_a));
 				
-				/*cov_term_12 = (weighted_flux1 * weighted_flux2) * (flux1 * flux2 /*- est_12//);*/
+				/*cov_term_12 = (weighted_flux1 * weighted_flux2) * (flux1 * flux2 //- est_12//);*/
 				
 				last_dist4_start = 0;
 				for (k = 0; k < max_dist3_index; k++)
@@ -582,7 +593,8 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 							bin_y_b = f_bin_y_b;
 							
 							/*weighted_flux4 = flux4 * weight4;*/
-							weights34 = weight3 * weight4;
+							weights_34 = weight3 * weight4;
+							
 
 							/*est_34 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_b, bin_y_b));*/
 							est_13 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_x_b));
@@ -590,7 +602,7 @@ bin_pixel_quads_loop(PyArrayObject * in_array_dist1,
 							est_13 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_x_b));
 							est_13 = *((double*)PyArray_GETPTR2(in_array_estimator, bin_x_a, bin_x_b));
 							
-							/*cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 /*- est_34//);*/
+							/*cov_term_34 = (weighted_flux3 * weighted_flux4) * (flux3 * flux4 //- est_34//);*/
 							
 							p_current_bin_flux =
 							    (double *)PyArray_GETPTR5(out_array,
@@ -651,7 +663,7 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 	PyArrayObject *in_array_weights4;
 	PyArrayObject *in_array_estimator;
 	PyArrayObject *out_array;
-	double qso_angle12, qso_angle34;
+	PyArrayObject *qso_angles;
 	double x_bin_size, y_bin_size;
 	double x_bin_count, y_bin_count;
 	
@@ -663,7 +675,7 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 		"ar_weights3", "ar_weights4",
 		"ar_est",
 		"out",
-		"qso_angle12", "qso_angle34",
+		"qso_angles",
 		"x_bin_size", "y_bin_size", "x_bin_count", "y_bin_count",
 		NULL
 	};
@@ -672,7 +684,7 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 	
 	/* parse numpy array arguments */
 	if (!PyArg_ParseTupleAndKeywords
-	    (args, kw, "O!O!O!O!O!O!O!O!O!O!O!O!O!O!dddddd:bin_pixel_quads", kwlist,
+	    (args, kw, "O!O!O!O!O!O!O!O!O!O!O!O!O!O!O!dddd:bin_pixel_quads", kwlist,
 	     &PyArray_Type, &in_array_dist1, &PyArray_Type, &in_array_dist2,
 	     &PyArray_Type, &in_array_flux1, &PyArray_Type, &in_array_flux2,
 	     &PyArray_Type, &in_array_weights1, &PyArray_Type, &in_array_weights2,
@@ -681,7 +693,7 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 	     &PyArray_Type, &in_array_weights3, &PyArray_Type, &in_array_weights4,
 	     &PyArray_Type, &in_array_estimator,
 	     &PyArray_Type, &out_array,
-	     &qso_angle12, &qso_angle34,
+	     &PyArray_Type, &qso_angles,
 	     &x_bin_size, &y_bin_size, &x_bin_count, &y_bin_count))
 	{
 		return NULL;
@@ -696,7 +708,7 @@ static PyObject *bin_pixel_quads(PyObject * self, PyObject * args, PyObject * kw
 			in_array_weights3, in_array_weights4,
 			in_array_estimator,
 			out_array,
-			qso_angle12, qso_angle34,
+			qso_angles,
 			x_bin_size, y_bin_size, x_bin_count, y_bin_count);
 	
 	MY_DEBUG_PRINT(":::::After loop end\n")
