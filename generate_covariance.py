@@ -33,8 +33,9 @@ comm = MPI.COMM_WORLD
 
 
 def gather_concatenate_big_array(local_array, sum_axis=0, max_nbytes=2 ** 31 - 1):
+    global_array = None
     global_nbytes = comm.allgather(local_array.nbytes)
-    if (local_array.shape[0] > 0):
+    if local_array.shape[0] > 0:
         assert np.take(local_array, [0],
                        axis=sum_axis).nbytes <= max_nbytes, "array elements must not be larger than max_nbytes"
     mpi_helper.r_print("global_nbytes", global_nbytes)
@@ -53,7 +54,7 @@ def gather_concatenate_big_array(local_array, sum_axis=0, max_nbytes=2 ** 31 - 1
         if comm.rank == 0:
             # mpi_helper.r_print(global_array_list)
             global_array = np.concatenate(global_array_list)
-    return global_array if comm.rank == 0 else None
+    return global_array
 
 
 def profile_main():
@@ -140,10 +141,13 @@ def profile_main():
     # define count of quads for each chunk
     sample_chunk_size = 40000
     local_random_sample = np.zeros((sample_chunk_size, 10))
+    global_pair_dict = None
 
     if comm.rank == 0:
         mpi_helper.r_print(
             "Gathered QSO pairs, count={0}".format(global_qso_pairs.shape[0]))
+        assert isinstance(global_qso_pairs, np.ndarray)
+
         # build a 2-level dictionary of all QSO pairs.
         global_pair_dict = collections.defaultdict(lambda: collections.defaultdict(lambda: np.inf))
         for qso1, qso2, angle in global_qso_pairs:
@@ -180,17 +184,18 @@ def profile_main():
 
         iteration_number += 1
 
+
 # @profile
 def create_random_sample(global_qso_pairs, global_pair_dict, sample_chunk_size):
     # create a random sample of pairs
     """
 
-    :type global_qso_pairs: np.ndarray
+    :type global_qso_pairs: np.multiarray.ndarray
     :type global_pair_dict: collections.defaultdict(dict)
     :type sample_chunk_size: int
-    :rtype: np.ndarray
+    :rtype: np.multiarray.ndarray
     """
-    ar_probabilities = 1 / global_qso_pairs[:, 2]
+    ar_probabilities = np.reciprocal(global_qso_pairs[:, 2])
     # normalize probability vector
     ar_probabilities /= ar_probabilities.sum()
     # draw a random pair as qso1, qso2

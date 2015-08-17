@@ -23,11 +23,11 @@ class Bins2D(AccumulatorBase):
         """
         add flux to x,y bins with weights and a filter mask.
         note: the x,y values should be rescaled prior to calling this method.
-        :type ar_flux: np.ndarray
-        :param ar_x: np.ndarray
-        :param ar_y: np.ndarray
-        :param mask: np.ndarray
-        :param ar_weights: np.ndarray
+        :type ar_flux: np.multiarray.ndarray
+        :param ar_x: np.multiarray.ndarray
+        :param ar_y: np.multiarray.ndarray
+        :param mask: np.multiarray.ndarray
+        :param ar_weights: np.multiarray.ndarray
         """
         ar_x_int = ar_x.astype(self.index_type)
         ar_y_int = ar_y.astype(self.index_type)

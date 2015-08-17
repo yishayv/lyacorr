@@ -151,7 +151,7 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
 
     # combine all different masks
     effective_mask = forest_mask & fit_mask & redshift_mask
-    ar_wavelength_masked = ar_wavelength[effective_mask]
+    ar_wavelength_masked = np.asarray(ar_wavelength[effective_mask])
     ar_fit_spectrum_masked = ar_fit_spectrum[effective_mask]
 
     # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
@@ -267,7 +267,7 @@ def delta_transmittance_chunk(qso_record_table):
         ar_z = lya_forest_transmittance.ar_z
         if ar_z.size:
             # prepare the mean transmittance for the z range of this QSO
-            ar_mean_flux_for_z_range = np.interp(ar_z, ar_z_mean_transmittance, ar_mean_transmittance)
+            ar_mean_flux_for_z_range = np.asarray(np.interp(ar_z, ar_z_mean_transmittance, ar_mean_transmittance))
 
             # delta transmittance is the change in relative transmittance vs the mean
             # therefore, subtract 1.

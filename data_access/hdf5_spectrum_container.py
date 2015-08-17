@@ -1,4 +1,5 @@
 import h5py
+import numpy as np
 
 
 INITIAL_SPECTRA = 1000
@@ -30,12 +31,24 @@ class Hdf5SpectrumContainer(object):
         self.f.close()
 
     def get_wavelength(self, n):
+        """
+
+        :rtype : np.multiarray.ndarray
+        """
         return self._get_array(n, 0)
 
     def get_flux(self, n):
+        """
+
+        :rtype : np.multiarray.ndarray
+        """
         return self._get_array(n, 1)
 
     def get_ivar(self, n):
+        """
+
+        :rtype : np.multiarray.ndarray
+        """
         return self._get_array(n, 2)
 
     def set_wavelength(self, n, data):
@@ -54,6 +67,12 @@ class Hdf5SpectrumContainer(object):
         self.data_set[n, i, :data.size] = data
 
     def _get_array(self, n, i):
+        """
+        helper function for returning flux, ivar, or wavelength arrays.
+        :type n: int
+        :type i: int
+        :rtype: np.multiarray.ndarray
+        """
         assert n < self.data_set.shape[0]
         ar = self.data_set[n][i]
         # trim zeros, according to wavelength

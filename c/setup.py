@@ -1,7 +1,8 @@
 from distutils.core import setup, Extension
-import numpy
-import sys
 import os
+
+import numpy
+
 
 # define the extension module
 debug = os.getenv('DEBUG', 0) != 0

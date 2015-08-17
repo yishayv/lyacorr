@@ -19,10 +19,10 @@ class MedianTransmittance:
         for n in xrange(self.ar_z.size):
             if ar_mask[n]:
                 ar_effective_weight = ar_weights[n]
-                ar_effective_flux = ar_flux[n]
+                ar_effective_flux = np.asarray(ar_flux[n])
                 ar_normalized_flux = ar_effective_flux / self.flux_range - self.flux_offset
                 ar_flux_index_float = np.clip(ar_normalized_flux, self.flux_min, self.flux_max) * self.flux_res
-                ar_flux_index = np.clip((ar_flux_index_float).astype(int), 0, self.flux_res - 1)
+                ar_flux_index = np.clip(ar_flux_index_float.astype(int), 0, self.flux_res - 1)
                 self.ar_flux_bins[n, ar_flux_index] += ar_effective_weight
                 self.ar_unweighted_flux_bins[n, ar_flux_index] += 1
 
@@ -93,4 +93,3 @@ class MedianTransmittance:
         :rtype : MeanTransmittance
         """
         return cls.load(filename)
-

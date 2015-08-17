@@ -32,9 +32,9 @@ class QSOData:
         """
 
         :type qso_rec: QSORecord
-        :type ar_wavelength: np.ndarray
-        :type ar_flux: np.ndarray
-        :type ar_ivar: np.ndarray
+        :type ar_wavelength: np.multiarray.ndarray
+        :type ar_flux: np.multiarray.ndarray
+        :type ar_ivar: np.multiarray.ndarray
         """
         self.qso_rec = qso_rec
         self.ar_wavelength = ar_wavelength

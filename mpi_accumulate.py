@@ -45,7 +45,7 @@ def accumulate_over_spectra(func, accumulator):
         object_local_result = local_result[1]
 
         assert isinstance(ar_local_result, np.ndarray)
-        ar_all_results = np.zeros(shape=tuple([comm.size] + list(ar_local_result.shape)))
+        ar_all_results = np.zeros(shape=(comm.size,) + tuple(ar_local_result.shape))
         comm.Gatherv(ar_local_result, ar_all_results, root=0)
         ar_qso_indices = np.zeros(shape=(comm.size, slice_size), dtype=int)
         comm.Gatherv(np.array([x['index'] for x in qso_record_table_chunk]), ar_qso_indices)
@@ -63,5 +63,3 @@ def accumulate_over_spectra(func, accumulator):
         return global_acc.return_result()
     else:
         return None, None
-
-

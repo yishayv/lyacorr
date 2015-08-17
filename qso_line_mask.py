@@ -1,6 +1,7 @@
-import numpy as np
-import spectrum
 import collections
+
+import numpy as np
+
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -73,8 +74,6 @@ def get_line_mask(ar_wavelength, spec_line):
 def add_line_mask(ar_wavelength, z):
     m = ar_wavelength.mask
     for spec_line in SpecLines:
-        # current_mask = vec_is_masked_by_line(
-        #     ar_wavelength, spec_line.wavelength, spec_line.width_factor, z)
         current_mask = get_line_mask(ar_wavelength, spec_line)
         m = np.logical_or(m, current_mask)
     return m

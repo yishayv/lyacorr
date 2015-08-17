@@ -83,13 +83,13 @@ class PlotSpectrum():
         self.ar_wavelength = np.array(qso_data_.ar_wavelength)
 
         # flux calibration:
-        self.ar_flux, self.ar_ivar = spectrum_calibration.apply_correction(qso_data_.ar_flux, qso_data_.ar_ivar)
+        self.ar_flux, self.ar_ivar = spectrum_calibration.apply_correction(qso_data_)
         # we assume the wavelength range in the input file is correct
         assert self.ar_wavelength.size == self.ar_flux.size
 
         # correct extinction:
         self.ar_flux_correct = deredden_spectrum.apply_correction(self.ar_wavelength, self.ar_flux,
-                                                                  qso_data_.qso_rec.extinction_g)
+                                                                  self.ar_ivar, qso_data_.qso_rec.extinction_g)
 
         # begin PCA fit:
         ar_wavelength_rest = self.ar_wavelength / (1 + qso_z)
@@ -118,7 +118,7 @@ class PlotSpectrum():
             m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
             ar_mean_flux_lookup = m.get_weighted_mean()
             self.ar_z = self.ar_wavelength / lya_center - 1
-            self.ar_mean_flux_for_z_range = np.interp(self.ar_z, m.ar_z, ar_mean_flux_lookup)
+            self.ar_mean_flux_for_z_range = np.asarray(np.interp(self.ar_z, m.ar_z, ar_mean_flux_lookup))
             self.fitted_mean = (self.fit_spectrum * self.ar_mean_flux_for_z_range)[self.ar_z < qso_z]
 
     def set_flux_range(self, flux_min, flux_max):
@@ -210,6 +210,7 @@ class PlotSpectrum():
         plt.legend(loc='best')
 
     def plot_transmittance(self):
+        ar_mean_flux_for_z_range = None
         if os.path.exists(settings.get_mean_transmittance_npy()):
             m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
             ar_mean_flux_lookup = m.get_weighted_mean()
@@ -229,7 +230,8 @@ class PlotSpectrum():
         y_min, y_max = axes.get_ylim()
         plt.fill_between(lya_forest_transmittance.ar_z, y_min, y_max, where=ar_transmittance_mask,
                          linewidth=.5, color='red', alpha=0.1)
-        plt.plot(self.ar_z[self.ar_z < self.qso_z], ar_mean_flux_for_z_range[self.ar_z < self.qso_z], color='red')
+        if ar_mean_flux_for_z_range:
+            plt.plot(self.ar_z[self.ar_z < self.qso_z], ar_mean_flux_for_z_range[self.ar_z < self.qso_z], color='red')
         plt.xlabel(r"$z$")
         # F(lambda)/Cq(lambda) is the same as F(z)/Cq(z)
         plt.ylabel(r"$f_q(z)/C_q(z)$")
@@ -239,7 +241,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         i = int(sys.argv[1])
 
-    spec_sample_1 = read_spectrum_fits.enum_spectra([qso_record_table[i]])
+    spec_sample_1 = read_spectrum_fits.enum_spectra(qso_record_table[[i]])
     for qso_data_1 in spec_sample_1:
         ps = PlotSpectrum(qso_data_1)
         plt.subplot(2, 1, 1)

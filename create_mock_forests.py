@@ -42,11 +42,10 @@ def profile_main():
     qso_spectra_hdf5 = settings.get_qso_spectra_hdf5()
     output_spectra = Hdf5SpectrumContainer(qso_spectra_hdf5, readonly=False, create_new=False,
                                            num_spectra=MAX_SPECTRA)
-    if draw_graph:
-        total_ar_x = np.array([])
-        total_ar_y = np.array([])
-        total_ar_z = np.array([])
-        total_ar_c = np.array([])
+    total_ar_x = np.array([])
+    total_ar_y = np.array([])
+    total_ar_z = np.array([])
+    total_ar_c = np.array([])
 
     for n in xrange(len(qso_record_list)):
         qso_rec = qso_record_list[n]
@@ -76,7 +75,7 @@ def profile_main():
         ar_fit_spectrum_masked = fit_spectrum[effective_mask]
 
         # convert redshift to distance
-        ar_dist = cd.fast_comoving_distance(ar_redshift[effective_mask])
+        ar_dist = np.asarray(cd.fast_comoving_distance(ar_redshift[effective_mask]))
 
         dec = qso_rec.dec * np.pi / 180
         ra = qso_rec.ra * np.pi / 180

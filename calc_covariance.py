@@ -3,7 +3,6 @@ import numpy as np
 import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 import bin_pixel_pairs
-import significant_qso_pairs
 import bins_2d
 
 NUM_BINS_X = 50

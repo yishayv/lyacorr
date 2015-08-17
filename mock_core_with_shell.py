@@ -26,7 +26,7 @@ class CoreWithShell:
     def array(self):
         """
 
-        :rtype : np.array
+        :rtype : np.multiarray.ndarray
         """
         return self.ar
 
@@ -51,7 +51,7 @@ class MockForest:
         self.core_radius_fraction = 0.5 * core_radius / self.cube_size
         # pixel density:
         self.inv_pixel_size = self.res / self.cube_size * 0.5
-        self.core_with_shell = CoreWithShell([self.res, self.res, self.res],
+        self.core_with_shell = CoreWithShell((self.res, self.res, self.res),
                                              core_radius=self.core_radius_fraction,
                                              shell_min=self.shell_min_fraction,
                                              shell_max=self.shell_max_fraction)
@@ -59,6 +59,13 @@ class MockForest:
         # self.core_with_shell.array -= self.core_with_shell.array.mean()
 
     def get_forest(self, x, y, z):
+        """
+
+        :type x: np.multiarray.ndarray
+        :type y: np.multiarray.ndarray
+        :type z: np.multiarray.ndarray
+        :return:
+        """
         x_indexes = ((x * self.inv_pixel_size) % self.res).astype(int)
         y_indexes = ((y * self.inv_pixel_size) % self.res).astype(int)
         z_indexes = ((z * self.inv_pixel_size) % self.res).astype(int)

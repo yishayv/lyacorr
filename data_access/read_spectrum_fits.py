@@ -10,7 +10,6 @@ import common_settings
 from pixel_flags import PixelFlags
 from data_access.qso_data import QSORecord, QSOData
 
-
 settings = common_settings.Settings()
 
 QSO_FILE = settings.get_qso_metadata_fits()
@@ -108,14 +107,16 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
 
             and_mask_data = hdu_list[2].data
             or_mask_data = hdu_list[3].data
+            last_fits_partial_path = fits_partial_path
 
+        assert flux_data and ivar_data and and_mask_data and or_mask_data and o_grid
         # return requested spectrum
         ar_flux = flux_data[qso_rec.fiberID - 1]
         ar_ivar = ivar_data[qso_rec.fiberID - 1]
         assert ar_flux.size == ar_ivar.size
 
-        current_and_mask_data = and_mask_data[qso_rec.fiberID - 1]
-        current_or_mask_data = or_mask_data[qso_rec.fiberID - 1]
+        current_and_mask_data = np.asarray(and_mask_data[qso_rec.fiberID - 1])
+        current_or_mask_data = np.asarray(or_mask_data[qso_rec.fiberID - 1])
         ar_effective_mask = np.logical_or(current_and_mask_data & AND_MASK,
                                           current_or_mask_data & OR_MASK)
 
@@ -130,8 +131,4 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
         # temporary: set ivar to 0 for all bad pixels
         ar_ivar[ar_effective_mask != 0] = 0
 
-        last_fits_partial_path = fits_partial_path
         yield QSOData(qso_rec, o_grid, ar_flux, ar_ivar)
-
-
-

@@ -2,10 +2,17 @@ import numpy as np
 
 
 def fast_linear_interpolate(f, x):
-    x = np.asarray(x)
+    """
+
+    :param f: array of evenly spaced function values
+    :param x: array of fractional positions to sample
+    :type f: np.multiarray.ndarray
+    :type x: np.multiarray.ndarray
+    :rtype: np.multiarray.ndarray
+    """
 
     x0 = np.floor(x).astype(int)
-    x1 = x0 + 1
+    x1 = np.add(x0, 1)
 
     # limit the range of x1 to prevent out of bounds access
     return (x1 - x) * f[x0] + (x - x0) * f[np.clip(x1, a_min=0, a_max=f.size - 1)]
@@ -15,7 +22,7 @@ class LinearInterpTable:
     def __init__(self, func, x_start, x_end, x_step):
         """
 
-        :type func: a function with a 1D array argument
+        :param func: a function with a 1D array argument
         :type x_start: float64
         :type x_end: float64
         :type x_step: float64
@@ -35,4 +42,3 @@ class LinearInterpTable:
         assert np.all(ar_x < self.x_end) & np.all(ar_x > self.x_start), "lookup value out of range"
         ar_index = self._func_value_table.size * (ar_x - self.x_start) / (self.x_end - self.x_start)
         return fast_linear_interpolate(self._func_value_table, ar_index)
-
