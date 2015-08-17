@@ -65,7 +65,8 @@ class PixelPairs:
     def find_nearby_pixels2(self, accumulator, qso_angle,
                             spec1_index, spec2_index, delta_t_file):
         """
-        Find all pixel pairs in QSO1,QSO2 that are closer than radius r
+        Find all pixel pairs in QSO1,QSO2 that are closer than radius r.
+        This is a reference implementation in pure Python+Numpy.
         :type accumulator: AccumulatorBase
         :type qso_angle: float64
         :type spec1_index: int
@@ -156,7 +157,8 @@ class PixelPairs:
     def find_nearby_pixels(self, accumulator, qso_angle,
                            spec1_index, spec2_index, delta_t_file):
         """
-        Find all pixel pairs in QSO1,QSO2 that are closer than radius r
+        Find all pixel pairs in QSO1,QSO2 that are closer than radius r.
+        This is a faster implementation that uses a Python/C API module.
         :type accumulator: AccumulatorBase
         :type qso_angle: float64
         :type spec1_index: int

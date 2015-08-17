@@ -56,13 +56,15 @@ def profile_main():
     ar_wavelength = np.arange(3817, 9206, 0.5)
     # use selected spectrum
     ar_flux = spectra[i]
+    # ar_ivar does not exist in csv
+    ar_ivar = np.ones_like(ar_flux)
     # we assume the wavelength range in the input file is correct
     assert ar_wavelength.size == ar_flux.size
 
     # begin PCA fit:
     ar_wavelength_rest = ar_wavelength / (1 + qso_z)
     fit_spectrum, fit_normalization_factor = \
-        fit_pca.fit(ar_wavelength_rest, ar_flux, normalized=False)
+        fit_pca.fit(ar_wavelength_rest, ar_flux, ar_ivar, qso_redshift=qso_z)
 
     # begin power-law fit:
     # for now we have no real error data, so just use '1's:

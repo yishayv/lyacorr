@@ -178,37 +178,3 @@ class Bins2D(AccumulatorBase):
         new_bins.ar_count = ar[:, :, 1]
         new_bins.ar_weights = ar[:, :, 2]
         return new_bins
-
-
-class Expandable1DArray(object):
-    def __init__(self, *args, **kwargs):
-        self.ar = np.copy(np.array(*args, **kwargs))
-        self.size = self.ar.size
-
-    def get_array_view(self):
-        return self.ar[:self.size]
-
-    def add_array(self, ar):
-        new_required_size = self.size + ar.size
-        # if a resize is needed, resize to the next power of 2
-        if self.ar.size < new_required_size:
-            self.ar.resize([self._new_size(new_required_size)])
-            # old_ar = self.ar
-            # self.ar = np.zeros(self._new_size(new_required_size))
-            # np.copyto(self.get_array_view(), old_ar)
-        np.copyto(self.ar[self.size:self.size + ar.size], ar)
-        self.size += ar.size
-        return self.get_array_view()
-
-    @classmethod
-    def _new_size(cls, n):
-        return max(cls.get_next_power_of_2(n), 0)
-
-    @classmethod
-    def get_next_power_of_2(cls, n):
-        return 1 << n.bit_length()
-
-
-class Bins2DLists:
-    def __init__(self):
-        self.bins = [Expandable1DArray() for i in 2500]

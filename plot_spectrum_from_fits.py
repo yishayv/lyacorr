@@ -83,12 +83,13 @@ class PlotSpectrum():
         self.ar_wavelength = np.array(qso_data_.ar_wavelength)
 
         # flux calibration:
-        self.ar_flux, self.ar_ivar = deredden_spectrum.apply_correction(qso_data_.ar_flux, qso_data_.ar_ivar)
+        self.ar_flux, self.ar_ivar = spectrum_calibration.apply_correction(qso_data_.ar_flux, qso_data_.ar_ivar)
         # we assume the wavelength range in the input file is correct
         assert self.ar_wavelength.size == self.ar_flux.size
 
         # correct extinction:
-        self.ar_flux_correct = deredden_spectrum(self.ar_wavelength, self.ar_flux, qso_data_.qso_rec.extinction_g)
+        self.ar_flux_correct = deredden_spectrum.apply_correction(self.ar_wavelength, self.ar_flux,
+                                                                  qso_data_.qso_rec.extinction_g)
 
         # begin PCA fit:
         ar_wavelength_rest = self.ar_wavelength / (1 + qso_z)

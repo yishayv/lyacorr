@@ -46,8 +46,7 @@ SpecLines = [
 
 
 def is_masked_by_range(wavelength, range_low, range_high, z):
-    return (wavelength < (1 + z) * range_high and
-            wavelength > (1 + z) * range_low)
+    return (1 + z) * range_high > wavelength > (1 + z) * range_low
 
 # vectorize the previous function
 vec_is_masked_by_range = np.vectorize(
