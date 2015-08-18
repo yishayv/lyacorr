@@ -37,5 +37,3 @@ class ComovingDistance:
         :return:
         """
         return self.lookup_table.eval(ar_z)
-
-

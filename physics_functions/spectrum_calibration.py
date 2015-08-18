@@ -9,6 +9,7 @@ class SpectrumCalibration:
     This class uses data and code from (Margala et al. 2015, http://arxiv.org/pdf/1506.04790v1.pdf) to
     perform spectrophotometric correction to SDSS spectra.
     """
+
     def __init__(self, tpcorr_file):
         # Open the throughput correction file
         self.tpcorr = h5py.File(tpcorr_file, 'r')

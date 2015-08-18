@@ -64,7 +64,7 @@ class MWLines:
         # convert coordinates to pixel ID
         # the ang2pix function can also get a list of theta and phi, no need for iterations
         theta = (-spec_dec + 90) / 180 * np.pi
-        phi = ((spec_ra) % 360) / 180 * np.pi
+        phi = (spec_ra % 360) / 180 * np.pi
         pixel = hp.ang2pix(32, theta, phi)
 
         # convert pixel ID to group ID

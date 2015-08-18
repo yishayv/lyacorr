@@ -4,7 +4,7 @@ import os.path
 _SEP = ':'
 
 
-class Settings():
+class Settings:
     def __init__(self):
         self.config_parser = ConfigParser.SafeConfigParser()
         self.effective_settings_file_name = os.getenv('LYACORR_CONF_FILE', self.default_settings_file_name)

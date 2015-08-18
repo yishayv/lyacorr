@@ -9,7 +9,6 @@ from data_access.read_spectrum_fits import QSO_fields_dict
 import common_settings
 from data_access import read_spectrum_fits
 
-
 settings = common_settings.Settings()
 
 

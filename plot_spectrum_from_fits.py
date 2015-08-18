@@ -60,7 +60,7 @@ def rolling_weighted_median(ar_data, ar_weights, box_size):
     return ar_flux_smoothed
 
 
-class PlotSpectrum():
+class PlotSpectrum:
     def __init__(self, qso_data_):
         """
 

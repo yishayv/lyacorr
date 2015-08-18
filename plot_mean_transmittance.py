@@ -17,7 +17,7 @@ def do_plot():
     ar_z, mean = m.get_weighted_mean_with_minimum_count(1)
     ar_z_med, ar_median = med.get_weighted_median_with_minimum_count(1)
     ar_z_med, ar_unweighted_median = med.get_weighted_median_with_minimum_count(1, weighted=False)
-    #low_pass_mean = m.get_low_pass_mean()[1]
+    # low_pass_mean = m.get_low_pass_mean()[1]
 
     fig = plt.figure(figsize=(14, 10))
     ax1 = fig.add_subplot(2, 1, 1)
@@ -50,4 +50,3 @@ def do_plot():
 
 if __name__ == '__main__':
     do_plot()
-

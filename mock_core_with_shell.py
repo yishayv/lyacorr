@@ -18,6 +18,7 @@ class CoreWithShell:
         x = (np.arange(0, shape[0]) + 0.5 - shape[0] / 2.) / shape[0]
         y = (np.arange(0, shape[1]) + 0.5 - shape[1] / 2.) / shape[1]
         z = (np.arange(0, shape[2]) + 0.5 - shape[2] / 2.) / shape[2]
+        # noinspection PyUnresolvedReferences
         dist = np.sqrt(np.add.outer(np.add.outer(x ** 2, y ** 2), z ** 2))
         self.dist = dist
         self.ar = self._core_with_shell_profile(dist, core_radius, shell_min, shell_max)

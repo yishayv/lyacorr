@@ -6,6 +6,7 @@ import astropy.units as u
 
 from physics_functions import comoving_distance
 
+
 class TestComovingDistance(TestCase):
     def test_fast_comoving_distance(self):
         z_params = {'z_start': 1.8, 'z_end': 3.7, 'z_step': 0.001}

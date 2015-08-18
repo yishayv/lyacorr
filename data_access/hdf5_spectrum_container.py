@@ -1,7 +1,6 @@
 import h5py
 import numpy as np
 
-
 INITIAL_SPECTRA = 1000
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992

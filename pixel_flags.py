@@ -53,5 +53,3 @@ class FlagStats:
             bit_number=bit, bit_name=PixelFlags.FlagNames[bit],
             and_fraction=self.bit_fraction(bit, 0),
             or_fraction=self.bit_fraction(bit, 1))
-
-

@@ -32,17 +32,17 @@ SpecLines = [
     # TODO: replace with a more accurate number
     SpectralLine('Ly-beta', ly_series_wavelength(3), 1.03),
     SpectralLine('Ly-alpha', ly_series_wavelength(2), 1.05),
-    #CIV emission is actually a doublet:
-    #CIV_line_1 = 1548.202 #f_lu=0.190
-    #with a weaker line at:
-    #CIV_line_2 = 1550.772 #f_lu=0.0962
-    #TODO: figure out if we should do some kind of weighted average
+    # CIV emission is actually a doublet:
+    # CIV_line_1 = 1548.202 #f_lu=0.190
+    # with a weaker line at:
+    # CIV_line_2 = 1550.772 #f_lu=0.0962
+    # TODO: figure out if we should do some kind of weighted average
     SpectralLine('CIV', 1548.202, 1.03),
-    #the rest are from: http://astro.uchicago.edu/~subbarao/newWeb/line.html
-    #note that their civ line is offset somewhat
+    # the rest are from: http://astro.uchicago.edu/~subbarao/newWeb/line.html
+    # note that their civ line is offset somewhat
     SpectralLine('SiIV_OIV', 1399.8, 1.03),
     SpectralLine('CIII', 1908.27, 1.03),
-    SpectralLine('CII', 2326.0, 1.01),  #weak
+    SpectralLine('CII', 2326.0, 1.01),  # weak
     SpectralLine('MgII', 2800.32, 1.03)]
 
 
@@ -58,17 +58,23 @@ def is_masked_by_line(wavelength, line_wavelength, line_width_factor, z):
     return is_masked_by_range(wavelength, line_wavelength / line_width_factor,
                               line_wavelength * line_width_factor, z)
 
-#vectorize the previous function
+# vectorize the previous function
 vec_is_masked_by_line = np.vectorize(
     is_masked_by_line, excluded=['line_wavelength', 'line_width_factor', 'z'])
 
 
 def get_line_mask(ar_wavelength, spec_line):
+    """
+
+    :type ar_wavelength: np.multiarray.ndarray
+    :type spec_line: SpectralLine
+    :rtype: np.multiarray.ndarray
+    """
     line_start = np.searchsorted(ar_wavelength, spec_line.wavelength / spec_line.width_factor)
     line_end = np.searchsorted(ar_wavelength, spec_line.wavelength * spec_line.width_factor)
     return np.concatenate((np.zeros(line_start),
-                          np.ones(line_end - line_start),
-                          np.zeros(ar_wavelength.size - line_end)))
+                           np.ones(line_end - line_start),
+                           np.zeros(ar_wavelength.size - line_end)))
 
 
 def add_line_mask(ar_wavelength, z):

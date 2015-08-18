@@ -254,8 +254,6 @@ def delta_transmittance_chunk(qso_record_table):
     # ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_median_with_minimum_count(20, weighted=True)
 
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
-    chunk_weighted_delta_t = 0
-    chunk_weight = 0
     n = 0
     for n in xrange(len(qso_record_table)):
         qso_spec_obj = spectra.return_spectrum(n)

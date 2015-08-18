@@ -78,4 +78,3 @@ class MeanTransmittance:
         :rtype : MeanTransmittance
         """
         return cls.load(filename)
-

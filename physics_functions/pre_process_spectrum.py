@@ -34,7 +34,6 @@ class PreProcessSpectrum:
         ar_flux = corrected_qso_data.ar_flux
         ar_ivar = corrected_qso_data.ar_ivar
         qso_rec = corrected_qso_data.qso_rec
-        z = qso_rec.z
         assert ar_flux.size == ar_ivar.size
 
         # try to correct lines

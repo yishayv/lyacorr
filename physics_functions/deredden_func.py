@@ -16,9 +16,9 @@ class DereddenSpectrum:
         """
 
         a_l_all = self.f_interp(ar_wavelength)
-        E_bv = extinction_g / 3.793
-        A_lambda = E_bv * a_l_all
-        correction_factor = 10 ** (A_lambda / 2.5)
+        e_bv = extinction_g / 3.793
+        a_lambda = e_bv * a_l_all
+        correction_factor = 10 ** (a_lambda / 2.5)
         ar_flux_corrected = ar_flux * correction_factor
         ar_ivar_corrected = ar_ivar / correction_factor ** 2
 

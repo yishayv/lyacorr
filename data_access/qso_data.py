@@ -21,7 +21,6 @@ class QSORecord:
                    qso_row['plate'], qso_row['mjd'], qso_row['fiberID'],
                    qso_row['extinction_g'])
 
-
     def __str__(self):
         return " ".join([str(self.specObjID), str(self.z), str(self.ra), str(self.dec),
                          str(self.plate), str(self.mjd), str(self.fiberID)])
