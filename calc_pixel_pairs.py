@@ -213,9 +213,8 @@ class PixelPairs:
                                                  y_bin_size=accumulator.get_y_bin_size(),
                                                  x_bin_count=accumulator.get_x_count(),
                                                  y_bin_count=accumulator.get_y_count())
-            # print ar[:,:,0].max()
-            local_bins = bins_2d.Bins2D.from_np_arrays(ar[:, :, 1], ar[:, :, 0], ar[:, :, 2],
-                                                       accumulator.get_x_range(), accumulator.get_y_range())
+            local_bins = bins_2d.Bins2D(ar.shape[0], ar.shape[1],
+                                        accumulator.get_x_range(), accumulator.get_y_range(), ar_existing_data=ar)
 
             flux_contribution = np.nanmax(np.abs(local_bins.ar_flux))
             self.significant_qso_pairs.add_if_larger(spec1_index, spec2_index, flux_contribution)

@@ -4,8 +4,12 @@ from flux_accumulator import AccumulatorBase
 
 
 class Bins2D(AccumulatorBase):
-    def __init__(self, x_count, y_count, x_range, y_range, filename=''):
-        self.ar_data = np.zeros((x_count, y_count, 3))
+    def __init__(self, x_count, y_count, x_range, y_range, ar_existing_data=None, filename=''):
+        if ar_existing_data is not None:
+            assert (x_count, y_count, 3) == ar_existing_data.shape
+            self.ar_data = ar_existing_data
+        else:
+            self.ar_data = np.zeros((x_count, y_count, 3))
         self.ar_flux = None
         self.ar_weights = None
         self.ar_count = None
@@ -68,6 +72,11 @@ class Bins2D(AccumulatorBase):
         self.ar_data += bins_2d_2.ar_data
         return self
 
+    def merge_array(self, ar_data):
+        assert self.ar_data.shape == ar_data.shape
+        self.ar_data += ar_data
+        return self
+
     def save(self, filename):
         self.filename = filename
         self.flush()
@@ -90,8 +99,8 @@ class Bins2D(AccumulatorBase):
 
     def update_array_slices(self):
         self.ar_flux = self.ar_data[:, :, 0]
-        self.ar_weights = self.ar_data[:, :, 1]
-        self.ar_count = self.ar_data[:, :, 2]
+        self.ar_count = self.ar_data[:, :, 1]
+        self.ar_weights = self.ar_data[:, :, 2]
 
     def __radd__(self, other):
         return self.merge(other)
@@ -105,32 +114,13 @@ class Bins2D(AccumulatorBase):
 
         :type other: Bins2D
         """
-        new_obj = cls(other.x_count, other.y_count, other.x_range, other.y_range, other.filename)
+        new_obj = cls(other.x_count, other.y_count, other.x_range, other.y_range, filename=other.filename)
         return new_obj
 
     @classmethod
     def from_other(cls, other):
         new_obj = cls.init_as(other)
         new_obj.merge(other)
-
-    @classmethod
-    def from_np_arrays(cls, ar_count, ar_flux, ar_weights, x_range, y_range):
-        """
-
-        :type ar_count: np.array
-        :type ar_flux: np.array
-        :type ar_weights: np.array
-        """
-        assert ar_count.ndim == ar_flux.ndim == ar_weights.ndim == 2
-        assert ar_count.shape == ar_flux.shape == ar_weights.shape
-        new_bins = cls(ar_count.shape[0], ar_count.shape[1], x_range, y_range)
-        new_bins.ar_data = np.zeros(ar_flux.shape + (3,))
-        new_bins.update_array_slices()
-        # use '[:]' in order to replace values in ar_data
-        new_bins.ar_count[:] = ar_count
-        new_bins.ar_flux[:] = ar_flux
-        new_bins.ar_weights[:] = ar_weights
-        return new_bins
 
     def set_filename(self, filename):
         self.filename = filename
