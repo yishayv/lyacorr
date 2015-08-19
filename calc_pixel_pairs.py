@@ -1,3 +1,11 @@
+"""
+    Accumulate flux products from pixel pairs to bins.
+    Uses a Python/C API methods for the actual calculation.
+    There are 2 modes of operation:
+        - mean: sum of weighted flux products, sum of weights
+        - median: a weighted histogram of flux products.
+    Also contains a slower reference implementation in pure Python (mean only)
+"""
 import numpy as np
 
 import common_settings
@@ -243,10 +251,6 @@ class PixelPairs:
         n = 0
         for i, j, k in pairs:
             qso_angle = pairs_angles[k]
-            # r_parallel = abs(ar_distance[i] - ar_distance[j])
-            # mean_distance = (ar_distance[i] + ar_distance[j]) / 2
-            # r_transverse = mean_distance * qso_angle
-            # print 'QSO pair with r_parallel %f, r_transverse %f' % (r_parallel, r_transverse)
             spec1_index = i
             spec2_index = j
 

@@ -5,9 +5,11 @@ from flux_accumulator import AccumulatorBase
 
 class Bins2D(AccumulatorBase):
     def __init__(self, x_count, y_count, x_range, y_range, filename=''):
-        self.ar_flux = np.zeros((x_count, y_count))
-        self.ar_weights = np.zeros((x_count, y_count))
-        self.ar_count = np.zeros((x_count, y_count))
+        self.ar_data = np.zeros((x_count, y_count, 3))
+        self.ar_flux = None
+        self.ar_weights = None
+        self.ar_count = None
+        self.update_array_slices()
         self.x_count = x_count
         self.y_count = y_count
         self.index_type = ''
@@ -58,16 +60,12 @@ class Bins2D(AccumulatorBase):
         self.ar_count += count_hist
 
     def merge(self, bins_2d_2):
-        assert self.ar_flux.shape == bins_2d_2.ar_flux.shape
-        assert self.ar_weights.shape == bins_2d_2.ar_weights.shape
-        assert self.ar_count.shape == bins_2d_2.ar_count.shape
+        assert self.ar_data.shape == bins_2d_2.ar_data.shape
         assert self.x_range == bins_2d_2.x_range
         assert self.y_range == bins_2d_2.y_range
         assert self.x_count == bins_2d_2.x_count
         assert self.y_count == bins_2d_2.y_count
-        self.ar_flux += bins_2d_2.ar_flux
-        self.ar_weights += bins_2d_2.ar_weights
-        self.ar_count += bins_2d_2.ar_count
+        self.ar_data += bins_2d_2.ar_data
         return self
 
     def save(self, filename):
@@ -75,9 +73,8 @@ class Bins2D(AccumulatorBase):
         self.flush()
 
     def from_3d_array(self, stacked_array):
-        self.ar_flux = stacked_array[:, :, 0]
-        self.ar_count = stacked_array[:, :, 1]
-        self.ar_weights = stacked_array[:, :, 2]
+        self.ar_data = stacked_array
+        self.update_array_slices()
         self.x_count = self.ar_count.shape[0]
         self.y_count = self.ar_count.shape[1]
         self.update_index_type()
@@ -91,6 +88,11 @@ class Bins2D(AccumulatorBase):
         # choose integer type according to number of bins
         self.index_type = 'int32' if self.x_count * self.y_count > 32767 else 'int16'
 
+    def update_array_slices(self):
+        self.ar_flux = self.ar_data[:, :, 0]
+        self.ar_weights = self.ar_data[:, :, 1]
+        self.ar_count = self.ar_data[:, :, 2]
+
     def __radd__(self, other):
         return self.merge(other)
 
@@ -103,8 +105,7 @@ class Bins2D(AccumulatorBase):
 
         :type other: Bins2D
         """
-        new_obj = cls(other.x_count, other.y_count, other.x_range, other.y_range)
-        new_obj.set_filename(other.filename)
+        new_obj = cls(other.x_count, other.y_count, other.x_range, other.y_range, other.filename)
         return new_obj
 
     @classmethod
@@ -123,16 +124,19 @@ class Bins2D(AccumulatorBase):
         assert ar_count.ndim == ar_flux.ndim == ar_weights.ndim == 2
         assert ar_count.shape == ar_flux.shape == ar_weights.shape
         new_bins = cls(ar_count.shape[0], ar_count.shape[1], x_range, y_range)
-        new_bins.ar_count = ar_count
-        new_bins.ar_flux = ar_flux
-        new_bins.ar_weights = ar_weights
+        new_bins.ar_data = np.zeros(ar_flux.shape + (3,))
+        new_bins.update_array_slices()
+        # use '[:]' in order to replace values in ar_data
+        new_bins.ar_count[:] = ar_count
+        new_bins.ar_flux[:] = ar_flux
+        new_bins.ar_weights[:] = ar_weights
         return new_bins
 
     def set_filename(self, filename):
         self.filename = filename
 
     def to_3d_array(self):
-        return np.dstack((self.ar_flux, self.ar_count, self.ar_weights))
+        return self.ar_data
 
     def flush(self):
         np.save(self.filename, self.to_3d_array())
@@ -174,7 +178,6 @@ class Bins2D(AccumulatorBase):
         new_bins = self.init_as(self)
         (new_bins.x_count, new_bins.y_count, new_bins.index_type, new_bins.filename, new_bins.max_range,
          new_bins.x_range, new_bins.y_range, new_bins.x_bin_size, new_bins.y_bin_size) = metadata
-        new_bins.ar_flux = ar[:, :, 0]
-        new_bins.ar_count = ar[:, :, 1]
-        new_bins.ar_weights = ar[:, :, 2]
+        new_bins.ar_data = ar
+        new_bins.update_array_slices()
         return new_bins
