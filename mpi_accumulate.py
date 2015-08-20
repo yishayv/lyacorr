@@ -36,8 +36,7 @@ def accumulate_over_spectra(func, accumulator):
     local_qso_record_table = itertools.islice(qso_record_table, local_start_index, local_end_index)
     l_print_no_barrier("-----", qso_record_count, local_start_index, local_end_index, local_size)
     slice_size = settings.get_file_chunk_size()
-    for qso_record_table_chunk, slice_number in itertools.izip(split_seq(slice_size, local_qso_record_table),
-                                                               itertools.count()):
+    for slice_number, qso_record_table_chunk in enumerate(split_seq(slice_size, local_qso_record_table)):
         local_result = func(qso_record_table_chunk)
         # all large data is stored in an array as the first tuple element.
         ar_local_result = local_result[0]
@@ -50,7 +49,7 @@ def accumulate_over_spectra(func, accumulator):
         ar_qso_indices = np.zeros(shape=(comm.size, slice_size), dtype=int)
         comm.Gatherv(np.array([x['index'] for x in qso_record_table_chunk]), ar_qso_indices)
 
-        # metadata, or anything else that is small, but may have complex data types is transfered as objects:
+        # metadata, or anything else that is small, but may have complex data types is transferred as objects:
         object_all_results = comm.gather(object_local_result)
 
         # "reduce" results
