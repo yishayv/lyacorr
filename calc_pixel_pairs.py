@@ -271,6 +271,9 @@ class PixelPairs:
         if self.accumulator_type == 'mean':
             pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
             pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
+        elif self.accumulator_type == 'mean_subsample':
+            pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
+            pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
         elif self.accumulator_type == 'histogram':
             pair_separation_bins = flux_histogram_bins.FluxHistogramBins(
                 NUM_BINS_X, NUM_BINS_Y, f_count=1000, x_range=self.radius, y_range=self.radius,

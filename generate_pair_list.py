@@ -48,8 +48,8 @@ class SubChunkHelper:
             shape=(comm.size,) + local_pair_separation_bins_array.shape)
         comm.Barrier()
         mpi_helper.r_print("BEGIN GATHER")
-        comm.Gatherv(local_pair_separation_bins_array, pair_separation_bins_array)
         list_pair_separation_bins_metadata = comm.gather(local_pair_separation_bins_metadata)
+        comm.Gatherv(local_pair_separation_bins_array, pair_separation_bins_array)
         mpi_helper.r_print("END_GATHER")
 
         if comm.rank == 0:

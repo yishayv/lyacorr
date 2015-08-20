@@ -89,6 +89,9 @@ class FluxHistogramBins(AccumulatorBase):
     def get_data_as_array(self):
         return self.ar_flux
 
+    def get_array_shape(self):
+        return self.ar_flux.shape
+
     def flush(self):
         np.save(self.filename, self.get_data_as_array())
 

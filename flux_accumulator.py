@@ -79,6 +79,10 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
+    def get_array_shape(self):
+        return
+
+    @abstractmethod
     def get_metadata(self):
         return
 

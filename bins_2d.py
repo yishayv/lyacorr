@@ -158,6 +158,9 @@ class Bins2D(AccumulatorBase):
     def get_data_as_array(self):
         return self.to_3d_array()
 
+    def get_array_shape(self):
+        return self.ar_data.shape
+
     def get_metadata(self):
         return [self.x_count, self.y_count, self.index_type,
                 self.filename, self.max_range,
