@@ -20,6 +20,7 @@ from physics_functions import comoving_distance
 import calc_pixel_pairs
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 import mpi_helper
+from physics_functions.spherical_math import SkyGroups, find_spherical_mean_deg
 
 settings = common_settings.Settings()
 
@@ -120,8 +121,24 @@ def profile_main():
     # each node should add its offset to get the QSO index in the original list (only for x[0]).
     # qso2 which contains the unmodified index to the full list of QSOs.
     # the third vector is a count so we can keep a reference to the angles vector.
-    local_qso_pairs_with_unity = np.vstack((count[0] + local_start_index,
-                                            count[1],
+    local_qso_index_1 = count[0] + local_start_index
+    local_qso_index_2 = count[1]
+
+    # find the mean ra,dec for each pair
+    local_qso_ra_pairs = np.vstack((ar_ra[local_qso_index_1], ar_ra[local_qso_index_2]))
+    local_qso_dec_pairs = np.vstack((ar_dec[local_qso_index_1], ar_dec[local_qso_index_2]))
+    # we can safely assume that separations is small enough so we don't have catastrophic cancellation of the mean,
+    # so checking the unit radius value is not required
+    local_pair_means_ra, local_pair_means_dec, _ = find_spherical_mean_deg(local_qso_ra_pairs, local_qso_dec_pairs,
+                                                                           axis=0)
+
+    sky_groups = SkyGroups()
+    group_id = sky_groups.get_group_ids(local_pair_means_ra, local_pair_means_dec)
+
+    local_qso_pairs_with_unity = np.vstack((local_qso_index_1,
+                                            local_qso_index_2,
+                                            local_pair_means_ra,
+                                            local_pair_means_dec,
                                             np.arange(count[0].size)))
 
     local_qso_pair_angles = count[2].to(u.rad).value
