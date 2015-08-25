@@ -61,6 +61,8 @@ class Settings:
     opt_mw_pixel_to_group_mapping_fits = 'mw_pixel_to_group_mapping_fits'
     # covariance matrix output
     opt_correlation_estimator_covariance_npy = 'correlation_estimator_covariance_npy'
+    # correlation estimator sub-samples
+    opt_correlation_estimator_subsamples_npz = 'correlation_estimator_subsamples_npz'
 
     section_performance = 'Performance'
     # default chunk size for multiprocessing
@@ -93,6 +95,8 @@ class Settings:
     opt_enable_spectrum_flux_correction = 'enable_spectrum_flux_correction'
     # enable extinction correction
     opt_enable_extinction_correction = 'enable_extinction_correction'
+    # enable computing the estimator in subsamples, for generating the covariance matrix
+    opt_enable_estimator_subsamples = 'enable_estimator_subsamples'
 
     section_mock_parameters = 'MockParameters'
     # scale of shell in Mpc
@@ -133,6 +137,7 @@ class Settings:
         value_mw_stacked_spectra_fits = '../../data/MW_lines/coor_bins.fits'
         value_mw_pixel_to_group_mapping_fits = '../../data/MW_lines/maps.fits'
         value_correlation_estimator_covariance_npy = '../../data/covariance.npy'
+        value_correlation_estimator_subsamples_npz = '../../data/estimator_subsamples.npz'
 
         value_file_chunk_size = 10000
         value_mpi_num_sub_chunks = 1440
@@ -149,6 +154,7 @@ class Settings:
         value_enable_mw_line_correction = True
         value_enable_spectrum_flux_correction = True
         value_enable_extinction_correction = True
+        value_enable_estimator_subsamples = True
 
         value_mock_shell_radius = 150
         value_mock_shell_fractional_width = 0.005
@@ -187,6 +193,8 @@ class Settings:
                                value_mw_pixel_to_group_mapping_fits)
         self.config_parser.set(self.section_file_paths, self.opt_correlation_estimator_covariance_npy,
                                value_correlation_estimator_covariance_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_correlation_estimator_subsamples_npz,
+                               value_correlation_estimator_subsamples_npz)
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
@@ -215,6 +223,8 @@ class Settings:
                                bool(value_enable_spectrum_flux_correction))
         self.config_parser.set(self.section_data_processing, self.opt_enable_extinction_correction,
                                bool(value_enable_extinction_correction))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_estimator_subsamples,
+                               bool(value_enable_estimator_subsamples))
 
         self.config_parser.add_section(self.section_mock_parameters)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
@@ -311,6 +321,9 @@ class Settings:
     def get_correlation_estimator_covariance_npy(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_correlation_estimator_covariance_npy)
 
+    def get_correlation_estimator_subsamples_npz(self):
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_correlation_estimator_subsamples_npz)
+
     # Performance
 
     def get_file_chunk_size(self):
@@ -356,6 +369,9 @@ class Settings:
 
     def get_enable_extinction_correction(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_extinction_correction)
+
+    def get_enable_estimator_subsamples(self):
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_estimator_subsamples)
 
     # Mock Parameters
 

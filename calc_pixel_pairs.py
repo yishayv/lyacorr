@@ -6,8 +6,11 @@
         - median: a weighted histogram of flux products.
     Also contains a slower reference implementation in pure Python (mean only)
 """
+from collections import namedtuple
+
 import numpy as np
 
+import bins_2d_with_group_id
 import common_settings
 import bins_2d
 from flux_accumulator import AccumulatorBase
@@ -21,6 +24,8 @@ NUM_BINS_Y = 50
 MAX_Z_RESOLUTION = 1000
 
 settings = common_settings.Settings()
+
+accumulator_types = namedtuple('accumulator_type', ['mean', 'mean_subsample', 'histogram'])
 
 
 class PreAllocMatrices:
@@ -163,7 +168,8 @@ class PixelPairs:
                                                z_weights)
 
     def find_nearby_pixels(self, accumulator, qso_angle,
-                           spec1_index, spec2_index, delta_t_file):
+                           spec1_index, spec2_index, delta_t_file,
+                           group_id=0):
         """
         Find all pixel pairs in QSO1,QSO2 that are closer than radius r.
         This is a faster implementation that uses a Python/C API module.
@@ -204,7 +210,7 @@ class PixelPairs:
         if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
             return
 
-        if self.accumulator_type == 'mean':
+        if self.accumulator_type == accumulator_types.mean:
             ar = bin_pixel_pairs.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
                                                  ar_flux1=spec1_flux, ar_flux2=spec2_flux,
                                                  ar_weights1=qso1_weights, ar_weights2=qso2_weights,
@@ -220,8 +226,24 @@ class PixelPairs:
             self.significant_qso_pairs.add_if_larger(spec1_index, spec2_index, flux_contribution)
 
             accumulator += local_bins
-            # print accumulator.ar_count.max()
-        elif self.accumulator_type == 'histogram':
+        elif self.accumulator_type == accumulator_types.mean_subsample:
+            ar = bin_pixel_pairs.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                                                 ar_flux1=spec1_flux, ar_flux2=spec2_flux,
+                                                 ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+                                                 qso_angle=qso_angle,
+                                                 x_bin_size=accumulator.get_x_bin_size(),
+                                                 y_bin_size=accumulator.get_y_bin_size(),
+                                                 x_bin_count=accumulator.get_x_count(),
+                                                 y_bin_count=accumulator.get_y_count())
+            local_bins = bins_2d_with_group_id.Bins2DWithGroupID(
+                ar.shape[0], ar.shape[1], accumulator.get_x_range(), accumulator.get_y_range())
+            local_bins.add_array_to_group_id(group_id=group_id, ar_data=ar)
+
+            flux_contribution = np.nanmax(np.abs(local_bins.dict_bins_2d_data[group_id].ar_flux))
+            self.significant_qso_pairs.add_if_larger(spec1_index, spec2_index, flux_contribution)
+
+            accumulator += local_bins
+        elif self.accumulator_type == accumulator_types.histogram:
             assert isinstance(accumulator, flux_histogram_bins.FluxHistogramBins)
             # TODO: try to avoid using implementation details of the accumulator interface
             accumulator.pair_count = bin_pixel_pairs.bin_pixel_pairs_histogram(
@@ -248,33 +270,33 @@ class PixelPairs:
         """
 
         n = 0
-        for i, j, k in pairs:
-            qso_angle = pairs_angles[k]
-            spec1_index = i
-            spec2_index = j
+        for spec1_index, spec2_index, group_id, angle_index in pairs:
+            qso_angle = pairs_angles[angle_index]
 
             self.find_nearby_pixels(accumulator, qso_angle,
-                                    spec1_index, spec2_index, delta_t_file)
+                                    spec1_index, spec2_index, delta_t_file,
+                                    group_id=group_id)
             n += 1
         return accumulator
 
     def add_qso_pairs_to_bins(self, pairs, pairs_angles, delta_t_file):
         """
 
-        :type pairs: np.array
-        :type pairs_angles: np.array
+        :type pairs: np.multiarray.ndarray
+        :type pairs_angles: np.multiarray.ndarray
         :type delta_t_file: NpSpectrumContainer
         :rtype: AccumulatorBase
         """
 
         pair_separation_bins = None
-        if self.accumulator_type == 'mean':
+        if self.accumulator_type == accumulator_types.mean:
             pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
             pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
-        elif self.accumulator_type == 'mean_subsample':
-            pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
-            pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
-        elif self.accumulator_type == 'histogram':
+        elif self.accumulator_type == accumulator_types.mean_subsample:
+            pair_separation_bins = bins_2d_with_group_id.Bins2DWithGroupID(
+                NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
+            pair_separation_bins.set_filename(settings.get_correlation_estimator_subsamples_npz())
+        elif self.accumulator_type == accumulator_types.histogram:
             pair_separation_bins = flux_histogram_bins.FluxHistogramBins(
                 NUM_BINS_X, NUM_BINS_Y, f_count=1000, x_range=self.radius, y_range=self.radius,
                 f_min=-2e-3, f_max=2e-3)

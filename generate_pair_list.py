@@ -37,25 +37,39 @@ class SubChunkHelper:
     def __init__(self):
         self.pair_separation_bins = None
 
-    def add_pairs_in_sub_chunk(self, delta_t_file, local_pair_angles, pairs, pixel_pairs, radius):
+    def add_pairs_in_sub_chunk(self, delta_t_file, local_pair_angles, pairs, pixel_pairs):
         local_pair_separation_bins = \
             pixel_pairs.add_qso_pairs_to_bins(pairs, local_pair_angles, delta_t_file)
 
         mpi_helper.l_print('local pair count:', local_pair_separation_bins.get_pair_count())
         local_pair_separation_bins_array = local_pair_separation_bins.get_data_as_array()
         local_pair_separation_bins_metadata = local_pair_separation_bins.get_metadata()
+        local_array_shape = local_pair_separation_bins_array.shape
 
-        pair_separation_bins_array = np.zeros(
-            shape=(comm.size,) + local_pair_separation_bins_array.shape)
         comm.Barrier()
         mpi_helper.r_print("BEGIN GATHER")
+        mpi_helper.l_print_no_barrier('local array shape:', local_array_shape)
+        array_counts = comm.allgather(local_array_shape[0])
+
+        pair_separation_bins_array = None
+        array_displacements = np.cumsum(array_counts) - np.array(array_counts)
+        if comm.rank == 0:
+            mpi_helper.r_print('array count:', array_counts)
+            root_array_shape = (np.sum(array_counts),) + local_array_shape[1:]
+            mpi_helper.r_print('root array shape:', root_array_shape)
+            pair_separation_bins_array = np.array(root_array_shape)
+
+        send_buf = [local_pair_separation_bins_array, local_array_shape[0]]
+        receive_buf = [pair_separation_bins_array, array_counts, array_displacements, MPI.DOUBLE]
+
+        comm.Gatherv(sendbuf=send_buf, recvbuf=receive_buf)
         list_pair_separation_bins_metadata = comm.gather(local_pair_separation_bins_metadata)
-        comm.Gatherv(local_pair_separation_bins_array, pair_separation_bins_array)
+        comm.Barrier()
         mpi_helper.r_print("END_GATHER")
 
         if comm.rank == 0:
             list_pair_separation_bins = [
-                local_pair_separation_bins.load_from(ar, metadata)
+                type(local_pair_separation_bins).load_from(ar, metadata)
                 for ar, metadata in itertools.izip(pair_separation_bins_array, list_pair_separation_bins_metadata)]
 
             # initialize bins only if this is the first time we get here
@@ -137,8 +151,7 @@ def profile_main():
 
     local_qso_pairs_with_unity = np.vstack((local_qso_index_1,
                                             local_qso_index_2,
-                                            local_pair_means_ra,
-                                            local_pair_means_dec,
+                                            group_id,
                                             np.arange(count[0].size)))
 
     local_qso_pair_angles = count[2].to(u.rad).value
@@ -159,7 +172,18 @@ def profile_main():
     mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
     # l_print('angle vector:', x[2])
 
-    accumulator_type = 'mean' if settings.get_enable_weighted_mean_estimator() else 'histogram'
+    if settings.get_enable_weighted_median_estimator():
+        accumulator_type = calc_pixel_pairs.accumulator_types.histogram
+        assert not settings.get_enable_weighted_mean_estimator(), "Median and mean estimators are mutually exclusive."
+        assert not settings.get_enable_estimator_subsamples(), "Subsamples not supported for histogram."
+    elif settings.get_enable_weighted_mean_estimator():
+        if settings.get_enable_estimator_subsamples():
+            accumulator_type = calc_pixel_pairs.accumulator_types.mean_subsample
+        else:
+            accumulator_type = calc_pixel_pairs.accumulator_types.mean
+    else:
+        assert False, "Either median or mean estimators must be specified."
+
     pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type=accumulator_type)
     # divide the work into sub chunks
     # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
@@ -173,7 +197,7 @@ def profile_main():
         mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", k, "out of", len(pixel_pair_sub_chunks[0]))
         sub_chunk_helper.add_pairs_in_sub_chunk(delta_t_file, local_qso_pair_angles,
                                                 local_qso_pairs[sub_chunk_start:sub_chunk_end],
-                                                pixel_pairs_object, radius)
+                                                pixel_pairs_object)
 
 
 if settings.get_profile():

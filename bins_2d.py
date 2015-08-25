@@ -167,8 +167,9 @@ class Bins2D(AccumulatorBase):
                 self.x_range, self.y_range,
                 self.x_bin_size, self.y_bin_size]
 
-    def load_from(self, ar, metadata):
-        new_bins = self.init_as(self)
+    @classmethod
+    def load_from(cls, ar, metadata):
+        new_bins = cls(1, 1, 1, 1)
         (new_bins.x_count, new_bins.y_count, new_bins.index_type, new_bins.filename, new_bins.max_range,
          new_bins.x_range, new_bins.y_range, new_bins.x_bin_size, new_bins.y_bin_size) = metadata
         new_bins.ar_data = ar

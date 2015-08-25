@@ -1,7 +1,8 @@
 import collections
-import numpy as np
-import bins_2d
 
+import numpy as np
+
+import bins_2d
 from flux_accumulator import AccumulatorBase
 
 
@@ -15,19 +16,44 @@ class Bins2DWithGroupID(AccumulatorBase):
         self.y_range = y_range
         self.x_bin_size = float(x_range) / x_count
         self.y_bin_size = float(y_range) / y_count
-        self.dict_ar_data = collections.defaultdict(lambda: bins_2d.Bins2D(x_count, y_count, xrange, y_range))
+        self.dict_bins_2d_data = collections.defaultdict(self._bins_creator)
+
+    def _bins_creator(self, ar=None):
+        return bins_2d.Bins2D(self.x_count, self.y_count, self.x_range, self.y_range, ar_existing_data=ar)
 
     def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask, ar_weights):
         assert False, "Not implemented"
 
+    def add_to_group_id(self, group_id, bins_2d_data):
+        """
+        Add flux (and weights) from an existing bins_2d object into the specified group_id
+        :type group_id: int
+        :type bins_2d_data: bins_2d.Bins2D
+        """
+        self.dict_bins_2d_data[group_id] += bins_2d_data
+
+    def add_array_to_group_id(self, group_id, ar_data):
+        """
+        Add flux (and weights) from an existing numpy array into the specified group_id
+        :type group_id: int
+        :type ar_data: np.multiarray.ndarray
+        """
+        self.add_to_group_id(group_id, self._bins_creator(ar_data))
+
     def merge(self, other):
-        assert isinstance(other, self)
+        """
+        Merge data from another object of the same type, adding fluxes, weights and counts.
+        The data from each group_id in 'other' is added to the corresponding group_id of this instance,
+        adding new group_ids as necessary.
+        :type other: Bins2DWithGroupID
+        :rtype: Bins2DWithGroupID
+        """
         assert self.x_range == other.x_range
         assert self.y_range == other.y_range
         assert self.x_count == other.x_count
         assert self.y_count == other.y_count
-        for group_id, ar_data in other.dict_ar_data.items():
-            self.dict_ar_data[group_id] += ar_data
+        for group_id, bins_2d_data in other.dict_bins_2d_data.items():
+            self.dict_bins_2d_data[group_id] += bins_2d_data
         return self
 
     def save(self, filename):
@@ -40,9 +66,9 @@ class Bins2DWithGroupID(AccumulatorBase):
         :type stacked_array: np.multiarray.ndarray
         :param group_ids: collections.Iterable[int]
         """
-        self.dict_ar_data.clear()
+        self.dict_bins_2d_data.clear()
         for index, group_id in enumerate(group_ids):
-            self.dict_ar_data[group_id] = stacked_array[index]
+            self.dict_bins_2d_data[group_id] = self._bins_creator(stacked_array[index])
         self.x_count = stacked_array.shape[1]
         self.y_count = stacked_array.shape[2]
 
@@ -62,8 +88,9 @@ class Bins2DWithGroupID(AccumulatorBase):
     @classmethod
     def init_as(cls, other):
         """
-
+        Return an instance with empty data, similar to 'other'
         :type other: Bins2DWithGroupID
+        :rtype : Bins2DWithGroupID
         """
         new_obj = cls(other.x_count, other.y_count, other.x_range, other.y_range, filename=other.filename)
         return new_obj
@@ -77,10 +104,13 @@ class Bins2DWithGroupID(AccumulatorBase):
         self.filename = filename
 
     def to_4d_array(self):
-        np.vstack([np.expand_dims(i, axis=0) for i in self.dict_ar_data.values()])
+        if self.dict_bins_2d_data:
+            return np.vstack([np.expand_dims(i.ar_data, axis=0) for i in self.dict_bins_2d_data.values()])
+        else:
+            return np.zeros(shape=(0, self.x_count, self.y_count, 3))
 
     def flush(self):
-        np.savez(self.filename, ar_data=self.to_4d_array(), group_ids=np.array(self.dict_ar_data.keys()))
+        np.savez(self.filename, ar_data=self.to_4d_array(), group_ids=np.array(self.dict_bins_2d_data.keys()))
 
     def get_max_range(self):
         return self.max_range
@@ -104,27 +134,33 @@ class Bins2DWithGroupID(AccumulatorBase):
         return self.y_count
 
     def get_pair_count(self):
-        bins_instance = bins_2d.Bins2D(self.x_count, self.y_count, self.x_range, self.y_range)
-        return np.sum([bins_instance.from_3d_array(i).ar_count.sum() for i in self.dict_ar_data.values()])
+        return np.sum([i.ar_count.sum() for i in self.dict_bins_2d_data.values()])
 
     def get_data_as_array(self):
         return self.to_4d_array()
 
     def get_array_shape(self):
-        return self.dict_ar_data.shape
+        return self.dict_bins_2d_data.shape
 
     def get_metadata(self):
         return [self.x_count, self.y_count,
                 self.filename, self.max_range,
                 self.x_range, self.y_range,
                 self.x_bin_size, self.y_bin_size,
-                self.dict_ar_data.keys()]
+                self.dict_bins_2d_data.keys()]
 
-    def load_from(self, ar, metadata):
-        new_bins = self.init_as(self)
+    @classmethod
+    def load_from(cls, ar, metadata):
+        """
+        Load
+        :type ar: np.multiarray.ndarray
+        :type metadata: list
+        :rtype : Bins2DWithGroupID
+        """
+        new_bins = cls(1, 1, 1, 1)
         (new_bins.x_count, new_bins.y_count, new_bins.filename, new_bins.max_range,
          new_bins.x_range, new_bins.y_range, new_bins.x_bin_size, new_bins.y_bin_size,
          group_ids) = metadata
         for index, group_id in enumerate(group_ids):
-            new_bins.dict_ar_data[group_id] = ar[index]
+            new_bins.dict_bins_2d_data[group_id] = new_bins._bins_creator(ar[index])
         return new_bins
