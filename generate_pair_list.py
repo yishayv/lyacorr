@@ -52,12 +52,13 @@ class SubChunkHelper:
         array_counts = comm.allgather(local_array_shape[0])
 
         pair_separation_bins_array = None
-        array_displacements = np.cumsum(array_counts) - np.array(array_counts)
+        array_endings = np.cumsum(array_counts)
+        array_displacements = array_endings - np.array(array_counts)
         if comm.rank == 0:
             mpi_helper.r_print('array count:', array_counts)
             root_array_shape = (np.sum(array_counts),) + local_array_shape[1:]
             mpi_helper.r_print('root array shape:', root_array_shape)
-            pair_separation_bins_array = np.array(root_array_shape)
+            pair_separation_bins_array = np.empty(shape=root_array_shape, dtype=np.float64)
 
         send_buf = [local_pair_separation_bins_array, local_array_shape[0]]
         receive_buf = [pair_separation_bins_array, array_counts, array_displacements, MPI.DOUBLE]
@@ -69,8 +70,9 @@ class SubChunkHelper:
 
         if comm.rank == 0:
             list_pair_separation_bins = [
-                type(local_pair_separation_bins).load_from(ar, metadata)
-                for ar, metadata in itertools.izip(pair_separation_bins_array, list_pair_separation_bins_metadata)]
+                type(local_pair_separation_bins).load_from(
+                    pair_separation_bins_array[array_displacements[rank]:array_endings[rank]], metadata)
+                for rank, metadata in enumerate(list_pair_separation_bins_metadata)]
 
             # initialize bins only if this is the first time we get here
             # for now use a function level static variable
