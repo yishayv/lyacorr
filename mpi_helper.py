@@ -26,10 +26,7 @@ def l_print(*args):
     for rank in range(0, comm.size):
         comm.Barrier()
         if rank == comm.rank:
-            print comm.rank, ':',
-            for i in args:
-                print i,
-            print
+            l_print_no_barrier(*args)
         comm.Barrier()
 
 
@@ -39,12 +36,10 @@ def l_print_no_barrier(*args):
     :param args:
     :return:
     """
-    for rank in range(0, comm.size):
-        if rank == comm.rank:
-            print comm.rank, ':',
-            for i in args:
-                print i,
-            print
+    print comm.rank, ':',
+    for i in args:
+        print i,
+    print
 
 
 def get_chunks(num_items, num_steps):

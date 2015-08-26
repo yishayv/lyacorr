@@ -45,6 +45,7 @@ class SubChunkHelper:
         local_pair_separation_bins_array = local_pair_separation_bins.get_data_as_array()
         local_pair_separation_bins_metadata = local_pair_separation_bins.get_metadata()
         local_array_shape = local_pair_separation_bins_array.shape
+        array_block_size = np.prod(local_array_shape[1:])
 
         comm.Barrier()
         mpi_helper.r_print("BEGIN GATHER")
@@ -58,10 +59,14 @@ class SubChunkHelper:
             mpi_helper.r_print('array count:', array_counts)
             root_array_shape = (np.sum(array_counts),) + local_array_shape[1:]
             mpi_helper.r_print('root array shape:', root_array_shape)
-            pair_separation_bins_array = np.empty(shape=root_array_shape, dtype=np.float64)
+            pair_separation_bins_array = np.ones(shape=root_array_shape, dtype=np.float64)
 
-        send_buf = [local_pair_separation_bins_array, local_array_shape[0]]
-        receive_buf = [pair_separation_bins_array, array_counts, array_displacements, MPI.DOUBLE]
+        send_buf = [local_pair_separation_bins_array,
+                    local_array_shape[0] * array_block_size]
+        receive_buf = [pair_separation_bins_array, np.multiply(array_counts, array_block_size),
+                       np.multiply(array_displacements, array_block_size), MPI.DOUBLE]
+
+        # mpi_helper.l_print(send_buf)
 
         comm.Gatherv(sendbuf=send_buf, recvbuf=receive_buf)
         list_pair_separation_bins_metadata = comm.gather(local_pair_separation_bins_metadata)
@@ -69,6 +74,7 @@ class SubChunkHelper:
         mpi_helper.r_print("END_GATHER")
 
         if comm.rank == 0:
+            # mpi_helper.r_print(receive_buf[0][0][0:10])
             list_pair_separation_bins = [
                 type(local_pair_separation_bins).load_from(
                     pair_separation_bins_array[array_displacements[rank]:array_endings[rank]], metadata)
@@ -81,6 +87,9 @@ class SubChunkHelper:
 
             # add new results to existing bins
             if list_pair_separation_bins:
+                for i in list_pair_separation_bins:
+                    for g in i.dict_bins_2d_data.keys():
+                        mpi_helper.l_print_no_barrier(np.sum(i.dict_bins_2d_data[g].ar_count))
                 self.pair_separation_bins = reduce(lambda x, y: x + y, list_pair_separation_bins,
                                                    self.pair_separation_bins)
 

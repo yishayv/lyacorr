@@ -6,9 +6,14 @@ from flux_accumulator import AccumulatorBase
 class Bins2D(AccumulatorBase):
     def __init__(self, x_count, y_count, x_range, y_range, ar_existing_data=None, filename=''):
         if ar_existing_data is not None:
-            assert (x_count, y_count, 3) == ar_existing_data.shape, "incompatible shape:{0}".format(
-                ar_existing_data.shape)
-            self.ar_data = ar_existing_data
+            expected_shape = (x_count, y_count, 3)
+            ravelled_shape = (x_count * y_count * 3,)
+            if ar_existing_data.shape == ravelled_shape:
+                self.ar_data = ar_existing_data.reshape(expected_shape)
+            else:
+                assert ar_existing_data.shape == expected_shape, "incompatible shape:{0}".format(
+                    ar_existing_data.shape)
+                self.ar_data = ar_existing_data
         else:
             self.ar_data = np.zeros((x_count, y_count, 3))
         self.ar_flux = None
