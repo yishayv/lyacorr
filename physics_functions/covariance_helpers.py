@@ -16,7 +16,7 @@ def jackknife_2d_weighted_test(ar_flux, ar_weights, out=None):
     cov_sum = np.einsum('ijk,ilm->jklm', cov_term, cov_term)
     print cov_sum.shape
 
-    out[:] = float(n - 1) / n * cov_sum
+    out[:, :, :, :] = float(n - 1) / n * cov_sum
     return out
 
 
@@ -34,5 +34,5 @@ def jackknife_2d(ar_flux, ar_weights, out=None):
     cov_sum = np.einsum('ijk,ilm->jklm', cov_term, cov_term)
     print cov_sum.shape
 
-    out[:] = float(n - 1) / n * cov_sum
+    out[:, :, :, :] = float(n - 1) / n * cov_sum
     return out
