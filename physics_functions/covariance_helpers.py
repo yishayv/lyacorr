@@ -3,7 +3,8 @@ import numpy as np
 
 def jackknife_2d_weighted_test(ar_flux, ar_weights, out=None):
     if not out:
-        out = np.zeros
+        out_shape = ar_flux.shape[1:] * 2
+        out = np.empty(shape=out_shape)
     n = ar_flux.shape[0]
     global_weights = np.sum(ar_weights)
     global_flux = np.sum(ar_flux, axis=0)
@@ -22,7 +23,8 @@ def jackknife_2d_weighted_test(ar_flux, ar_weights, out=None):
 
 def jackknife_2d(ar_flux, ar_weights, out=None):
     if not out:
-        out = np.zeros
+        out_shape = ar_flux.shape[1:] * 2
+        out = np.empty(shape=out_shape)
     n = ar_flux.shape[0]
     ar_estimators = np.nan_to_num(ar_flux / ar_weights)
     global_sum = np.nansum(ar_estimators, axis=0)
