@@ -19,6 +19,8 @@ class ContinuumFitPCA:
     RED_END = 1600
     LY_A_PEAK_BINNED = 1216
     LY_A_PEAK_INDEX = (LY_A_PEAK_BINNED - BLUE_START) / 0.5
+    LY_A_NORMALIZATION_BIN = 1280
+    LY_A_NORMALIZATION_INDEX = (LY_A_NORMALIZATION_BIN - BLUE_START) / 0.5
     NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
@@ -161,9 +163,9 @@ class ContinuumFitPCA:
         ar_red_flux_rebinned = ar_flux_rebinned[self.LY_A_PEAK_INDEX:]
         ar_red_ivar_rebinned = ar_ivar_rebinned[self.LY_A_PEAK_INDEX:]
 
-        # Suzuki 2004 normalizes flux according to 21 pixels around 1216
+        # Suzuki 2004 normalizes flux according to 21 pixels around 1280
         normalization_factor = \
-            ar_red_flux_rebinned[self.LY_A_PEAK_INDEX - 10:self.LY_A_PEAK_INDEX + 11].mean()
+            ar_red_flux_rebinned[self.LY_A_NORMALIZATION_INDEX - 10:self.LY_A_NORMALIZATION_INDEX + 11].mean()
         ar_red_flux_rebinned_normalized = ar_red_flux_rebinned / float(normalization_factor)
 
         # predict the full spectrum from the red part of the spectrum.
