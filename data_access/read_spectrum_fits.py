@@ -109,7 +109,11 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             or_mask_data = hdu_list[3].data
             last_fits_partial_path = fits_partial_path
 
-        assert flux_data and ivar_data and and_mask_data and or_mask_data and o_grid
+        assert flux_data is not None
+        assert ivar_data is not None
+        assert and_mask_data is not None
+        assert or_mask_data is not None
+        assert o_grid is not None
         # return requested spectrum
         ar_flux = flux_data[qso_rec.fiberID - 1]
         ar_ivar = ivar_data[qso_rec.fiberID - 1]
