@@ -19,6 +19,7 @@ import mean_transmittance
 from physics_functions.deredden_func import DereddenSpectrum
 from physics_functions.spectrum_calibration import SpectrumCalibration
 import sys
+from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
 i = 232
 
@@ -47,6 +48,7 @@ settings = common_settings.Settings()
 qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 deredden_spectrum = DereddenSpectrum()
 spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
+pre_process_spectrum = PreProcessSpectrum()
 
 
 def rolling_weighted_median(ar_data, ar_weights, box_size):
@@ -81,15 +83,18 @@ class PlotSpectrum:
 
         # create the wavelength series for the measurements
         self.ar_wavelength = np.array(qso_data_.ar_wavelength)
+        self.ar_flux = np.array(qso_data_.ar_flux)
+        self.ar_ivar = np.array(qso_data_.ar_ivar)
 
-        # flux calibration:
-        self.ar_flux, self.ar_ivar = spectrum_calibration.apply_correction(qso_data_)
-        # we assume the wavelength range in the input file is correct
-        assert self.ar_wavelength.size == self.ar_flux.size
+        # correct for flux mis-calibration, milky-way lines, and extinction
+        # (enabled/disabled by config options)
+        pre_processed_qso_data, result_string = pre_process_spectrum.apply(qso_data_)
 
-        # correct extinction:
-        self.ar_flux_correct = deredden_spectrum.apply_correction(self.ar_wavelength, self.ar_flux,
-                                                                  self.ar_ivar, qso_data_.qso_rec.extinction_g)
+        if result_string != 'processed':
+            # error during pre-processing. log statistics of error causes.
+            print "pre-processing error:", result_string
+
+        self.ar_flux_correct = pre_processed_qso_data.ar_flux
 
         # begin PCA fit:
         ar_wavelength_rest = self.ar_wavelength / (1 + qso_z)
@@ -230,7 +235,7 @@ class PlotSpectrum:
         y_min, y_max = axes.get_ylim()
         plt.fill_between(lya_forest_transmittance.ar_z, y_min, y_max, where=ar_transmittance_mask,
                          linewidth=.5, color='red', alpha=0.1)
-        if ar_mean_flux_for_z_range:
+        if ar_mean_flux_for_z_range is not None:
             plt.plot(self.ar_z[self.ar_z < self.qso_z], ar_mean_flux_for_z_range[self.ar_z < self.qso_z], color='red')
         plt.xlabel(r"$z$")
         # F(lambda)/Cq(lambda) is the same as F(z)/Cq(z)
