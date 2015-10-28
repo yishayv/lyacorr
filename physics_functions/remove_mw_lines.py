@@ -70,7 +70,7 @@ class MWLines:
         # convert pixel ID to group ID
         group = self.fast_group_id[pixel]
         if group == 10000:
-            print "the coordinates are not in part of the stacked spectra"
+            print("the coordinates are not in part of the stacked spectra")
             return np.array([]), np.array([]), False
 
         return self.ar_wl, self.ar_spectra[group], True
@@ -88,4 +88,4 @@ class MWLines:
 
 # mw_lines = MWLines()
 # pixel, group, wl, spec = mw_lines.return_stacked_spectrum_at_coord(11.25, 14.1497329363)
-# print spec
+# print(spec)

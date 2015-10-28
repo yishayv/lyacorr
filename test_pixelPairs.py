@@ -46,8 +46,8 @@ class TestPixelPairs(TestCase):
                                         spec2_index=1,
                                         delta_t_file=delta_t_file)
 
-        print pair_separation_bins_1.ar_flux.sum(), pair_separation_bins_2.ar_flux.sum()
-        print pair_separation_bins_1.ar_count.sum(), pair_separation_bins_2.ar_count.sum()
+        print(pair_separation_bins_1.ar_flux.sum(), pair_separation_bins_2.ar_flux.sum())
+        print(pair_separation_bins_1.ar_count.sum(), pair_separation_bins_2.ar_count.sum())
 
         self.assertAlmostEqual((pair_separation_bins_1.ar_flux - pair_separation_bins_2.ar_flux).sum(), 0, 6)
         self.assertAlmostEqual((pair_separation_bins_1.ar_count - pair_separation_bins_2.ar_count).sum(), 0, 6)

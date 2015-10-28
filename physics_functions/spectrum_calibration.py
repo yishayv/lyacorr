@@ -41,7 +41,7 @@ class SpectrumCalibration:
             new_qso_data = QSOData(qso_rec, qso_data.ar_wavelength, corrected_flux, corrected_ivar)
             return new_qso_data
         else:
-            print "No flux correction for QSO:", qso_rec
+            print("No flux correction for QSO:", qso_rec)
             return qso_data
 
     def is_correction_available(self, qso_data):

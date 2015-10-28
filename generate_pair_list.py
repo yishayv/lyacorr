@@ -104,7 +104,7 @@ class SubChunkHelper:
 def profile_main():
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
-    # print 'minimum distance', min_distance, 'Mpc/rad'
+    # print('minimum distance', min_distance, 'Mpc/rad')
 
     # initialize data sources
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
@@ -126,10 +126,10 @@ def profile_main():
     max_angular_separation = radius / (cd.comoving_distance(1.9) / u.radian)
     mpi_helper.r_print('maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree))
 
-    # print ar_list
+    # print(ar_list)
     coord_set = coord.SkyCoord(ra=ar_ra * u.degree, dec=ar_dec * u.degree,
                                distance=ar_distance * u.Mpc)
-    # print coord_set
+    # print(coord_set)
 
     # find all QSO pairs
     chunk_sizes, chunk_offsets = mpi_helper.get_chunks(len(coord_set), comm.size)

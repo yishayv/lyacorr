@@ -318,7 +318,7 @@ class ContinuumFitPCA:
 
     @staticmethod
     def get_simple_snr(ar_flux, ar_ivar):
-        # no need to square ar_flux because median
+        # no need to square ar_flux because the median stays the same
         # TODO: is it correct to use the absolute value even though it has no physical justification?
         return np.percentile(np.abs(ar_flux), 50) * np.sqrt(np.percentile(ar_ivar, 50))
 

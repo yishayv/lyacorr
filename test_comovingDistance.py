@@ -14,5 +14,5 @@ class TestComovingDistance(TestCase):
         ar_z = np.arange(1.952, 3.6, 0.132)
         ar_dist = cd.fast_comoving_distance(ar_z)
         ar_dist_reference = Planck13.comoving_transverse_distance(ar_z) / u.Mpc
-        print ar_dist - ar_dist_reference
+        print(ar_dist - ar_dist_reference)
         self.assertTrue(np.allclose(ar_dist, ar_dist_reference))

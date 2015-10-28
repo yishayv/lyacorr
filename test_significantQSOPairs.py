@@ -20,6 +20,6 @@ class TestSignificantQSOPairs(TestCase):
         ar_5_largest_values = ar_values[np.argpartition(ar_values, -5)[-5:]]
         self.assertSetEqual(set(s.ar_values), set(ar_5_largest_values))
 
-        print s.ar_qso1
-        print s.ar_qso2
-        print s.ar_values
+        print(s.ar_qso1)
+        print(s.ar_qso2)
+        print(s.ar_values)

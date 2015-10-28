@@ -307,7 +307,7 @@ def calc_mean_transmittance():
     stats_list = comm.gather(local_stats)
     if comm.rank == 0:
         total_stats = sum(stats_list, Counter())
-        print pprint.pformat(total_stats)
+        print(pprint.pformat(total_stats))
         # decide whether to save mean/median results based on common settings:
         if settings.get_enable_weighted_mean_estimator():
             m.save(settings.get_mean_transmittance_npy())

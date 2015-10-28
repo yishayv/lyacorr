@@ -81,7 +81,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
         if fits_partial_path != last_fits_partial_path:
             fits_full_path = find_fits_file(plate_dir_list, fits_partial_path)
             if not fits_full_path:
-                print "Missing file:", fits_partial_path
+                print("Missing file:", fits_partial_path)
                 continue
 
             # get header

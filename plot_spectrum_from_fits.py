@@ -75,8 +75,8 @@ class PlotSpectrum:
         qso_rec = qso_data_.qso_rec
         qso_z = qso_rec.z
         self.qso_z = qso_z
-        print "Plate, FiberID, MJD:", qso_rec.plate, qso_rec.fiberID, qso_rec.mjd
-        print "Z:", self.qso_z
+        print("Plate, FiberID, MJD:", qso_rec.plate, qso_rec.fiberID, qso_rec.mjd)
+        print("Z:", self.qso_z)
 
         fit_pca_files = settings.get_pca_continuum_tables()
         fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
@@ -92,7 +92,7 @@ class PlotSpectrum:
 
         if result_string != 'processed':
             # error during pre-processing. log statistics of error causes.
-            print "pre-processing error:", result_string
+            print("pre-processing error:", result_string)
 
         self.ar_flux_correct = pre_processed_qso_data.ar_flux
 
@@ -101,7 +101,7 @@ class PlotSpectrum:
         self.fit_spectrum, fit_normalization_factor, is_good_fit = \
             fit_pca.fit(ar_wavelength_rest, self.ar_flux_correct, self.ar_ivar, qso_z,
                         boundary_value=np.nan)
-        print "good fit:", is_good_fit
+        print("good fit:", is_good_fit)
 
         # begin power-law fit:
         # for now we have no real error data, so just use '1's:

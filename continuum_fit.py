@@ -22,11 +22,11 @@ def fit_powerlaw(ar_wavelength, ar_flux, ar_flux_err):
                               args=(ar_logwavelength, ar_logflux, ar_logflux_err), full_output=1)
     pfinal = out[0]
     covar = out[1]
-    print pfinal
-    print covar
+    print(pfinal)
+    print(covar)
     index = pfinal[1]
     amp = np.e ** pfinal[0]
-    print amp, '*e^', index
+    print(amp, '*e^', index)
     index_err = np.sqrt(covar[0][0])
     amp_err = np.sqrt(covar[1][1]) * amp
     return amp, index

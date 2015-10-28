@@ -65,7 +65,7 @@ def profile_main():
     mpi_helper.r_print(temp1)
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
-    # print 'minimum distance', min_distance, 'Mpc/rad'
+    # print('minimum distance', min_distance, 'Mpc/rad')
 
     # initialize data sources
     mpi_helper.l_print("Loading QSO record table")
@@ -91,10 +91,10 @@ def profile_main():
     # create a CovarianceMatrix instance:
     cov = calc_covariance.CovarianceMatrix(cd=cd, radius=radius)
 
-    # print ar_list
+    # print(ar_list)
     coord_set = coord.SkyCoord(ra=ar_ra * u.degree, dec=ar_dec * u.degree,
                                distance=ar_distance * u.Mpc)
-    # print coord_set
+    # print(coord_set)
 
     # find all QSO pairs
     chunk_sizes, chunk_offsets = mpi_helper.get_chunks(len(coord_set), comm.size)
@@ -244,7 +244,7 @@ def create_random_sample(global_qso_pairs, global_pair_dict, sample_chunk_size):
             if not np.any(np.isinf(random_sample_quad[i])):
                 all_angles_in_range = True
 
-    print "end of quad sample."
+    print("end of quad sample.")
     return random_sample_quad
 
 

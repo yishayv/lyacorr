@@ -108,7 +108,7 @@ class PixelPairs:
         spec1_distances = self.cd.fast_comoving_distance(spec1_z)
 
         spec2_flux = delta_t_file.get_flux(spec2_index)
-        # print spec2_flux
+        # print(spec2_flux)
         spec2_distances = self.cd.fast_comoving_distance(spec2_z)
 
         # get pre-calculated weights for each QSO
@@ -199,7 +199,7 @@ class PixelPairs:
         spec1_distances = self.cd.fast_comoving_distance(spec1_z)
 
         spec2_flux = delta_t_file.get_flux(spec2_index)
-        # print spec2_flux
+        # print(spec2_flux)
         spec2_distances = self.cd.fast_comoving_distance(spec2_z)
 
         # get pre-calculated weights for each QSO

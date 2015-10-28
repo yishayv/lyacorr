@@ -111,7 +111,7 @@ def profile_main():
         # overwrite the existing forest
         output_spectra.set_flux(n, ar_flux)
         if n % 1000 == 0:
-            print n
+            print(n)
 
     if draw_graph:
         mlab.points3d(total_ar_x, total_ar_y, total_ar_z, total_ar_c,

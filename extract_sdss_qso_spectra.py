@@ -58,9 +58,9 @@ def profile_main():
         output_spectra.set_ivar(index, i[3])
 
     for bit in xrange(0, 32):
-        print flag_stats.to_string(bit)
+        print(flag_stats.to_string(bit))
 
-    print 'Total count: ' + str(flag_stats.pixel_count)
+    print('Total count: ' + str(flag_stats.pixel_count))
 
 if settings.get_profile():
     cProfile.run('profile_main()', sort=2, filename='extract_sdss_qso_spectra.prof')
