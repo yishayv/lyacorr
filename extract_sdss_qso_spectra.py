@@ -1,4 +1,7 @@
-import itertools
+try:
+    from future_builtins import map
+except ImportError:
+    pass
 
 import cProfile
 
@@ -6,12 +9,15 @@ import numpy as np
 import astropy.table as table
 
 from data_access import read_spectrum_fits
-
 from pixel_flags import FlagStats
 from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 import common_settings
 from data_access.qso_data import QSOData
 
+try:
+    xrange
+except NameError:
+    xrange = range
 
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992
@@ -47,7 +53,7 @@ def profile_main():
                                            num_spectra=MAX_SPECTRA)
 
     if settings.get_single_process():
-        result_enum = itertools.imap(save_spectrum, spec_sample)
+        result_enum = map(save_spectrum, spec_sample)
     else:
         assert False, "Not supported"
 

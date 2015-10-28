@@ -4,7 +4,7 @@ __author__ = 'yishay'
 
 
 def reverse_dict(d):
-    return dict((v, k) for k, v in d.iteritems())
+    return dict((v, k) for k, v in d.items())
 
 
 class PixelFlags:

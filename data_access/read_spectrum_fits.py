@@ -10,12 +10,18 @@ import common_settings
 from pixel_flags import PixelFlags
 from data_access.qso_data import QSORecord, QSOData
 
+try:
+    xrange
+except NameError:
+    xrange = range
+
+
 settings = common_settings.Settings()
 
 QSO_FILE = settings.get_qso_metadata_fits()
 # read header names for the QSO table
 QSO_FIELDS_FILE = settings.get_qso_metadata_fields()
-with open(QSO_FIELDS_FILE, mode='rb') as f:
+with open(QSO_FIELDS_FILE, mode='r') as f:
     QSO_fields = list(csv.reader(f))[0]
 QSO_fields_dict = dict(zip(QSO_fields, itertools.count()))
 PLATE_DIR_DEFAULT = settings.get_plate_dir_list()
