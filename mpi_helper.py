@@ -1,6 +1,6 @@
+from __future__ import print_function
 from mpi4py import MPI
 import numpy as np
-from __future__ import print_function
 
 comm = MPI.COMM_WORLD
 
@@ -12,10 +12,10 @@ def r_print(*args):
     :return:
     """
     if comm.rank == 0:
-        print 'ROOT:',
+        print('ROOT:', end=' ')
         for i in args:
-            print((i, end=' '))
-        print
+            print(i, end=' ')
+        print()
 
 
 def l_print(*args):
@@ -39,7 +39,7 @@ def l_print_no_barrier(*args):
     """
     print(comm.rank, ':', end=' ')
     for i in args:
-        print((i, end=' '))
+        print(i, end=' ')
     print
 
 
