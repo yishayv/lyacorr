@@ -155,7 +155,7 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum):
     ar_fit_spectrum_masked = ar_fit_spectrum[effective_mask]
 
     # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
-    if ar_wavelength_masked.size < 50:
+    if ar_wavelength_masked.size < 150:
         local_stats['low_count'] += 1
         l_print_no_barrier("skipped QSO (low pixel count): ", qso_rec)
         return empty_result
