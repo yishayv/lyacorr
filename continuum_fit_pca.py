@@ -135,7 +135,7 @@ class ContinuumFitPCA:
         ar_red_flux = ar_flux[red_spectrum_mask]
         ar_red_ivar = ar_ivar[red_spectrum_mask]
         # interpolate red spectrum into predefined bins:
-        # (use nearest neighbor to avoid leaking bad data)
+        # use nearest neighbor to avoid leaking bad data between adjacent pixels.
         f_flux = scipy.interpolate.interp1d(ar_red_wavelength_rest, ar_red_flux,
                                             kind='nearest', bounds_error=False, assume_sorted=True)
         ar_red_flux_rebinned = f_flux(self.ar_red_wavelength_bins)
@@ -146,7 +146,7 @@ class ContinuumFitPCA:
 
     def rebin_full_spectrum(self, ar_flux, ar_ivar, ar_wavelength_rest):
         # interpolate spectrum into predefined bins:
-        # (use nearest neighbor to avoid leaking bad data)
+        # use nearest neighbor to avoid leaking bad data between adjacent pixels.
         f_flux = scipy.interpolate.interp1d(ar_wavelength_rest, ar_flux,
                                             kind='nearest', bounds_error=False, assume_sorted=True)
         ar_flux_rebinned = f_flux(self.ar_wavelength_bins)
@@ -277,8 +277,8 @@ class ContinuumFitPCA:
         is_good_fit_result = 0.02 < delta_f < max_delta_f and snr > 0.5
 
         # noinspection PyTypeChecker
-        bin_x = np.clip(snr * 50 / 30, 0, 49)
-        bin_y = np.clip(delta_f * 50 / 1., 0, 49)
+        bin_x = int(np.clip(snr * 50 / 30, 0, 49))
+        bin_y = int(np.clip(delta_f * 50 / 1., 0, 49))
         self.snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
         return is_good_fit_result
 
@@ -318,9 +318,15 @@ class ContinuumFitPCA:
 
     @staticmethod
     def get_simple_snr(ar_flux, ar_ivar):
+        """
+        Compute the SNR of a spectrum using median flux and median ivar.
+        :type ar_flux: np.ndarray
+        :type ar_ivar: np.ndarray
+        :rtype: float
+        """
         # no need to square ar_flux because the median stays the same
-        # TODO: is it correct to use the absolute value even though it has no physical justification?
-        return np.percentile(np.abs(ar_flux), 50) * np.sqrt(np.percentile(ar_ivar, 50))
+        # no longer using absolute value, because a negative flux should not have high significance.
+        return np.nanmedian(ar_flux) * np.sqrt(np.nanmedian(ar_ivar))
 
     @staticmethod
     def max_delta_f_per_snr(snr):

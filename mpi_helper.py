@@ -40,7 +40,7 @@ def l_print_no_barrier(*args):
     print(comm.rank, ':', end=' ')
     for i in args:
         print(i, end=' ')
-    print
+    print()
 
 
 def get_chunks(num_items, num_steps):
