@@ -88,7 +88,7 @@ class ContinuumFitPCA:
         result = lmfit.minimize(fcn=self.red_spectrum_residual,
                                 params=params, args=(ar_red_flux, ar_red_ivar))
         # get the coefficients of the fitted spectrum:
-        red_spectrum_coefficients = self.red_spectrum_fit_coefficients(params, ar_red_flux, ar_red_ivar)
+        red_spectrum_coefficients = self.red_spectrum_fit_coefficients(result.params, ar_red_flux, ar_red_ivar)
         # map red PCs to full spectrum PCs
         full_spectrum_coefficients = self.red_to_full(red_spectrum_coefficients)
         # convert from PCs to an actual spectrum
@@ -251,7 +251,7 @@ class ContinuumFitPCA:
         boxcar15 = signal.boxcar(box_size)
         # convolve and divide by box_size to keep the same scale
         ar_red_flux_smoothed = signal.convolve(ar_red_flux, boxcar15, mode='same') / box_size
-        ar_diff = np.abs(ar_red_flux_fit - ar_red_flux_smoothed) / ar_red_flux_smoothed
+        ar_diff = np.abs((ar_red_flux_fit - ar_red_flux_smoothed) / ar_red_flux_smoothed)
         # since delta wavelength is known, (eq 4) in the 2012 paper simplifies to:
         delta_f = ar_diff.sum() / cls.NUM_RED_BINS
         return delta_f
