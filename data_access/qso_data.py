@@ -22,7 +22,7 @@ class QSORecord:
                    qso_row['extinction_g'])
 
     def __str__(self):
-        return " ".join([str(self.specObjID), str(self.z), str(self.ra), str(self.dec),
+        return " ".join([str(self.index), str(self.specObjID), str(self.z), str(self.ra), str(self.dec),
                          str(self.plate), str(self.mjd), str(self.fiberID)])
 
 
