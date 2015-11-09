@@ -179,7 +179,7 @@ class ContinuumFitPCA:
         ar_blue_flux_rebinned = ar_flux_rebinned[:self.LY_A_PEAK_INDEX]
         ar_blue_ivar_rebinned = ar_ivar_rebinned[:self.LY_A_PEAK_INDEX]
         ar_blue_fit_mean_flux_rebinned = ar_mean_flux_constraint[:self.LY_A_PEAK_INDEX] * ar_blue_fit
-        ar_blue_data_mask = [np.logical_and(np.isfinite(ar_blue_flux_rebinned), ar_blue_ivar_rebinned != 0)]
+        ar_blue_data_mask = np.logical_and(np.isfinite(ar_blue_flux_rebinned), ar_blue_ivar_rebinned != 0)
 
         if np.array(ar_blue_data_mask).sum() > 50:
             # find the optimal mean flux regulation:
@@ -268,6 +268,7 @@ class ContinuumFitPCA:
         """
         :type snr: float
         :type goodness_of_fit: np.multiarray.ndarray
+        :rtype bool
         """
         # threshold is based on signal to noise.
         max_delta_f = self.max_delta_f_per_snr(snr) if snr != 0 else 0
