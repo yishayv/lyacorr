@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def jackknife_2d_weighted_test(ar_flux, ar_weights, out=None):
+def jackknife_2d_weighted(ar_flux, ar_weights, out=None):
     if not out:
         out_shape = ar_flux.shape[1:] * 2
         out = np.empty(shape=out_shape)
@@ -58,7 +58,7 @@ def subsample_2d(ar_flux, ar_weights, out=None):
     return out
 
 
-def subsample_2d_weighted_test(ar_flux, ar_weights, out=None):
+def subsample_2d_weighted(ar_flux, ar_weights, out=None):
     if not out:
         out_shape = ar_flux.shape[1:] * 2
         out = np.empty(shape=out_shape)
