@@ -8,15 +8,12 @@ import median_transmittance
 lya_center = 1215.67
 
 settings = common_settings.Settings()
+enable_median_transmittance = False
 
 
 def do_plot():
     m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
-    med = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())
-
     ar_z, mean = m.get_weighted_mean_with_minimum_count(1)
-    ar_z_med, ar_median = med.get_weighted_median_with_minimum_count(1)
-    ar_z_med, ar_unweighted_median = med.get_weighted_median_with_minimum_count(1, weighted=False)
     # low_pass_mean = m.get_low_pass_mean()[1]
 
     fig = plt.figure(figsize=(14, 10))
@@ -24,8 +21,15 @@ def do_plot():
     ax2 = ax1.twiny()
     ax1.plot(ar_z, mean)
     # ax1.plot(ar_z, low_pass_mean, color='red')
-    ax1.plot(ar_z_med, ar_median, color='orange')
-    ax1.plot(ar_z_med, ar_unweighted_median, color='green')
+
+    if enable_median_transmittance:
+        med = median_transmittance.MedianTransmittance.from_file(settings.get_median_transmittance_npy())
+
+        ar_z_med, ar_median = med.get_weighted_median_with_minimum_count(1)
+        ar_z_med, ar_unweighted_median = med.get_weighted_median_with_minimum_count(1, weighted=False)
+
+        ax1.plot(ar_z_med, ar_median, color='orange')
+        ax1.plot(ar_z_med, ar_unweighted_median, color='green')
 
     ax1.set_ylabel(r"$\left< f_q(z)/C_q(z) \right> $")
     plt.ylim(0.0, 1.2)
