@@ -1,11 +1,11 @@
 __author__ = 'yishay'
 
-import numpy as np
-import scipy.linalg
-import scipy.interpolate
-from scipy import signal
-import lmfit
 import astropy.table as table
+import lmfit
+import numpy as np
+import scipy.interpolate
+import scipy.linalg
+from scipy import signal
 
 import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer
@@ -333,7 +333,7 @@ class ContinuumFitPCA:
     @staticmethod
     def max_delta_f_per_snr(snr):
         # approximate a fixed quantile of spectra as a function of SNR.
-        return ((snr / 1.5) ** (-1.5) / 3.6 + 0.05) * 1.5
+        return ((snr * 0.627063775571) ** (-1.94410864348)) * 1.0 + 0.127016066895
 
 
 class ContinuumFitContainer(object):
