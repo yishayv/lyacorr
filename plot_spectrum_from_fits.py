@@ -114,10 +114,10 @@ class PlotSpectrum:
         qso_line_mask.mask_ly_absorption(spec, qso_z)
 
         # fit the power-law to unmasked part of the spectrum
-        amp, index = continuum_fit.fit_powerlaw(
-            spec.ma_wavelength.compressed(),
-            spec.ma_flux.compressed(),
-            spec.ma_flux_err.compressed())
+        # amp, index = continuum_fit.fit_powerlaw(
+        #     spec.ma_wavelength.compressed(),
+        #     spec.ma_flux.compressed(),
+        #     spec.ma_flux_err.compressed())
 
         if os.path.exists(settings.get_mean_transmittance_npy()):
             m = mean_transmittance.MeanTransmittance.from_file(settings.get_mean_transmittance_npy())
@@ -154,7 +154,7 @@ class PlotSpectrum:
 
         ar_flux_err = np.reciprocal(np.sqrt(self.ar_ivar))
         plt.fill_between(self.ar_wavelength, self.ar_flux_correct - ar_flux_err,
-                         self.ar_flux_correct + ar_flux_err, color='gray', linewidth=.3)
+                         self.ar_flux_correct + ar_flux_err, color='lightgray', linewidth=.3)
 
         box_size = 1
         window_func = signal.boxcar(box_size)
@@ -175,7 +175,7 @@ class PlotSpectrum:
         plt.plot(self.ar_wavelength, self.ar_flux_correct, ms=2, linewidth=.3, color='blue', label='Observed flux')
         # plt.loglog(spec.ma_wavelength.compressed(),
         # spec.ma_flux.compressed(), ',', ms=2, color='darkblue')
-        plt.plot(self.ar_wavelength, self.fit_spectrum, color='orange', label='Continuum fit')
+        plt.plot(self.ar_wavelength, self.fit_spectrum, color='darkorange', label='Continuum fit')
 
         qso_z = self.qso_z
 
@@ -184,20 +184,20 @@ class PlotSpectrum:
                      label='Mean transmission flux')
 
         plt.axvspan(redshift(1040, qso_z), redshift(1200, qso_z),
-                    alpha=0.3, facecolor='yellow', edgecolor='red')
+                    alpha=0.2, facecolor='yellow', edgecolor='yellow')
 
-        for l in qso_line_mask.SpecLines:
-            plot_v_mark(redshift(l.wavelength, qso_z))
-            plt.axvspan(redshift(l.wavelength / l.width_factor, qso_z),
-                        redshift(l.wavelength * l.width_factor, qso_z),
-                        alpha=0.02, facecolor='cyan', edgecolor='none')
+        # for l in qso_line_mask.SpecLines:
+        #     plot_v_mark(redshift(l.wavelength, qso_z))
+        #     plt.axvspan(redshift(l.wavelength / l.width_factor, qso_z),
+        #                 redshift(l.wavelength * l.width_factor, qso_z),
+        #                 alpha=0.02, facecolor='cyan', edgecolor='none')
 
-        plt.xlabel(r"$\lambda [\AA]$")
-        plt.ylabel(r"$f(\lambda)$ $[10^{-17}erg/s/cm^{2}/\AA]$")
+        plt.xlabel(r"$\lambda [{\rm \AA}]$", fontsize=12)
+        plt.ylabel(r"$f(\lambda)$ $[{\rm 10^{-17}erg/s/cm^{2}/\AA}]$", fontsize=12)
 
         # create a predicted flux array, based on fitted power_law
         # noinspection PyTypeChecker
-        power_law_array = np.vectorize(power_law, excluded=['amp', 'index'])
+        # power_law_array = np.vectorize(power_law, excluded=['amp', 'index'])
 
         # ar_flux / power_law_array(ar_wavelength, amp, index)
         # plt.loglog(ar_wavelength,
@@ -210,9 +210,9 @@ class PlotSpectrum:
         axes = plt.gca()
         y_min, y_max = axes.get_ylim()
         plt.fill_between(self.ar_wavelength, y_min, y_max, where=ar_flux_mask,
-                         linewidth=.5, color='red', alpha=0.1)
+                         linewidth=.5, color='lightgray', alpha=1)
 
-        plt.legend(loc='best')
+        plt.legend(loc='upper right', prop={'size': 9})
 
     def plot_transmittance(self):
         ar_mean_flux_for_z_range = None
@@ -234,7 +234,7 @@ class PlotSpectrum:
         axes.set_ylim(-1, 2)
         y_min, y_max = axes.get_ylim()
         plt.fill_between(lya_forest_transmittance.ar_z, y_min, y_max, where=ar_transmittance_mask,
-                         linewidth=.5, color='red', alpha=0.1)
+                         linewidth=.5, color='lightgray', alpha=1)
         if ar_mean_flux_for_z_range is not None:
             plt.plot(self.ar_z[self.ar_z < self.qso_z], ar_mean_flux_for_z_range[self.ar_z < self.qso_z], color='red')
         plt.xlabel(r"$z$")

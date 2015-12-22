@@ -40,14 +40,14 @@ def do_plot():
 
     ax3 = host_subplot(2, 1, 2)
     ax4 = ax3.twinx()
-    ax4.set_ylabel(r"$N_{Spectra}$")
+    ax4.set_ylabel(r"$N_{\rm Spectra}$")
     ax3.plot(m.ar_z, m.ar_total_flux, color='blue', label=r"Total flux$\times$ weight")
     ax3.plot(m.ar_z, m.ar_weights, ':', color='green', label='Total weight')
     ax4.plot(m.ar_z, m.ar_count, ':', color='red', label='Spectra count')
     ax3.set_xlim(ax1.get_xlim())
-    ax3.set_ylabel(r"$\sum_q f_q(z)/C_q(z)$")
-    ax3.set_xlabel(r"$z$")
-    ax3.legend(loc='best')
+    ax3.set_ylabel(r"$\sum_q f_q(z)/C_q(z)$", fontsize=12)
+    ax3.set_xlabel(r"$z$", fontsize=12)
+    ax3.legend(loc='upper right', prop={'size': 9})
 
     plt.show()
 
