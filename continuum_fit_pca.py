@@ -22,6 +22,8 @@ class ContinuumFitPCA:
     LY_A_NORMALIZATION_BIN = 1280
     LY_A_NORMALIZATION_INDEX = (LY_A_NORMALIZATION_BIN - BLUE_START) / 0.5
     NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
+    NUM_SNR_BINS = 50
+    NUM_DELTA_F_BINS = 50
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
                  fit_function_name=None, num_components=8):
@@ -264,6 +266,15 @@ class ContinuumFitPCA:
 
         return self._is_good_fit(snr, delta_f)
 
+    def get_snr_bin(self, snr):
+        if snr <= 0:
+            return 0
+
+        log_offset = 1.6
+        log_range = 5.
+        return int(np.clip(np.log(snr) * self.NUM_SNR_BINS / log_range + log_offset, 0, self.NUM_SNR_BINS - 1))
+
+
     def _is_good_fit(self, snr, goodness_of_fit):
         """
         :type snr: float
@@ -279,8 +290,8 @@ class ContinuumFitPCA:
         is_good_fit_result = 0.02 < delta_f < max_delta_f and snr > 0.5
 
         # noinspection PyTypeChecker
-        bin_x = int(np.clip(snr * 50 / 30, 0, 49))
-        bin_y = int(np.clip(delta_f * 50 / 1., 0, 49))
+        bin_x = self.get_snr_bin(snr)
+        bin_y = int(np.clip(delta_f * self.NUM_DELTA_F_BINS / 1., 0, self.NUM_DELTA_F_BINS - 1))
         self.snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
         return is_good_fit_result
 
