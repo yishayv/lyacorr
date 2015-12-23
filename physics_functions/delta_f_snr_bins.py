@@ -4,8 +4,8 @@ import numpy as np
 class DeltaFSNRBins(object):
     NUM_SNR_BINS = 50
     NUM_DELTA_F_BINS = 50
-    LOG_SNR_RANGE = 5.
-    LOG_SNR_OFFSET = 1.6
+    LOG_SNR_RANGE = 6.
+    LOG_SNR_OFFSET = 2.
     DELTA_F_RANGE = 1.
     DELTA_F_OFFSET = 0.
 

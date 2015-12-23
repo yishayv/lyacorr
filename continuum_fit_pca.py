@@ -336,7 +336,7 @@ class ContinuumFitPCA:
     @staticmethod
     def max_delta_f_per_snr(snr):
         # approximate a fixed quantile of spectra as a function of SNR.
-        return (((np.log(snr) + (2.4437028837)) ** -4.59563338416) * 19.9990433381) + 0.117054927835
+        return (((np.log(snr) + (1.73361213608)) ** -1.77642133103) * 0.100000000162) + 0.114870860742
 
 
 class ContinuumFitContainer(object):
