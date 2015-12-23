@@ -8,6 +8,7 @@ import scipy.linalg
 from scipy import signal
 
 import common_settings
+import physics_functions.delta_f_snr_bins
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 
 settings = common_settings.Settings()
@@ -22,8 +23,6 @@ class ContinuumFitPCA:
     LY_A_NORMALIZATION_BIN = 1280
     LY_A_NORMALIZATION_INDEX = (LY_A_NORMALIZATION_BIN - BLUE_START) / 0.5
     NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
-    NUM_SNR_BINS = 50
-    NUM_DELTA_F_BINS = 50
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
                  fit_function_name=None, num_components=8):
@@ -50,7 +49,9 @@ class ContinuumFitPCA:
         self.pivot_wavelength = 1280
         self.delta_wavelength = self.ar_blue_wavelength_bins / self.pivot_wavelength - 1
         self.delta_wavelength_sq = np.square(self.delta_wavelength)
-        self.snr_stats = np.zeros(shape=(3, 50, 50))
+
+        self.delta_f_snr_bins_helper = physics_functions.delta_f_snr_bins.DeltaFSNRBins()
+        self.snr_stats = self.delta_f_snr_bins_helper.get_empty_histogram_array()
 
     def red_to_full(self, red_pc_coefficients):
         return np.dot(self.projection_matrix.T, red_pc_coefficients)
@@ -196,7 +197,7 @@ class ContinuumFitPCA:
                                                              ar_blue_data_mask))
                 # apply the 2nd order mean flux regulation to the continuum fit:
                 ar_regulated_blue_flux = self.mean_flux_2nd_order_correction(
-                    result.params, ar_blue_fit, self.delta_wavelength, self.delta_wavelength_sq)
+                        result.params, ar_blue_fit, self.delta_wavelength, self.delta_wavelength_sq)
             else:
                 # low redshift makes most of the forest inaccessible,
                 # use a 1st order fit to avoid over-fitting.
@@ -207,7 +208,7 @@ class ContinuumFitPCA:
 
                 # apply the 1st order mean flux regulation to the continuum fit:
                 ar_regulated_blue_flux = self.mean_flux_1st_order_correction(
-                    result.params, ar_blue_fit, self.delta_wavelength)
+                        result.params, ar_blue_fit, self.delta_wavelength)
 
             # overwrite the original blue fit with the regulated fit.
             ar_full_fit[:self.LY_A_PEAK_INDEX] = ar_regulated_blue_flux
@@ -266,15 +267,6 @@ class ContinuumFitPCA:
 
         return self._is_good_fit(snr, delta_f)
 
-    def get_snr_bin(self, snr):
-        if snr <= 0:
-            return 0
-
-        log_offset = 1.6
-        log_range = 5.
-        return int(np.clip(np.log(snr) * self.NUM_SNR_BINS / log_range + log_offset, 0, self.NUM_SNR_BINS - 1))
-
-
     def _is_good_fit(self, snr, goodness_of_fit):
         """
         :type snr: float
@@ -282,7 +274,7 @@ class ContinuumFitPCA:
         :rtype bool
         """
         # threshold is based on signal to noise.
-        max_delta_f = self.max_delta_f_per_snr(snr) if snr != 0 else 0
+        max_delta_f = self.max_delta_f_per_snr(snr) if snr > 0 else 0
 
         delta_f = goodness_of_fit
 
@@ -290,8 +282,8 @@ class ContinuumFitPCA:
         is_good_fit_result = 0.02 < delta_f < max_delta_f and snr > 0.5
 
         # noinspection PyTypeChecker
-        bin_x = self.get_snr_bin(snr)
-        bin_y = int(np.clip(delta_f * self.NUM_DELTA_F_BINS / 1., 0, self.NUM_DELTA_F_BINS - 1))
+        bin_x = self.delta_f_snr_bins_helper.snr_to_bin(snr)
+        bin_y = self.delta_f_snr_bins_helper.delta_f_to_bin(delta_f)
         self.snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
         return is_good_fit_result
 
@@ -344,7 +336,7 @@ class ContinuumFitPCA:
     @staticmethod
     def max_delta_f_per_snr(snr):
         # approximate a fixed quantile of spectra as a function of SNR.
-        return ((snr ** -1.94271113437) * 0.315078696773) + 0.126994987976
+        return (((np.log(snr) + (2.4437028837)) ** -4.59563338416) * 19.9990433381) + 0.117054927835
 
 
 class ContinuumFitContainer(object):
@@ -353,10 +345,10 @@ class ContinuumFitContainer(object):
         self.np_spectrum = NpSpectrumContainer(readonly=False, num_spectra=num_spectra)
         self.continuum_fit_metadata = table.Table()
         self.continuum_fit_metadata.add_columns(
-            [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
-             table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
-             table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
-             table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
+                [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
+                 table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
+                 table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
+                 table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
 
         # initialize array
         self.np_spectrum.zero()
@@ -422,10 +414,10 @@ class ContinuumFitContainerFiles(ContinuumFitContainer):
                                                    filename=settings.get_continuum_fit_npy())
             self.continuum_fit_metadata = table.Table()
             self.continuum_fit_metadata.add_columns(
-                [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
-                 table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
-                 table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
-                 table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
+                    [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
+                     table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
+                     table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
+                     table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
 
             # initialize file
             self.np_spectrum.zero()
