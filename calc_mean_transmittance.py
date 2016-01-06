@@ -24,6 +24,7 @@ from physics_functions import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 from mpi_helper import l_print_no_barrier
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
+from physics_functions.remove_bal import RemoveBalSimple
 
 lya_center = 1215.67
 
@@ -252,6 +253,7 @@ def delta_transmittance_chunk(qso_record_table):
     # ignore values with less than 20 sample points
     ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_mean_with_minimum_count(20)
     # ar_z_mean_transmittance, ar_mean_transmittance = m.get_weighted_median_with_minimum_count(20, weighted=True)
+    remove_bal = RemoveBalSimple()
 
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
     n = 0
@@ -275,6 +277,9 @@ def delta_transmittance_chunk(qso_record_table):
             ar_delta_t_ivar = pixel_weight.eval(lya_forest_transmittance.ar_ivar,
                                                 ar_mean_flux_for_z_range * lya_forest_transmittance.ar_fit,
                                                 ar_z)
+
+            # remove BAL regions by setting the ivar of nearby pixels to 0
+            ar_delta_t_ivar[remove_bal.get_mask(ar_delta_t)] = 0
 
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
             # Note: using wavelength field to store redshift
