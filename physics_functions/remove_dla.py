@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 
 
-class RemoveBalSimple(object):
+class RemoveDlaSimple(object):
     def __init__(self):
         self.detect_box_size = 30
         self.detect_boxcar = signal.boxcar(self.detect_box_size)
