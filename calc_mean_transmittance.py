@@ -279,7 +279,10 @@ def delta_transmittance_chunk(qso_record_table):
                                                 ar_z)
 
             # remove BAL regions by setting the ivar of nearby pixels to 0
-            ar_delta_t_ivar[remove_bal.get_mask(ar_delta_t)] = 0
+            ar_bal_mask = remove_bal.get_mask(ar_delta_t)
+            if np.any(ar_bal_mask):
+                l_print_no_barrier("BAL(s) removed from QSO: ", qso_spec_obj.qso_rec)
+            ar_delta_t_ivar[ar_bal_mask] = 0
 
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
             # Note: using wavelength field to store redshift
