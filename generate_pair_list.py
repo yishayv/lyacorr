@@ -121,7 +121,7 @@ def profile_main():
 
     # TODO: find a more precise value instead of z=1.9
     # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
-    # the article assumes h=100km/s/mpc
+    # the article assumes h is measured in units of 100km/s/mpc
     radius = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0).value
     max_angular_separation = radius / (cd.comoving_distance(1.9) / u.radian)
     mpi_helper.r_print('maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree))
