@@ -7,6 +7,7 @@ class TestJackknife_2d(TestCase):
     w = np.ones_like(f)
 
     def test_jackknife_2d_weighted(self):
+        print("test_jackknife_2d_weighted")
         f = self.f
         w = self.w
         a = covariance_helpers.jackknife_2d_weighted(f,w)
@@ -15,10 +16,17 @@ class TestJackknife_2d(TestCase):
         self.failUnless(np.allclose(a,b))
 
     def test_jackknife_2d(self):
+        print("test_jackknife_2d")
         print(covariance_helpers.jackknife_2d(self.f,self.w))
 
     def test_subsample_2d_weighted(self):
+        print("test_subsample_2d_weighted")
         print(covariance_helpers.subsample_2d_weighted(self.f, self.w))
 
     def test_subsample_2d(self):
+        print("test_subsample_2d")
         print(covariance_helpers.subsample_2d(self.f,self.w))
+
+    def test_bootstrap_2d(self):
+        print("test_bootstrap_2d")
+        print(covariance_helpers.bootstrap_2d(self.f, self.w))

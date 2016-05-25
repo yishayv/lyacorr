@@ -76,3 +76,26 @@ def subsample_2d_weighted(ar_flux, ar_weights, out=None):
 
     out[:, :, :, :] = 1 / float(n * (n - 1)) * cov_sum
     return out
+
+
+def bootstrap_2d(ar_flux, ar_weights, out=None, iterations=1000):
+    if not out:
+        out_shape = ar_flux.shape[1:] * 2
+        out = np.empty(shape=out_shape)
+    n = ar_flux.shape[0]
+    global_weights = np.sum(ar_weights)
+    global_flux = np.sum(ar_flux, axis=0)
+    global_weighted_sum = global_flux / global_weights
+    print("global weighted sum: shape:", global_weighted_sum.shape, "mean:", global_weighted_sum.mean())
+
+    ar_estimators = np.nan_to_num(ar_flux / ar_weights)
+    cov_term_mean = np.nansum(ar_estimators, axis=0) / n
+    cov_term = ar_estimators - cov_term_mean
+    cov_sum = np.zeros(shape=out_shape)
+    random_integers = np.random.choice(n, iterations, replace=True)
+
+    for bootstrap_sample in random_integers:
+        cov_sum += np.einsum('ij,kl->ijkl', cov_term[bootstrap_sample], cov_term[bootstrap_sample])
+
+    out[:, :, :, :] = 1 / float(iterations) * cov_sum
+    return out
