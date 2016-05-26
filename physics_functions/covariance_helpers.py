@@ -92,10 +92,13 @@ def bootstrap_2d(ar_flux, ar_weights, out=None, iterations=1000):
     cov_term_mean = np.nansum(ar_estimators, axis=0) / n
     cov_term = ar_estimators - cov_term_mean
     cov_sum = np.zeros(shape=out_shape)
+    cov_temp = np.zeros(shape=out_shape)
     random_integers = np.random.choice(n, iterations, replace=True)
 
     for bootstrap_sample in random_integers:
-        cov_sum += np.einsum('ij,kl->ijkl', cov_term[bootstrap_sample], cov_term[bootstrap_sample])
+        np.einsum('ij,kl->ijkl', cov_term[bootstrap_sample], cov_term[bootstrap_sample],
+                  out=cov_temp)
+        cov_sum += cov_temp
 
     out[:, :, :, :] = 1 / float(iterations) * cov_sum
     return out
