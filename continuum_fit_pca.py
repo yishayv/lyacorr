@@ -7,6 +7,7 @@ import scipy.linalg
 from scipy import signal
 
 import common_settings
+import continuum_goodness_of_fit
 import physics_functions.delta_f_snr_bins
 
 settings = common_settings.Settings()
@@ -50,6 +51,9 @@ class ContinuumFitPCA:
 
         self.delta_f_snr_bins_helper = physics_functions.delta_f_snr_bins.DeltaFSNRBins()
         self.snr_stats = self.delta_f_snr_bins_helper.get_empty_histogram_array()
+        self.power_law_fit_result, _snr_bins, _masked_snr_bins, _y_quantile = \
+            continuum_goodness_of_fit.calc_fit_powerlaw()
+        self.max_delta_f_per_snr = continuum_goodness_of_fit.get_max_delta_f_per_snr_func(self.power_law_fit_result)
 
     def red_to_full(self, red_pc_coefficients):
         return np.dot(self.projection_matrix.T, red_pc_coefficients)
@@ -195,7 +199,7 @@ class ContinuumFitPCA:
                                                              ar_blue_data_mask))
                 # apply the 2nd order mean flux regulation to the continuum fit:
                 ar_regulated_blue_flux = self.mean_flux_2nd_order_correction(
-                        result.params, ar_blue_fit, self.delta_wavelength, self.delta_wavelength_sq)
+                    result.params, ar_blue_fit, self.delta_wavelength, self.delta_wavelength_sq)
             else:
                 # low redshift makes most of the forest inaccessible,
                 # use a 1st order fit to avoid over-fitting.
@@ -206,7 +210,7 @@ class ContinuumFitPCA:
 
                 # apply the 1st order mean flux regulation to the continuum fit:
                 ar_regulated_blue_flux = self.mean_flux_1st_order_correction(
-                        result.params, ar_blue_fit, self.delta_wavelength)
+                    result.params, ar_blue_fit, self.delta_wavelength)
 
             # overwrite the original blue fit with the regulated fit.
             ar_full_fit[:self.LY_A_PEAK_INDEX] = ar_regulated_blue_flux
@@ -330,13 +334,3 @@ class ContinuumFitPCA:
         # no need to square ar_flux because the median stays the same
         # no longer using absolute value, because a negative flux should not have high significance.
         return np.nanmedian(ar_flux) * np.sqrt(np.nanmedian(ar_ivar))
-
-    @staticmethod
-    def max_delta_f_per_snr(snr):
-        if not np.exp(-0.5) < snr < np.exp(4):
-            return 0
-        # approximate a fixed quantile of spectra as a function of SNR.
-        max_delta_f = (((np.log(snr) + 0.377140829206) ** -2.08691188991) * 0.107186158854) + 0.121288290221
-        return min(max_delta_f, 1.)
-
-

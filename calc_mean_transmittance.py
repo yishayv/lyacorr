@@ -12,18 +12,17 @@ from collections import Counter
 import numpy as np
 from scipy import interpolate
 
-from data_access import read_spectrum_hdf5
+import common_settings
 import mean_transmittance
 import median_transmittance
-from continuum_fit_pca import ContinuumFitPCA
 from continuum_fit_container import ContinuumFitContainerFiles
-from mpi_accumulate import accumulate_over_spectra, comm
-import common_settings
+from data_access import read_spectrum_hdf5
 from data_access.numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from data_access.qso_data import QSOData
-from physics_functions import pixel_weight_coefficients
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
+from mpi_accumulate import accumulate_over_spectra, comm
 from mpi_helper import l_print_no_barrier
+from physics_functions import pixel_weight_coefficients
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 from physics_functions.remove_dla import RemoveDlaSimple
 
@@ -31,8 +30,6 @@ lya_center = 1215.67
 
 settings = common_settings.Settings()
 force_single_process = settings.get_single_process()
-fit_pca_files = settings.get_pca_continuum_tables()
-fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
 z_range = (1.9, 3.5, 0.0004)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()

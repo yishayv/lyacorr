@@ -10,7 +10,7 @@ import weighted
 
 import common_settings
 import physics_functions.delta_f_snr_bins
-from continuum_goodness_of_fit import calc_fit_powerlaw, fit_function
+from continuum_goodness_of_fit import calc_fit_powerlaw, fit_function, power_law_to_string
 
 settings = common_settings.Settings()
 
@@ -47,9 +47,8 @@ ax1.set_ylabel(r"${\rm \left|\delta F\right|}$", fontsize=14)
 # plt.set_cmap('gray')
 # plt.plot(x, y)
 result, snr_bins, masked_snr_bins, y_quantile = calc_fit_powerlaw()
-power_law_coefficients = {i.name: i.value for i in result.params.values()}
 
-print('return (((np.log(snr) + ({d})) ** {a}) * {b}) + {c}'.format(**power_law_coefficients))
+print(power_law_to_string(result))
 
 ax1.plot(snr_bins, y_quantile, linewidth=1.)
 

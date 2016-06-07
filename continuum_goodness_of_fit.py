@@ -40,3 +40,29 @@ def calc_fit_powerlaw():
     fit_params.add('d', 3, min=-5, max=5)
     fit_result = lmfit.minimize(fit_function, fit_params, kws={'data': y_quantile[mask], 'x': masked_snr_bins})
     return fit_result, snr_bins, masked_snr_bins, y_quantile
+
+
+def max_delta_f_per_snr(snr, a, b, c, d):
+    # approximate a fixed quantile of spectra as a function of SNR.
+    if not np.exp(-0.5) < snr < np.exp(4):
+        return 0
+    x = np.log(snr)
+    max_delta_f = ((x + d) ** a) * b + c
+    return min(max_delta_f, 1.)
+
+
+def get_max_delta_f_per_snr_func(fit_result):
+    power_law_coefficients = {i.name: i.value for i in fit_result.params.values()}
+
+    a = power_law_coefficients['a']
+    b = power_law_coefficients['b']
+    c = power_law_coefficients['c']
+    d = power_law_coefficients['d']
+
+    # max_delta_f = fit_function(params=fit_result.params(), data=0, x=np.log(snr))
+    return lambda (snr): max_delta_f_per_snr(snr, a, b, c, d)
+
+
+def power_law_to_string(fit_result):
+    power_law_coefficients = {i.name: i.value for i in fit_result.params.values()}
+    return '(((np.log(snr) + ({d})) ** {a}) * {b}) + {c}'.format(**power_law_coefficients)

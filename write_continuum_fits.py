@@ -1,19 +1,20 @@
+import cProfile
 import itertools
 import pprint
-import cProfile
 from collections import Counter
 
 import numpy as np
 from mpi4py import MPI
 
-import median_transmittance
-from continuum_fit_pca import ContinuumFitPCA
-from continuum_fit_container import ContinuumFitContainerFiles, ContinuumFitContainer
-from mpi_accumulate import accumulate_over_spectra
-from data_access import read_spectrum_hdf5
 import common_settings
-from mpi_helper import l_print_no_barrier
+import continuum_goodness_of_fit
+import median_transmittance
+from continuum_fit_container import ContinuumFitContainerFiles, ContinuumFitContainer
+from continuum_fit_pca import ContinuumFitPCA
+from data_access import read_spectrum_hdf5
 from delta_transmittance_remove_mean import get_weighted_mean_from_file
+from mpi_accumulate import accumulate_over_spectra
+from mpi_helper import l_print_no_barrier
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
 MAX_WAVELENGTH_COUNT = 4992
@@ -23,6 +24,9 @@ comm = MPI.COMM_WORLD
 settings = common_settings.Settings()
 fit_pca_files = settings.get_pca_continuum_tables()
 fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
+l_print_no_barrier('Continuum fit SNR selection Power-law: {0}'.format(
+    continuum_goodness_of_fit.power_law_to_string(fit_pca.power_law_fit_result)))
+
 z_range = (1.9, 3.5, 0.0001)
 local_stats = Counter(
     {'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'no_flux_calibration': 0, 'no_mw_lines': 0,
