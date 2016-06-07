@@ -7,7 +7,8 @@ import numpy as np
 from mpi4py import MPI
 
 import median_transmittance
-from continuum_fit_pca import ContinuumFitPCA, ContinuumFitContainer, ContinuumFitContainerFiles
+from continuum_fit_pca import ContinuumFitPCA
+from continuum_fit_container import ContinuumFitContainerFiles, ContinuumFitContainer
 from mpi_accumulate import accumulate_over_spectra
 from data_access import read_spectrum_hdf5
 import common_settings

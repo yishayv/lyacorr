@@ -15,7 +15,8 @@ from scipy import interpolate
 from data_access import read_spectrum_hdf5
 import mean_transmittance
 import median_transmittance
-from continuum_fit_pca import ContinuumFitContainerFiles, ContinuumFitPCA
+from continuum_fit_pca import ContinuumFitPCA
+from continuum_fit_container import ContinuumFitContainerFiles
 from mpi_accumulate import accumulate_over_spectra, comm
 import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
