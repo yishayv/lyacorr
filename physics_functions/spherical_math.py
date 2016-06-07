@@ -1,7 +1,7 @@
 from collections import namedtuple
 
-import numpy as np
 import healpy as hp
+import numpy as np
 from numpy import deg2rad, rad2deg
 
 const_deg2rad = np.pi / 180
@@ -39,11 +39,10 @@ group_types = namedtuple('group_types', ('plate', 'healpix'))
 
 
 class SkyGroups:
-    def __init__(self, group_type=group_types.healpix):
-        self.group_type = group_type
+    def __init__(self, nside=32):
+        self.nside = nside
 
     def get_group_ids(self, ar_ra, ar_dec):
-        assert self.group_type == group_types.healpix
         ar_theta = deg2rad(-ar_dec + 90)
         ar_phi = deg2rad(ar_ra % 360)
-        return hp.ang2pix(32, ar_theta, ar_phi)
+        return hp.ang2pix(self.nside, ar_theta, ar_phi)

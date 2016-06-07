@@ -89,6 +89,8 @@ class Settings:
     opt_continuum_fit_method = 'continuum_fit_method'
     # cosmology (Planck or WMAP[579])
     opt_cosmology = 'cosmology'
+    # healpix nside parameter
+    opt_healpix_nside = 'healpix_nside'
     # enable/disable weighted mean estimator
     opt_enable_weighted_mean_estimator = 'enable_weighted_mean_estimator'
     # enabled/disable weighted median estimator
@@ -153,6 +155,7 @@ class Settings:
         value_max_forest_redshift = 3.2
         value_continuum_fit_method = 'dot_product'
         value_cosmology = 'Planck13'
+        value_healpix_nside = 32
         value_enable_weighted_mean_estimator = True
         value_enable_weighted_median_estimator = True
         value_enable_mw_line_correction = True
@@ -217,6 +220,8 @@ class Settings:
                                str(value_continuum_fit_method))
         self.config_parser.set(self.section_data_processing, self.opt_cosmology,
                                str(value_cosmology))
+        self.config_parser.set(self.section_data_processing, self.opt_healpix_nside,
+                               int(value_healpix_nside))
         self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_mean_estimator,
                                bool(value_enable_weighted_mean_estimator))
         self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_median_estimator,
@@ -358,6 +363,9 @@ class Settings:
 
     def get_cosmology(self):
         return self.config_parser.get(self.section_data_processing, self.opt_cosmology)
+
+    def get_healpix_nside(self):
+        return self.config_parser.getint(self.section_data_processing, self.opt_healpix_nside)
 
     def get_enable_weighted_mean_estimator(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_weighted_mean_estimator)

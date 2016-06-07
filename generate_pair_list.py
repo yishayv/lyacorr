@@ -157,7 +157,7 @@ def profile_main():
     local_pair_means_ra, local_pair_means_dec, _ = find_spherical_mean_deg(local_qso_ra_pairs, local_qso_dec_pairs,
                                                                            axis=0)
 
-    sky_groups = SkyGroups()
+    sky_groups = SkyGroups(nside=settings.get_healpix_nside())
     group_id = sky_groups.get_group_ids(local_pair_means_ra, local_pair_means_dec)
 
     local_qso_pairs_with_unity = np.vstack((local_qso_index_1,
