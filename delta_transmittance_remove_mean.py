@@ -168,8 +168,13 @@ if __name__ == '__main__':
         exit()
 
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
+    if settings.get_ism_only_mode():
+        delta_t_filename = settings.get_forest_ism_npy()
+    else:
+        delta_t_filename = settings.get_delta_t_npy()
+
     delta_t_file = NpSpectrumContainer(readonly=False, create_new=False, num_spectra=len(qso_record_table),
-                                       filename=settings.get_delta_t_npy(), max_wavelength_count=1000)
+                                       filename=delta_t_filename, max_wavelength_count=1000)
 
     ar_delta_t_weighted, ar_ivar_total, ar_z, n, ar_delta_t_median = update_mean(delta_t_file)
 

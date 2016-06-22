@@ -37,6 +37,8 @@ class Settings:
     opt_qso_metadata_npy = 'qso_metadata_npy'
     # delta_t array (npy)
     opt_delta_t_npy = 'delta_transmittance_npy'
+    # estimated ism component of forest
+    opt_forest_ism_npy = 'forest_ism_npy'
     # correlation estimator bins (weighted mean)
     opt_mean_estimator_bins = 'mean_estimator_bins_npy'
     # correlation estimator bins (weighted median)
@@ -79,6 +81,8 @@ class Settings:
     opt_profile = 'profile'
 
     section_data_processing = 'DataProcessing'
+    # replace actual forest with estimated ISM
+    opt_ism_only_mode = 'ism_only_mode'
     # low continuum flux cutoff
     opt_min_continuum_threshold = 'min_continuum_threshold'
     # minimum forest redshift to use
@@ -129,6 +133,7 @@ class Settings:
         value_qso_metadata_fields = '../../data/QSOs_test_header.csv'
         value_qso_metadata_npy = '../../data/QSO_table.npy'
         value_delta_t_npy = '../../data/delta_t.npy'
+        value_forest_ism_npy = '../../data/forest_ism.npy'
         value_mean_estimator_bins_npy = '../../data/mean_estimator_bins.npy'
         value_median_estimator_bins_npy = '../../data/median_estimator_bins.npy'
         value_sigma_sq_lss = '../../data/Sigma_sq_LSS.txt'
@@ -150,6 +155,7 @@ class Settings:
         value_single_process = False
         value_profile = False
 
+        value_ism_only_mode = False
         value_min_continuum_threshold = 0.5
         value_min_forest_redshift = 1.96
         value_max_forest_redshift = 3.2
@@ -182,6 +188,7 @@ class Settings:
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fields, value_qso_metadata_fields)
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_npy, value_qso_metadata_npy)
         self.config_parser.set(self.section_file_paths, self.opt_delta_t_npy, value_delta_t_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_forest_ism_npy, value_forest_ism_npy)
         self.config_parser.set(self.section_file_paths, self.opt_mean_estimator_bins, value_mean_estimator_bins_npy)
         self.config_parser.set(self.section_file_paths, self.opt_median_estimator_bins, value_median_estimator_bins_npy)
         self.config_parser.set(self.section_file_paths, self.opt_sigma_sq_lss, value_sigma_sq_lss)
@@ -210,6 +217,8 @@ class Settings:
         self.config_parser.set(self.section_performance, self.opt_profile, str(value_profile))
 
         self.config_parser.add_section(self.section_data_processing)
+        self.config_parser.set(self.section_data_processing, self.opt_ism_only_mode,
+                               bool(value_ism_only_mode))
         self.config_parser.set(self.section_data_processing, self.opt_min_continuum_threshold,
                                str(value_min_continuum_threshold))
         self.config_parser.set(self.section_data_processing, self.opt_min_forest_redshift,
@@ -288,6 +297,9 @@ class Settings:
     def get_delta_t_npy(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_delta_t_npy)
 
+    def get_forest_ism_npy(self):
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_forest_ism_npy)
+
     def get_mean_estimator_bins(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_mean_estimator_bins)
 
@@ -348,6 +360,8 @@ class Settings:
         return self.config_parser.getboolean(self.section_performance, self.opt_profile)
 
     # Data Processing
+    def get_ism_only_mode(self):
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_ism_only_mode)
 
     def get_min_continuum_threshold(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)
