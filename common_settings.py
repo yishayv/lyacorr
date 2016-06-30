@@ -65,6 +65,10 @@ class Settings:
     opt_mw_stacked_spectra_fits = 'mw_stacked_spectra_fits'
     # mapping from pixel ID to group ID for Milky-Way line removal
     opt_mw_pixel_to_group_mapping_fits = 'mw_pixel_to_group_mapping_fits'
+    # MW lines stacked by extinction
+    opt_ism_extinction_spectra = 'ism_extinction_spectra_npy'
+    # extinction levels for the previous array
+    opt_ism_extinction_levels = 'ism_extinction_levels_npy'
     # covariance matrix output
     opt_correlation_estimator_covariance_npy = 'correlation_estimator_covariance_npy'
     # correlation estimator sub-samples
@@ -147,6 +151,8 @@ class Settings:
         value_tp_correction_hdf5 = '../../data/tp_correction/tpcorr.hdf5'
         value_mw_stacked_spectra_fits = '../../data/MW_lines/coor_bins.fits'
         value_mw_pixel_to_group_mapping_fits = '../../data/MW_lines/maps.fits'
+        value_ism_extinction_spectra = '../../data/ExtinctionBins20.npy'
+        value_ism_extinction_levels = '../../data/ExtinctionBins20_values.npy'
         value_correlation_estimator_covariance_npy = '../../data/covariance.npy'
         value_correlation_estimator_subsamples_npz = '../../data/estimator_subsamples.npz'
 
@@ -205,6 +211,10 @@ class Settings:
         self.config_parser.set(self.section_file_paths, self.opt_mw_stacked_spectra_fits, value_mw_stacked_spectra_fits)
         self.config_parser.set(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits,
                                value_mw_pixel_to_group_mapping_fits)
+        self.config_parser.set(self.section_file_paths, self.opt_ism_extinction_spectra,
+                               value_ism_extinction_spectra)
+        self.config_parser.set(self.section_file_paths, self.opt_ism_extinction_levels,
+                               value_ism_extinction_levels)
         self.config_parser.set(self.section_file_paths, self.opt_correlation_estimator_covariance_npy,
                                value_correlation_estimator_covariance_npy)
         self.config_parser.set(self.section_file_paths, self.opt_correlation_estimator_subsamples_npz,
@@ -338,6 +348,12 @@ class Settings:
 
     def get_mw_pixel_to_group_mapping_fits(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits)
+
+    def get_ism_extinction_spectra(self):
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_ism_extinction_spectra)
+
+    def get_ism_extinction_levels(self):
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_ism_extinction_levels)
 
     def get_correlation_estimator_covariance_npy(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_correlation_estimator_covariance_npy)

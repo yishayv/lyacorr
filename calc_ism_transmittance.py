@@ -16,6 +16,7 @@ from data_access.read_spectrum_fits import QSORecord
 from mpi_accumulate import accumulate_over_spectra, comm
 from mpi_helper import l_print_no_barrier
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
+import data_access.numpy_spectrum_container
 
 lya_center = 1215.67
 
@@ -26,6 +27,11 @@ ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 local_stats = Counter({'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
 pre_process_spectrum = PreProcessSpectrum()
+ar_extinction_levels = np.load(settings.get_ism_extinction_levels())
+
+ism_spectra = data_access.numpy_spectrum_container.NpSpectrumContainer(
+    readonly=True, create_new=False, filename=settings.get_ism_extinction_spectra(),
+    max_wavelength_count=10880)
 
 
 class ISMTransmittanceAccumulator:
@@ -81,7 +87,7 @@ def ism_transmittance_chunk(qso_record_table):
         index = qso_rec.index
 
         # read original delta transmittance
-        ar_wavelength = delta_transmittance_file.get_wavelength(index)
+        ar_redshift = delta_transmittance_file.get_wavelength(index)
         ar_flux = delta_transmittance_file.get_flux(index)
         ar_ivar = delta_transmittance_file.get_ivar(index)
 
@@ -89,18 +95,21 @@ def ism_transmittance_chunk(qso_record_table):
         # ar_flux_new, ar_ivar_new, is_corrected = pre_process_spectrum.mw_lines.apply_correction(
         #     ar_wavelength, np.ones_like(ar_flux), ar_ivar, qso_rec.ra, qso_rec.dec)
 
-        # get typical ISM correction
-        ar_flux_new, ar_ivar_new, is_corrected = pre_process_spectrum.mw_lines.apply_correction(
-            (ar_wavelength + 1) * lya_center, np.ones_like(ar_flux), ar_ivar, ra=200, dec=31.)
+        ar_wavelength = (ar_redshift + 1) * lya_center
+        extinction_bin = 10
+        ar_ism_resampled = np.interp(ar_wavelength,
+                                 ism_spectra.get_wavelength(extinction_bin),
+                                 ism_spectra.get_flux(extinction_bin))
+        extinction = ar_extinction_levels[extinction_bin]
+        # rescale according to QSO extinction
+        ar_flux_new = (ar_ism_resampled - 1) * 10 * qso_rec.extinction_g / extinction
 
-        # is_corrected = True
-        if is_corrected:
-            ism_delta_t.set_wavelength(i, ar_wavelength)
-            # use reciprocal to get absorption spectrum, then subtract 1 to get the delta
-            ism_delta_t.set_flux(i, (1. / ar_flux_new - 1) * qso_rec.extinction_g * 30.)
-            # ism_delta_t.set_flux(i, np.ones_like(ar_flux) * qso_rec.extinction_g)
-            # use original ivar because we are not correcting an existing spectrum
-            ism_delta_t.set_ivar(i, ar_ivar)
+        ism_delta_t.set_wavelength(i, ar_redshift)
+        # use reciprocal to get absorption spectrum, then subtract 1 to get the delta
+        ism_delta_t.set_flux(i, ar_flux_new)
+        # ism_delta_t.set_flux(i, np.ones_like(ar_flux) * qso_rec.extinction_g)
+        # use original ivar because we are not correcting an existing spectrum
+        ism_delta_t.set_ivar(i, ar_ivar)
 
         n += 1
 
