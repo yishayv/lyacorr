@@ -86,13 +86,19 @@ def ism_transmittance_chunk(qso_record_table):
         ar_ivar = delta_transmittance_file.get_ivar(index)
 
         # get correction to ISM
-        ar_flux_new, ar_ivar_new, is_corrected = pre_process_spectrum.mw_lines.apply_correction(
-            ar_wavelength, np.ones_like(ar_flux), ar_ivar, qso_rec.ra, qso_rec.dec)
+        # ar_flux_new, ar_ivar_new, is_corrected = pre_process_spectrum.mw_lines.apply_correction(
+        #     ar_wavelength, np.ones_like(ar_flux), ar_ivar, qso_rec.ra, qso_rec.dec)
 
+        # get typical ISM correction
+        ar_flux_new, ar_ivar_new, is_corrected = pre_process_spectrum.mw_lines.apply_correction(
+            (ar_wavelength + 1) * lya_center, np.ones_like(ar_flux), ar_ivar, ra=200, dec=31.)
+
+        # is_corrected = True
         if is_corrected:
             ism_delta_t.set_wavelength(i, ar_wavelength)
             # use reciprocal to get absorption spectrum, then subtract 1 to get the delta
-            ism_delta_t.set_flux(i, 1. / ar_flux_new - 1)
+            ism_delta_t.set_flux(i, (1. / ar_flux_new - 1) * qso_rec.extinction_g * 30.)
+            # ism_delta_t.set_flux(i, np.ones_like(ar_flux) * qso_rec.extinction_g)
             # use original ivar because we are not correcting an existing spectrum
             ism_delta_t.set_ivar(i, ar_ivar)
 
