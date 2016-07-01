@@ -228,31 +228,31 @@ class Settings:
 
         self.config_parser.add_section(self.section_data_processing)
         self.config_parser.set(self.section_data_processing, self.opt_ism_only_mode,
-                               bool(value_ism_only_mode))
+                               str(value_ism_only_mode))
         self.config_parser.set(self.section_data_processing, self.opt_min_continuum_threshold,
                                str(value_min_continuum_threshold))
         self.config_parser.set(self.section_data_processing, self.opt_min_forest_redshift,
-                               float(value_min_forest_redshift))
+                               str(value_min_forest_redshift))
         self.config_parser.set(self.section_data_processing, self.opt_max_forest_redshift,
-                               float(value_max_forest_redshift))
+                               str(value_max_forest_redshift))
         self.config_parser.set(self.section_data_processing, self.opt_continuum_fit_method,
                                str(value_continuum_fit_method))
         self.config_parser.set(self.section_data_processing, self.opt_cosmology,
                                str(value_cosmology))
         self.config_parser.set(self.section_data_processing, self.opt_healpix_nside,
-                               int(value_healpix_nside))
+                               str(value_healpix_nside))
         self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_mean_estimator,
-                               bool(value_enable_weighted_mean_estimator))
+                               str(value_enable_weighted_mean_estimator))
         self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_median_estimator,
-                               bool(value_enable_weighted_median_estimator))
+                               str(value_enable_weighted_median_estimator))
         self.config_parser.set(self.section_data_processing, self.opt_enable_mw_line_correction,
-                               bool(value_enable_mw_line_correction))
+                               str(value_enable_mw_line_correction))
         self.config_parser.set(self.section_data_processing, self.opt_enable_spectrum_flux_correction,
-                               bool(value_enable_spectrum_flux_correction))
+                               str(value_enable_spectrum_flux_correction))
         self.config_parser.set(self.section_data_processing, self.opt_enable_extinction_correction,
-                               bool(value_enable_extinction_correction))
+                               str(value_enable_extinction_correction))
         self.config_parser.set(self.section_data_processing, self.opt_enable_estimator_subsamples,
-                               bool(value_enable_estimator_subsamples))
+                               str(value_enable_estimator_subsamples))
 
         self.config_parser.add_section(self.section_mock_parameters)
         self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
