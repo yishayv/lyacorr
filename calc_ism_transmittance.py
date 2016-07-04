@@ -96,13 +96,22 @@ def ism_transmittance_chunk(qso_record_table):
         #     ar_wavelength, np.ones_like(ar_flux), ar_ivar, qso_rec.ra, qso_rec.dec)
 
         ar_wavelength = (ar_redshift + 1) * lya_center
-        extinction_bin = 10
+        # limit maximum bin number because higher extinction bins are not reliable
+        max_extinction_bin = max(20, ar_extinction_levels.size)
+
+        if np.isfinite(qso_rec.extinction_g):
+            extinction_bin = int(np.round(np.interp(qso_rec.extinction_g, ar_extinction_levels, np.arange(max_extinction_bin))))
+        else:
+            extinction_bin = 0
+
+        l_print_no_barrier("extinction_bin = ", extinction_bin)
         ar_ism_resampled = np.interp(ar_wavelength,
                                  ism_spectra.get_wavelength(extinction_bin),
                                  ism_spectra.get_flux(extinction_bin))
         extinction = ar_extinction_levels[extinction_bin]
         # rescale according to QSO extinction
-        ar_flux_new = (ar_ism_resampled - 1) * 10 * qso_rec.extinction_g / extinction
+        l_print_no_barrier(qso_rec.extinction_g, extinction)
+        ar_flux_new = (ar_ism_resampled - 1) * 6. * qso_rec.extinction_g / extinction
 
         ism_delta_t.set_wavelength(i, ar_redshift)
         # use reciprocal to get absorption spectrum, then subtract 1 to get the delta
