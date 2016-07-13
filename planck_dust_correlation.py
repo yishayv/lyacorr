@@ -129,7 +129,7 @@ for current_direction_index in np.arange(num_directions):
 
         if comm.rank == 0:
             r_print("Finished direction ", current_direction_index, ", Iteration ", i)
-            ar_product_total[current_direction_index] += ar_weights_reduce
+            ar_product_total[current_direction_index] += ar_product_reduce
             ar_weights_total[current_direction_index] += ar_weights_reduce
             r_print("total weight: ", ar_weights_total[current_direction_index].sum())
 
