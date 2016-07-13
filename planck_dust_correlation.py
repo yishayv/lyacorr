@@ -4,7 +4,6 @@ import numpy as np
 import numpy.random as random
 import numpy.random.mtrand
 from astropy.coordinates import SkyCoord, Longitude, Latitude
-from astropy.coordinates import matching
 from mpi4py import MPI
 
 from mpi_helper import r_print
@@ -33,7 +32,7 @@ if comm.rank == 0:
     ar_map_0 = hp.fitsfunc.read_map("/Users/yishay/Downloads/COM_CompMap_Dust-DL07-AvMaps_2048_R2.00.fits", field=0)
     # ar_map_0_log = np.log(ar_map_0)
 
-    mock = True
+    mock = False
     if mock:
         ar_mock = ar_map_0
         nside_signal = 32
@@ -63,24 +62,20 @@ def main_loop(max_angle, disc_part_mean, disc_part, disc_part_pixel_coords, max_
     ar_product_reduce = np.zeros(shape=num_bins)
     ar_weights_reduce = np.zeros(shape=num_bins)
     chosen_indices = np.random.choice(np.arange(disc_part_pixel_coords.shape[0]), size=100, replace=False)
-    pixel_coords_small_sample = disc_part_pixel_coords[chosen_indices]
-    count = matching.search_around_sky(pixel_coords_small_sample,
-                                       disc_part_pixel_coords,
-                                       max_angular_separation)
-    a_with_unity = disc_part[chosen_indices[count[0]]]
-    b_with_unity = disc_part[count[1]]
-    ar_dist_with_unity = count[2].to(u.rad).value
-    a = a_with_unity[a_with_unity != b_with_unity]
-    b = b_with_unity[a_with_unity != b_with_unity]
-    ar_dist = ar_dist_with_unity[a_with_unity != b_with_unity]
-    a_part = a[ar_dist < max_angle]
-    b_part = b[ar_dist < max_angle]
-    ar_dist_part = ar_dist[ar_dist < max_angle]
-    ar_bins_float = ar_dist_part / max_angle * num_bins  # type: np.ndarray
-    ar_bins = ar_bins_float.astype(int)
-    pair_product = np.nan_to_num((ar_map[a_part] - disc_part_mean) * (ar_map[b_part] - disc_part_mean))
-    ar_product += np.bincount(ar_bins, weights=pair_product, minlength=num_bins)
-    ar_weights += np.bincount(ar_bins, minlength=num_bins)
+    for index in chosen_indices:
+        vec_a = hp.pix2vec(2048, index)
+        disc2 = hp.query_disc(2048, vec=vec_a, radius=max_angular_separation.to(u.rad).value)
+        vec_b = hp.pix2vec(2048, disc2)
+        ar_ang_dist_with_zero = hp.rotator.angdist(vec_a, vec_b)
+        a = index
+        b = disc2[ar_ang_dist_with_zero > 0]
+        ar_ang_dist_with_zero = ar_ang_dist_with_zero[ar_ang_dist_with_zero > 0]
+        ar_bins_float = ar_ang_dist_with_zero / max_angle * num_bins  # type: np.ndarray
+        ar_bins = ar_bins_float.astype(int)
+        pair_product = np.nan_to_num((ar_map[a] - disc_part_mean) * (ar_map[b] - disc_part_mean))
+        ar_product += np.bincount(ar_bins, weights=pair_product, minlength=num_bins)
+        ar_weights += np.bincount(ar_bins, minlength=num_bins)
+
     comm.Reduce(
         [ar_product, MPI.DOUBLE],
         [ar_product_reduce, MPI.DOUBLE],
@@ -118,9 +113,9 @@ for current_direction_index in np.arange(num_directions):
     global_max_angular_separation = 5. * u.degree
 
     # build initial kd-tree
-    __ = matching.search_around_sky(pixel_coords[0:1],
-                                    pixel_coords,
-                                    global_max_angular_separation)
+    # __ = matching.search_around_sky(pixel_coords[0:1],
+    #                                 pixel_coords,
+    #                                 global_max_angular_separation)
 
     for i in np.arange(1):
 
