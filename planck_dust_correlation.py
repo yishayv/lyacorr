@@ -10,19 +10,7 @@ from mpi_helper import r_print
 
 comm = MPI.COMM_WORLD
 
-
-def angular_distance(ar1, ar2):
-    theta1, phi1 = hp.pix2ang(2048, ar1)
-    theta2, phi2 = hp.pix2ang(2048, ar2)
-    ra1 = phi1 * 180. / np.pi
-    dec1 = 90. - (theta1 * 180. / np.pi)
-    ra2 = phi2 * 180. / np.pi
-    dec2 = 90. - (theta2 * 180. / np.pi)
-    coord1 = SkyCoord(ra=ra1 * u.degree, dec=dec1 * u.degree)
-    coord2 = SkyCoord(ra=ra2 * u.degree, dec=dec2 * u.degree)
-    return coord1.separation(coord2).to(u.rad).value
-
-
+# use a different random seed for each MPI rank, but still use predictable results for easier debugging.
 _ = np.random.mtrand.RandomState(comm.rank)
 
 ar_map_shape = None
@@ -56,14 +44,14 @@ def ra_dec2ang(ra, dec):
     return (90. - dec) * np.pi / 180., ra / 180. * np.pi
 
 
-def main_loop(max_angle, disc_part_mean, disc_part, disc_part_pixel_coords, max_angular_separation):
+def main_loop(max_angle, disc_part_mean, disc_part, max_angular_separation):
     ar_product = np.zeros(shape=num_bins)
     ar_weights = np.zeros(shape=num_bins)
     ar_product_reduce = np.zeros(shape=num_bins)
     ar_weights_reduce = np.zeros(shape=num_bins)
-    chosen_indices = np.random.choice(np.arange(disc_part_pixel_coords.shape[0]), size=100, replace=False)
+    chosen_indices = np.random.choice(np.arange(disc_part.shape[0]), size=100, replace=False)
     for index in chosen_indices:
-        vec_a = hp.pix2vec(2048, index)
+        vec_a = hp.pix2vec(2048, disc_part[index])
         disc2 = hp.query_disc(2048, vec=vec_a, radius=max_angular_separation.to(u.rad).value)
         vec_b = hp.pix2vec(2048, disc2)
         ar_ang_dist_with_zero = hp.rotator.angdist(vec_a, vec_b)
@@ -109,18 +97,17 @@ for current_direction_index in np.arange(num_directions):
     max_angle_fixed = 5. / 180. * np.pi
     disc_mean = np.nanmean(ar_map[disc])
     ar_dec, ar_ra = hp.pix2ang(2048, disc)
-    pixel_coords = SkyCoord(ra=ar_ra * u.rad, dec=ar_dec * u.rad)
-    global_max_angular_separation = 5. * u.degree
+    global_max_angular_separation = 5. * u.degree  # type: u.Quantity
 
     # build initial kd-tree
     # __ = matching.search_around_sky(pixel_coords[0:1],
     #                                 pixel_coords,
     #                                 global_max_angular_separation)
 
-    for i in np.arange(10):
+    for i in np.arange(1):
 
         ar_product_iter, ar_weights_iter = main_loop(
-            max_angle=max_angle_fixed, disc_part_mean=disc_mean, disc_part=disc, disc_part_pixel_coords=pixel_coords,
+            max_angle=max_angle_fixed, disc_part_mean=disc_mean, disc_part=disc,
             max_angular_separation=global_max_angular_separation
         )
 
@@ -128,13 +115,9 @@ for current_direction_index in np.arange(num_directions):
             r_print("Finished direction ", current_direction_index, ", Iteration ", i)
             ar_product_total[current_direction_index] += ar_product_iter
             ar_weights_total[current_direction_index] += ar_weights_iter
-            r_print("total weight: ", ar_weights_total.sum())
+            r_print("total weight: ", ar_weights_total[current_direction_index].sum())
 
             angular_separation_bins = np.arange(num_bins, dtype=float) / num_bins * max_angle_fixed * 180. / np.pi
             np.savez(
                 '../../data/planck_dust_correlation.npz', angular_separation_bins=angular_separation_bins,
                 ar_product_total=ar_product_total, ar_weights_total=ar_weights_total)
-            # plt.plot(angular_separation_bins, ar_corr)
-            # plt.show()
-            # plt.plot(angular_separation_bins, ar_weights_total)
-            # plt.show()
