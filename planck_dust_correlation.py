@@ -29,7 +29,7 @@ ar_map_shape = None
 ar_map_0 = None
 ar_map_0_log = None
 if comm.rank == 0:
-    ar_map_0 = hp.fitsfunc.read_map("/Users/yishay/Downloads/COM_CompMap_Dust-DL07-AvMaps_2048_R2.00.fits", field=0)
+    ar_map_0 = hp.fitsfunc.read_map("../../data/COM_CompMap_Dust-DL07-AvMaps_2048_R2.00.fits", field=0)
     # ar_map_0_log = np.log(ar_map_0)
 
     mock = False
@@ -117,7 +117,7 @@ for current_direction_index in np.arange(num_directions):
     #                                 pixel_coords,
     #                                 global_max_angular_separation)
 
-    for i in np.arange(1):
+    for i in np.arange(10):
 
         ar_product_iter, ar_weights_iter = main_loop(
             max_angle=max_angle_fixed, disc_part_mean=disc_mean, disc_part=disc, disc_part_pixel_coords=pixel_coords,
