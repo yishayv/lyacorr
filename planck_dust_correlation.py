@@ -111,7 +111,7 @@ for current_direction_index in np.arange(num_directions):
         ar_product_reduce = np.zeros(shape=num_bins)
         ar_weights_reduce = np.zeros(shape=num_bins)
 
-        ar_product_iter, ar_weights_iter = main_loop(
+        ar_product_local, ar_weights_local = main_loop(
             ar_map=ar_map_local, max_bin_angle=max_angle_fixed,
             outer_disc_mean=disc_mean, outer_disc=disc,
             max_angular_separation=global_max_angular_separation
@@ -119,18 +119,18 @@ for current_direction_index in np.arange(num_directions):
 
         # sum up bins from all nodes
         comm.Reduce(
-            [ar_product_iter, MPI.DOUBLE],
+            [ar_product_local, MPI.DOUBLE],
             [ar_product_reduce, MPI.DOUBLE],
             op=MPI.SUM, root=0)
         comm.Reduce(
-            [ar_weights_iter, MPI.DOUBLE],
+            [ar_weights_local, MPI.DOUBLE],
             [ar_weights_reduce, MPI.DOUBLE],
             op=MPI.SUM, root=0)
 
         if comm.rank == 0:
             r_print("Finished direction ", current_direction_index, ", Iteration ", i)
-            ar_product_total[current_direction_index] += ar_product_iter
-            ar_weights_total[current_direction_index] += ar_weights_iter
+            ar_product_total[current_direction_index] += ar_weights_reduce
+            ar_weights_total[current_direction_index] += ar_weights_reduce
             r_print("total weight: ", ar_weights_total[current_direction_index].sum())
 
             angular_separation_bins = np.arange(num_bins, dtype=float) / num_bins * max_angle_fixed * 180. / np.pi
