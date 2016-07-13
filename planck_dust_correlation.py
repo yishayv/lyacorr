@@ -49,9 +49,9 @@ def main_loop(max_angle, disc_part_mean, disc_part, max_angular_separation):
     ar_weights = np.zeros(shape=num_bins)
     ar_product_reduce = np.zeros(shape=num_bins)
     ar_weights_reduce = np.zeros(shape=num_bins)
-    chosen_indices = np.random.choice(np.arange(disc_part.shape[0]), size=100, replace=False)
+    chosen_indices = np.random.choice(disc_part, size=100, replace=False)
     for index in chosen_indices:
-        vec_a = hp.pix2vec(2048, disc_part[index])
+        vec_a = hp.pix2vec(2048, index)
         disc2 = hp.query_disc(2048, vec=vec_a, radius=max_angular_separation.to(u.rad).value)
         vec_b = hp.pix2vec(2048, disc2)
         ar_ang_dist_with_zero = hp.rotator.angdist(vec_a, vec_b)
