@@ -14,7 +14,7 @@ from continuum_fit_pca import ContinuumFitPCA
 from data_access import read_spectrum_hdf5
 from delta_transmittance_remove_mean import get_weighted_mean_from_file
 from mpi_accumulate import accumulate_over_spectra
-from mpi_helper import l_print_no_barrier
+from mpi_helper import l_print_no_barrier, r_print
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
 MAX_WAVELENGTH_COUNT = 4992
@@ -140,7 +140,7 @@ def profile_main():
     stats_list = comm.gather(local_stats)
     if comm.rank == 0:
         total_stats = sum(stats_list, Counter())
-        print(pprint.pformat(total_stats))
+        r_print(pprint.pformat(total_stats))
         snr_stats = np.zeros_like(snr_stats_list[0])
         for i in snr_stats_list:
             snr_stats += i

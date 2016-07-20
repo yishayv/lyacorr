@@ -21,7 +21,7 @@ from data_access.numpy_spectrum_container import NpSpectrumContainer, NpSpectrum
 from data_access.qso_data import QSOData
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 from mpi_accumulate import accumulate_over_spectra, comm
-from mpi_helper import l_print_no_barrier
+from mpi_helper import l_print_no_barrier, r_print
 from physics_functions import pixel_weight_coefficients
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 from physics_functions.remove_dla import RemoveDlaSimple
@@ -313,7 +313,7 @@ def calc_mean_transmittance():
     stats_list = comm.gather(local_stats)
     if comm.rank == 0:
         total_stats = sum(stats_list, Counter())
-        print(pprint.pformat(total_stats))
+        r_print(pprint.pformat(total_stats))
         # decide whether to save mean/median results based on common settings:
         if settings.get_enable_weighted_mean_estimator():
             m.save(settings.get_mean_transmittance_npy())
