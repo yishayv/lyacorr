@@ -134,7 +134,12 @@ def profile_main():
     # print(ar_list)
     coord_set = coord.SkyCoord(ra=ar_ra * u.degree, dec=ar_dec * u.degree,
                                distance=ar_distance * u.Mpc)
-    # print(coord_set)
+    # create a random permutation of the coordinate set
+    # (this is done to balance the load on the nodes)
+    coord_permutation = None
+    if comm.rank == 0:
+        coord_permutation = np.random.permutation(len(coord_set))
+    coord_permutation = comm.bcast(coord_permutation)
 
     # find all QSO pairs
     chunk_sizes, chunk_offsets = mpi_helper.get_chunks(len(coord_set), comm.size)
@@ -149,7 +154,7 @@ def profile_main():
 
     # search around sky returns indices in the input lists.
     # each node should add its offset to get the QSO index in the original list (only for x[0]).
-    # qso2 which contains the unmodified index to the full list of QSOs.
+    # qso2 contains the unmodified index to the full list of QSOs.
     # the third vector is a count so we can keep a reference to the angles vector.
     local_qso_index_1 = count[0] + local_start_index
     local_qso_index_2 = count[1]
@@ -157,7 +162,7 @@ def profile_main():
     # find the mean ra,dec for each pair
     local_qso_ra_pairs = np.vstack((ar_ra[local_qso_index_1], ar_ra[local_qso_index_2]))
     local_qso_dec_pairs = np.vstack((ar_dec[local_qso_index_1], ar_dec[local_qso_index_2]))
-    # we can safely assume that separations is small enough so we don't have catastrophic cancellation of the mean,
+    # we can safely assume that separations are small enough so we don't have catastrophic cancellation of the mean,
     # so checking the unit radius value is not required
     local_pair_means_ra, local_pair_means_dec, _ = find_spherical_mean_deg(local_qso_ra_pairs, local_qso_dec_pairs,
                                                                            axis=0)
@@ -179,7 +184,9 @@ def profile_main():
 
     # remove pairs of the same QSO, which have different [plate,mjd,fiber]
     # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
-    local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pair_angles > 5e-5]
+    # also keep only 1 instance of each pair (keep only: qso1_index_hash < qso2_index_hash)
+    local_qso_pairs = local_qso_pairs_with_unity.T[np.logical_and(local_qso_pair_angles > 5e-5,
+        coord_permutation[local_qso_pairs_with_unity[0]] < coord_permutation[local_qso_pairs_with_unity[1]])]
 
     mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
                        local_qso_pairs.shape[0] - chunk_sizes[comm.rank])

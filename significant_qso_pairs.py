@@ -2,7 +2,7 @@ import numpy as np
 
 
 class SignificantQSOPairs:
-    def __init__(self, num_elements=10, dtype=float, initial_value=np.nan):
+    def __init__(self, num_elements=20, dtype=float, initial_value=np.nan):
         self.ar_qso1 = np.zeros(shape=num_elements, dtype=int)
         self.ar_qso2 = np.zeros(shape=num_elements, dtype=int)
         self.ar_values = np.full(shape=num_elements, fill_value=initial_value, dtype=dtype)
