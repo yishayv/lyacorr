@@ -275,7 +275,7 @@ class Settings:
         return os.path.expandvars(value)
 
     def get_env_expanded_multiple_paths(self, section, key):
-        return [os.path.expanduser(i) for i in
+        return [os.path.expanduser(i.strip()) for i in
                 self.config_parser.get(section, key).split(_SEP)]
 
     # File Paths

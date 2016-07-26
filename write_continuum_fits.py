@@ -22,8 +22,7 @@ MAX_WAVELENGTH_COUNT = 4992
 comm = MPI.COMM_WORLD
 
 settings = common_settings.Settings()
-fit_pca_files = settings.get_pca_continuum_tables()
-fit_pca = ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
+fit_pca = ContinuumFitPCA()
 l_print_no_barrier('Continuum fit SNR selection Power-law: {0}'.format(
     continuum_goodness_of_fit.power_law_to_string(fit_pca.power_law_fit_result)))
 
