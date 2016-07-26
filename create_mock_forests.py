@@ -1,14 +1,14 @@
 import cProfile
 
-import numpy as np
 import astropy.table as table
+import numpy as np
 
-from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 import common_settings
+import continuum_fit_pca
+import mock_core_with_shell
+from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 from data_access.qso_data import QSORecord
 from physics_functions import comoving_distance
-import mock_core_with_shell
-import continuum_fit_pca
 
 draw_graph = False
 
@@ -20,8 +20,7 @@ MAX_WAVELENGTH_COUNT = 4992
 
 settings = common_settings.Settings()
 
-fit_pca_files = settings.get_pca_continuum_tables()
-fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
+fit_pca = continuum_fit_pca.ContinuumFitPCA()
 
 z_start = 1.8
 z_end = 3.6

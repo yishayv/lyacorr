@@ -1,7 +1,7 @@
 import os.path
 
-import matplotlib.pyplot as plt
 import astropy.table as table
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
 # from astropy.convolution import convolve as ap_convolve, Gaussian1DKernel
@@ -13,7 +13,6 @@ import common_settings
 import continuum_fit_pca
 import spectrum
 import qso_line_mask
-import continuum_fit
 import calc_mean_transmittance
 import mean_transmittance
 from physics_functions.deredden_func import DereddenSpectrum
@@ -22,7 +21,6 @@ import sys
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
 i = 232
-
 
 # TODO: replace with a more accurate number
 lya_center = 1215.67
@@ -78,8 +76,7 @@ class PlotSpectrum:
         print("Plate, FiberID, MJD:", qso_rec.plate, qso_rec.fiberID, qso_rec.mjd)
         print("Z:", self.qso_z)
 
-        fit_pca_files = settings.get_pca_continuum_tables()
-        fit_pca = continuum_fit_pca.ContinuumFitPCA(fit_pca_files[0], fit_pca_files[1], fit_pca_files[2])
+        fit_pca = continuum_fit_pca.ContinuumFitPCA()
 
         # create the wavelength series for the measurements
         self.ar_wavelength = np.array(qso_data_.ar_wavelength)
