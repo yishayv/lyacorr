@@ -162,12 +162,18 @@ class ContinuumFitPCA:
             ar_red_flux_rebinned[pca.LY_A_NORMALIZATION_INDEX - 10:pca.LY_A_NORMALIZATION_INDEX + 11].mean()
         ar_red_flux_rebinned_normalized = ar_red_flux_rebinned / float(normalization_factor)
 
-        # predict the full spectrum from the red part of the spectrum.
-        ar_full_fit = self.fit_function(pca, ar_red_flux_rebinned_normalized,
-                                        ar_red_ivar_rebinned)
+        for i in np.arange(3):
+            # predict the full spectrum from the red part of the spectrum.
+            ar_full_fit = self.fit_function(pca, ar_red_flux_rebinned_normalized,
+                                            ar_red_ivar_rebinned)
 
-        # restore the original flux scale
-        ar_full_fit = ar_full_fit * normalization_factor
+            # restore the original flux scale
+            ar_full_fit = ar_full_fit * normalization_factor
+            ar_red_fit = ar_full_fit[pca.LY_A_PEAK_INDEX:]
+            # mask 2.5 sigma absorption
+            ar_absorption_mask = ar_red_flux_rebinned - ar_red_fit < - 2.5 * (ar_red_ivar_rebinned**-0.5)
+            # print "masked ", float(ar_absorption_mask.sum())/ar_absorption_mask.size, " of pixels in iteration ", i
+            ar_red_ivar_rebinned[ar_absorption_mask] = 0
 
         ar_blue_fit = ar_full_fit[:pca.LY_A_PEAK_INDEX]
         ar_blue_flux_rebinned = ar_flux_rebinned[:pca.LY_A_PEAK_INDEX]
@@ -178,10 +184,10 @@ class ContinuumFitPCA:
         if np.array(ar_blue_data_mask).sum() > 50:
             # find the optimal mean flux regulation:
             params = lmfit.Parameters()
-            params.add('a_mf', value=0, min=-30, max=30)
+            params.add('a_mf', value=0, min=-300, max=300)
             if qso_redshift > 2.4:
                 # there are enough forest pixels for a 2nd order fit:
-                params.add('b_mf', value=0, min=-30, max=30)
+                params.add('b_mf', value=0, min=-300, max=300)
                 result = lmfit.minimize(fcn=self.regulate_mean_flux_2nd_order_residual,
                                         params=params, args=(pca,
                                                              ar_blue_flux_rebinned,
@@ -289,7 +295,8 @@ class ContinuumFitPCA:
         delta_f = goodness_of_fit
 
         # in addition to a max_delta_f value, avoid suspicious over-fitting and very low SNR values
-        is_good_fit_result = 0.02 < delta_f < max_delta_f and snr > 0.5
+        # ignore high SNR as well.
+        is_good_fit_result = 0.02 < delta_f < max_delta_f and np.exp(0.1) < snr < np.exp(3)
 
         # noinspection PyTypeChecker
         bin_x = self.delta_f_snr_bins_helper.snr_to_bin(snr)

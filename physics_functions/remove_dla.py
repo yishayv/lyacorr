@@ -12,7 +12,7 @@ class RemoveDlaSimple(object):
     def get_mask(self, ar_flux):
         # detect low flux regions using threshold
         # convolve and divide by box_size to keep the same scale
-        spec1_smooth = signal.convolve(ar_flux > -0.8, self.detect_boxcar, mode='same') / self.detect_box_size
+        spec1_smooth = signal.convolve(ar_flux > -0.6, self.detect_boxcar, mode='same') / self.detect_box_size
 
         # expand the mask to nearby pixels by smoothing
         mask_thresh = np.array(spec1_smooth < 0.2)
