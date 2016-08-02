@@ -9,6 +9,7 @@ from mpi4py import MPI
 import common_settings
 import continuum_goodness_of_fit
 import median_transmittance
+import physics_functions.delta_f_snr_bins
 from continuum_fit_container import ContinuumFitContainerFiles, ContinuumFitContainer
 from continuum_fit_pca import ContinuumFitPCA
 from data_access import read_spectrum_hdf5
@@ -17,14 +18,17 @@ from mpi_accumulate import accumulate_over_spectra
 from mpi_helper import l_print_no_barrier, r_print
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
+try:
+    _range = xrange
+except NameError:
+    _range = range
+
 MAX_WAVELENGTH_COUNT = 4992
 
 comm = MPI.COMM_WORLD
 
 settings = common_settings.Settings()
 fit_pca = ContinuumFitPCA()
-l_print_no_barrier('Continuum fit SNR selection Power-law: {0}'.format(
-    continuum_goodness_of_fit.power_law_to_string(fit_pca.power_law_fit_result)))
 
 z_range = (1.9, 3.5, 0.0001)
 local_stats = Counter(
@@ -48,7 +52,7 @@ class ContinuumAccumulator:
             # array based mpi gather returns zeros at the end of the global array.
             # use the fact that the object based gather returns the correct number of elements:
             num_spectra = len(object_result)
-            for n in xrange(num_spectra):
+            for n in _range(num_spectra):
                 index = ar_qso_indices[n]
                 self.continuum_fit_container.set_wavelength(index, continua.get_wavelength(n))
                 self.continuum_fit_container.set_flux(index, continua.get_flux(n))
@@ -57,13 +61,12 @@ class ContinuumAccumulator:
                 self.n += 1
             l_print_no_barrier("n =", self.n)
         l_print_no_barrier("n =", self.n)
-        return self.return_result()
 
     def return_result(self):
-        return self.n
+        return self.continuum_fit_container
 
     def finalize(self):
-        self.continuum_fit_container.save()
+        pass
 
 
 def do_continuum_fit_chunk(qso_record_table):
@@ -85,12 +88,16 @@ def do_continuum_fit_chunk(qso_record_table):
         # ignore values with less than 20 sample points
         # ar_z_mean_flux, ar_mean_flux = m.get_weighted_mean_with_minimum_count(20)
         ar_z_mean_flux, ar_mean_flux = med.get_weighted_median_with_minimum_count(20)
-        median_flux_func = lambda (ar_z): np.interp(ar_z, ar_z_mean_flux, ar_mean_flux)
-        ar_z_mean_correction, ar_mean_correction = get_weighted_mean_from_file()
-        median_flux_correction_func = lambda (ar_z): median_flux_func(ar_z) * (
-            1 - np.interp(ar_z, ar_z_mean_correction, ar_mean_correction))
 
-    for n in xrange(len(qso_record_table)):
+        def median_flux_func(ar_z):
+            np.interp(ar_z, ar_z_mean_flux, ar_mean_flux)
+
+        ar_z_mean_correction, ar_mean_correction = get_weighted_mean_from_file()
+
+        def median_flux_correction_func(ar_z):
+            median_flux_func(ar_z) * (1 - np.interp(ar_z, ar_z_mean_correction, ar_mean_correction))
+
+    for n in _range(len(qso_record_table)):
         current_qso_data = spectra.return_spectrum(n)
 
         pre_processed_qso_data, result_string = pre_process_spectrum.apply(current_qso_data)
@@ -113,7 +120,7 @@ def do_continuum_fit_chunk(qso_record_table):
             continue
 
         fit_result = fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan,
-                        mean_flux_constraint_func=median_flux_correction_func)
+                                 mean_flux_constraint_func=median_flux_correction_func)
 
         if not fit_result.is_good_fit:
             local_stats['bad_fit'] += 1
@@ -124,6 +131,8 @@ def do_continuum_fit_chunk(qso_record_table):
         continuum_chunk.set_flux(n, fit_result.spectrum)
         # TODO: find a way to estimate error, or create a file without ivar values.
 
+        continuum_chunk.set_metadata(n, fit_result.is_good_fit, fit_result.goodness_of_fit, fit_result.snr)
+
         local_stats['accepted'] += 1
 
     l_print_no_barrier("offset =", start_offset)
@@ -131,19 +140,49 @@ def do_continuum_fit_chunk(qso_record_table):
 
 
 def profile_main():
-    accumulate_over_spectra(do_continuum_fit_chunk, ContinuumAccumulator)
+    continuum_fit_container = accumulate_over_spectra(do_continuum_fit_chunk, ContinuumAccumulator)
     l_print_no_barrier(pprint.pformat(local_stats))
 
-    snr_stats_list = comm.gather(fit_pca.snr_stats)
     stats_list = comm.gather(local_stats)
     if comm.rank == 0:
+        continuum_fit_metadata = continuum_fit_container.continuum_fit_metadata
         total_stats = sum(stats_list, Counter())
         r_print(pprint.pformat(total_stats))
-        snr_stats = np.zeros_like(snr_stats_list[0])
-        for i in snr_stats_list:
-            snr_stats += i
-        np.save(settings.get_fit_snr_stats(), snr_stats)
 
+        delta_f_snr_bins_helper = physics_functions.delta_f_snr_bins.DeltaFSNRBins()
+        snr_stats = delta_f_snr_bins_helper.get_empty_histogram_array()
+        for row in continuum_fit_metadata:
+            snr = row['snr']
+            goodness_of_fit = row['goodness_of_fit']
+            # no #inspection PyTypeChecker
+            bin_x = delta_f_snr_bins_helper.snr_to_bin(snr)
+            bin_y = delta_f_snr_bins_helper.delta_f_to_bin(goodness_of_fit)
+            snr_stats[2, bin_x, bin_y] += 1
+
+        # keep only the best fits (power law fit of the 0.9 quantile)
+        power_law_fit_result, _snr_bins, _masked_snr_bins, _y_quantile = \
+            continuum_goodness_of_fit.calc_fit_power_law(snr_stats[2])
+        r_print('Continuum fit SNR selection Power-law: {0}'.format(
+            continuum_goodness_of_fit.power_law_to_string(power_law_fit_result)))
+        max_delta_f_per_snr = continuum_goodness_of_fit.get_max_delta_f_per_snr_func(power_law_fit_result)
+
+        for row in continuum_fit_metadata:
+            snr = row['snr']
+            goodness_of_fit = row['goodness_of_fit']
+            is_good_fit_result = (fit_pca.is_good_fit(snr, goodness_of_fit) and
+                                  goodness_of_fit < max_delta_f_per_snr(snr))
+
+            # update the QSO fit table with the final fit status
+            row['is_good_fit'] = is_good_fit_result
+            # no #inspection PyTypeChecker
+            bin_x = delta_f_snr_bins_helper.snr_to_bin(snr)
+            bin_y = delta_f_snr_bins_helper.delta_f_to_bin(goodness_of_fit)
+            snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
+
+        # save the fit statistics
+        np.save(settings.get_fit_snr_stats(), snr_stats)
+        # save the fit metadata table
+        continuum_fit_container.save()
 
 if settings.get_profile():
     cProfile.runctx('profile_main()', globals(), locals(), filename='write_continuum_fits.prof', sort=2)

@@ -7,8 +7,6 @@ import scipy.linalg
 from scipy import signal
 
 import common_settings
-import continuum_goodness_of_fit
-import physics_functions.delta_f_snr_bins
 import qso_pca_loader
 
 settings = common_settings.Settings()
@@ -31,12 +29,6 @@ class ContinuumFitPCA:
                              'lee_2012': self.fit_red_spectrum}[fit_function_name]
 
         self.list_pca_container = list_pca_container
-
-        self.delta_f_snr_bins_helper = physics_functions.delta_f_snr_bins.DeltaFSNRBins()
-        self.snr_stats = self.delta_f_snr_bins_helper.get_empty_histogram_array()
-        self.power_law_fit_result, _snr_bins, _masked_snr_bins, _y_quantile = \
-            continuum_goodness_of_fit.calc_fit_powerlaw()
-        self.max_delta_f_per_snr = continuum_goodness_of_fit.get_max_delta_f_per_snr_func(self.power_law_fit_result)
 
     @staticmethod
     def red_to_full(pca, red_pc_coefficients):
@@ -246,7 +238,7 @@ class ContinuumFitPCA:
             spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
                                  boundary_value, boundary_value)
 
-            is_good_fit = self.is_good_fit(pca, ar_flux_rebinned, ar_ivar_rebinned, binned_spectrum)
+            is_good_fit = self._is_good_fit(pca, ar_flux_rebinned, ar_ivar_rebinned, binned_spectrum)
 
             result_item = FitResult(spectrum, normalization_factor, is_good_fit, goodness_of_fit, snr)
 
@@ -280,33 +272,33 @@ class ContinuumFitPCA:
         delta_f = ar_diff.sum() / pca.NUM_RED_BINS
         return delta_f
 
-    def is_good_fit(self, pca, ar_flux, ar_ivar, ar_flux_fit):
+    def _is_good_fit(self, pca, ar_flux, ar_ivar, ar_flux_fit):
         # threshold is based on signal to noise.
         snr = self.get_simple_snr(ar_flux[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX],
                                   ar_ivar[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX])
         delta_f = self.get_goodness_of_fit(pca, ar_flux, ar_flux_fit)
 
-        return self._is_good_fit(snr, delta_f)
+        return self.is_good_fit(snr, delta_f)
 
-    def _is_good_fit(self, snr, goodness_of_fit):
+    @staticmethod
+    def is_good_fit(snr, goodness_of_fit):
         """
         :type snr: float
         :type goodness_of_fit: np.multiarray.ndarray
         :rtype bool
         """
         # threshold is based on signal to noise.
-        max_delta_f = self.max_delta_f_per_snr(snr) if snr > 0 else 0
-
-        delta_f = goodness_of_fit
+        # max_delta_f = self.max_delta_f_per_snr(snr) if snr > 0 else 0
 
         # in addition to a max_delta_f value, avoid suspicious over-fitting and very low SNR values
         # ignore high SNR as well.
-        is_good_fit_result = 0.02 < delta_f < max_delta_f and np.exp(0.1) < snr < np.exp(3)
+        max_delta_f = 1.
+        min_delta_f = 0.02
+        min_snr = np.exp(0.1)
+        max_snr = np.exp(3)
 
-        # noinspection PyTypeChecker
-        bin_x = self.delta_f_snr_bins_helper.snr_to_bin(snr)
-        bin_y = self.delta_f_snr_bins_helper.delta_f_to_bin(delta_f)
-        self.snr_stats[1 if is_good_fit_result else 0, bin_x, bin_y] += 1
+        is_good_fit_result = min_delta_f < goodness_of_fit < max_delta_f and min_snr < snr < max_snr
+
         return is_good_fit_result
 
     def regulate_mean_flux_2nd_order_residual(self, params, pca, ar_flux, ar_fit, ar_data_mask):

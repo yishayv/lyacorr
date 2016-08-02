@@ -11,10 +11,10 @@ class ContinuumFitContainer(object):
         self.np_spectrum = NpSpectrumContainer(readonly=False, num_spectra=num_spectra)
         self.continuum_fit_metadata = table.Table()
         self.continuum_fit_metadata.add_columns(
-                [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
-                 table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
-                 table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
-                 table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
+            [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
+             table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
+             table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
+             table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
 
         # initialize array
         self.np_spectrum.zero()
@@ -80,10 +80,10 @@ class ContinuumFitContainerFiles(ContinuumFitContainer):
                                                    filename=settings.get_continuum_fit_npy())
             self.continuum_fit_metadata = table.Table()
             self.continuum_fit_metadata.add_columns(
-                    [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
-                     table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
-                     table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
-                     table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
+                [table.Column(name='index', dtype='i8', unit=None, length=num_spectra),
+                 table.Column(name='is_good_fit', dtype='b', unit=None, length=num_spectra),
+                 table.Column(name='goodness_of_fit', dtype='f8', unit=None, length=num_spectra),
+                 table.Column(name='snr', dtype='f8', unit=None, length=num_spectra)])
 
             # initialize file
             self.np_spectrum.zero()
