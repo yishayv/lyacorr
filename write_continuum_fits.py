@@ -124,8 +124,7 @@ def do_continuum_fit_chunk(qso_record_table):
 
         if not fit_result.is_good_fit:
             local_stats['bad_fit'] += 1
-            l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
-            continue
+            l_print_no_barrier("bad fit QSO: ", qso_rec)
 
         continuum_chunk.set_wavelength(n, ar_wavelength)
         continuum_chunk.set_flux(n, fit_result.spectrum)

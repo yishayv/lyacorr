@@ -209,7 +209,8 @@ class ContinuumFitPCA:
             is_good_fit = False
 
         goodness_of_fit = self.get_goodness_of_fit(pca, ar_flux_rebinned, ar_full_fit) if is_good_fit else np.inf
-        snr = self.get_simple_snr(ar_red_flux_rebinned, ar_red_ivar_rebinned)
+        snr = self.get_simple_snr(ar_flux_rebinned[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX],
+                                  ar_ivar_rebinned[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX])
 
         return ar_full_fit, pca.ar_wavelength_bins, normalization_factor, goodness_of_fit, snr
 
