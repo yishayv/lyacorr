@@ -10,14 +10,17 @@ settings = common_settings.Settings()
 
 # based on [Paris 2011] and [Lee, Suzuki, & Spergel 2012]
 class PCALoaderParis:
+    WAVELENGTH_STEP = 0.5
     BLUE_START = 1020
     RED_END = 2000
+    RED_END_GOODNESS_OF_FIT = 1600
     LY_A_PEAK_BINNED = 1216
-    LY_A_PEAK_INDEX = (LY_A_PEAK_BINNED - BLUE_START) / 0.5
+    LY_A_PEAK_INDEX = (LY_A_PEAK_BINNED - BLUE_START) / WAVELENGTH_STEP
     LY_A_NORMALIZATION_BIN = 1280
-    LY_A_NORMALIZATION_INDEX = (LY_A_NORMALIZATION_BIN - BLUE_START) / 0.5
-    NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
-    NUM_FULL_BINS = (RED_END - BLUE_START) * 2 + 1
+    LY_A_NORMALIZATION_INDEX = (LY_A_NORMALIZATION_BIN - BLUE_START) / WAVELENGTH_STEP
+    NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) / WAVELENGTH_STEP + 1
+    NUM_FULL_BINS = (RED_END - BLUE_START) / WAVELENGTH_STEP + 1
+    RED_END_GOODNESS_OF_FIT_INDEX = RED_END_GOODNESS_OF_FIT / WAVELENGTH_STEP
     PC1_INDEX = 2
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
@@ -32,9 +35,9 @@ class PCALoaderParis:
         self.red_mean = self.red_pc_table[:, 1]
         self.full_mean = self.full_pc_table[:, 1]
         # create wavelength bins
-        self.ar_wavelength_bins = np.arange(self.BLUE_START, self.RED_END + .1, 0.5)
-        self.ar_red_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, 0.5)
-        self.ar_blue_wavelength_bins = np.arange(self.BLUE_START, self.LY_A_PEAK_BINNED, 0.5)
+        self.ar_wavelength_bins = np.arange(self.BLUE_START, self.RED_END + .1, self.WAVELENGTH_STEP)
+        self.ar_red_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, self.WAVELENGTH_STEP)
+        self.ar_blue_wavelength_bins = np.arange(self.BLUE_START, self.LY_A_PEAK_BINNED, self.WAVELENGTH_STEP)
         # pre-calculated values for mean flux regulation
         self.pivot_wavelength = 1280
         self.delta_wavelength = self.ar_blue_wavelength_bins / self.pivot_wavelength - 1
@@ -43,14 +46,17 @@ class PCALoaderParis:
 
 # based on [Suzuki 2005] and [Lee, Suzuki, & Spergel 2012]
 class PCALoaderSuzuki:
+    WAVELENGTH_STEP = 0.5
     BLUE_START = 1020
     RED_END = 1600
+    RED_END_GOODNESS_OF_FIT = 1600
     LY_A_PEAK_BINNED = 1216
-    LY_A_PEAK_INDEX = (LY_A_PEAK_BINNED - BLUE_START) / 0.5
+    LY_A_PEAK_INDEX = (LY_A_PEAK_BINNED - BLUE_START) / WAVELENGTH_STEP
     LY_A_NORMALIZATION_BIN = 1280
-    LY_A_NORMALIZATION_INDEX = (LY_A_NORMALIZATION_BIN - BLUE_START) / 0.5
-    NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) * 2 + 1
-    NUM_FULL_BINS = (RED_END - BLUE_START) * 2 + 1
+    LY_A_NORMALIZATION_INDEX = (LY_A_NORMALIZATION_BIN - BLUE_START) / WAVELENGTH_STEP
+    NUM_RED_BINS = (RED_END - LY_A_PEAK_BINNED) / WAVELENGTH_STEP + 1
+    NUM_FULL_BINS = (RED_END - BLUE_START) / WAVELENGTH_STEP + 1
+    RED_END_GOODNESS_OF_FIT_INDEX = RED_END_GOODNESS_OF_FIT / WAVELENGTH_STEP
     PC1_INDEX = 3
 
     def __init__(self, red_pc_text_file, full_pc_text_file, projection_matrix_file,
@@ -65,9 +71,9 @@ class PCALoaderSuzuki:
         self.red_mean = self.red_pc_table[:, 1]
         self.full_mean = self.full_pc_table[:, 1]
         # create wavelength bins
-        self.ar_wavelength_bins = np.arange(self.BLUE_START, self.RED_END + .1, 0.5)
-        self.ar_red_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, 0.5)
-        self.ar_blue_wavelength_bins = np.arange(self.BLUE_START, self.LY_A_PEAK_BINNED, 0.5)
+        self.ar_wavelength_bins = np.arange(self.BLUE_START, self.RED_END + .1, self.WAVELENGTH_STEP)
+        self.ar_red_wavelength_bins = np.arange(self.LY_A_PEAK_BINNED, self.RED_END + .1, self.WAVELENGTH_STEP)
+        self.ar_blue_wavelength_bins = np.arange(self.BLUE_START, self.LY_A_PEAK_BINNED, self.WAVELENGTH_STEP)
         # pre-calculated values for mean flux regulation
         self.pivot_wavelength = 1280
         self.delta_wavelength = self.ar_blue_wavelength_bins / self.pivot_wavelength - 1

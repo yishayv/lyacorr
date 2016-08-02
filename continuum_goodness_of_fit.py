@@ -44,11 +44,12 @@ def calc_fit_powerlaw():
 
 def max_delta_f_per_snr(snr, a, b, c, d):
     # approximate a fixed quantile of spectra as a function of SNR.
-    if not np.exp(-0.5) < snr < np.exp(4):
-        return 0
-    x = np.log(snr)
+    mask = np.logical_and(np.exp(-0.5) < snr, snr < np.exp(4))
+    x = np.log(snr[mask])
     max_delta_f = ((x + d) ** a) * b + c
-    return min(max_delta_f, 1.)
+    result = np.zeros_like(snr)
+    result[mask] = np.minimum(max_delta_f, 1)
+    return result
 
 
 def get_max_delta_f_per_snr_func(fit_result):

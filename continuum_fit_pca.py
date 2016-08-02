@@ -162,7 +162,8 @@ class ContinuumFitPCA:
             ar_red_flux_rebinned[pca.LY_A_NORMALIZATION_INDEX - 10:pca.LY_A_NORMALIZATION_INDEX + 11].mean()
         ar_red_flux_rebinned_normalized = ar_red_flux_rebinned / float(normalization_factor)
 
-        for i in np.arange(3):
+        ar_full_fit = None
+        for _ in np.arange(3):
             # predict the full spectrum from the red part of the spectrum.
             ar_full_fit = self.fit_function(pca, ar_red_flux_rebinned_normalized,
                                             ar_red_ivar_rebinned)
@@ -179,6 +180,7 @@ class ContinuumFitPCA:
         ar_blue_flux_rebinned = ar_flux_rebinned[:pca.LY_A_PEAK_INDEX]
         ar_blue_ivar_rebinned = ar_ivar_rebinned[:pca.LY_A_PEAK_INDEX]
         ar_blue_fit_mean_flux_rebinned = ar_mean_flux_constraint[:pca.LY_A_PEAK_INDEX] * ar_blue_fit
+        # ignore pixels with 0 ivar
         ar_blue_data_mask = np.logical_and(np.isfinite(ar_blue_flux_rebinned), ar_blue_ivar_rebinned)
 
         if np.array(ar_blue_data_mask).sum() > 50:
@@ -264,8 +266,8 @@ class ContinuumFitPCA:
         """
         # note: we assume standard bins (self.ar_wavelength_bins)
         # get the red part of the spectrum
-        ar_red_flux = ar_flux[pca.LY_A_PEAK_INDEX:]
-        ar_red_flux_fit = ar_flux_fit[pca.LY_A_PEAK_INDEX:]
+        ar_red_flux = ar_flux[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX]
+        ar_red_flux_fit = ar_flux_fit[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX]
         # smooth the observed flux
         box_size = 15
         boxcar15 = signal.boxcar(box_size)
