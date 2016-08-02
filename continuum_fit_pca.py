@@ -172,7 +172,7 @@ class ContinuumFitPCA:
             ar_full_fit = ar_full_fit * normalization_factor
             ar_red_fit = ar_full_fit[pca.LY_A_PEAK_INDEX:]
             # mask 2.5 sigma absorption
-            ar_absorption_mask = ar_red_flux_rebinned - ar_red_fit < - 2.5 * (ar_red_ivar_rebinned**-0.5)
+            ar_absorption_mask = ar_red_flux_rebinned - ar_red_fit < - 2.5 * (ar_red_ivar_rebinned ** -0.5)
             # print "masked ", float(ar_absorption_mask.sum())/ar_absorption_mask.size, " of pixels in iteration ", i
             ar_red_ivar_rebinned[ar_absorption_mask] = 0
 
@@ -217,14 +217,16 @@ class ContinuumFitPCA:
             is_good_fit = False
 
         goodness_of_fit = self.get_goodness_of_fit(pca, ar_flux_rebinned, ar_full_fit) if is_good_fit else np.inf
+        snr = self.get_simple_snr(ar_red_flux_rebinned, ar_red_ivar_rebinned)
 
-        return ar_full_fit, pca.ar_wavelength_bins, normalization_factor, goodness_of_fit
+        return ar_full_fit, pca.ar_wavelength_bins, normalization_factor, goodness_of_fit, snr
 
     def fit(self, ar_wavelength_rest, ar_flux, ar_ivar, qso_redshift, boundary_value=None,
             mean_flux_constraint_func=None):
 
         # loop over available PCA templates and return the best result
-        FitResult = namedtuple('FitResult', ['spectrum', 'normalization_factor', 'is_good_fit', 'goodness_of_fit'])
+        FitResult = namedtuple('FitResult',
+                               ['spectrum', 'normalization_factor', 'is_good_fit', 'goodness_of_fit', 'snr'])
         result_list = []
         for i, pca in enumerate(self.list_pca_container):
             ar_flux_rebinned, ar_ivar_rebinned = self.rebin_full_spectrum(pca, ar_flux, ar_ivar, ar_wavelength_rest)
@@ -238,7 +240,7 @@ class ContinuumFitPCA:
             else:
                 ar_mean_flux_constraint = mean_flux_constraint_func(ar_z_rebinned)
 
-            binned_spectrum, ar_wavelength_rest_binned, normalization_factor, goodness_of_fit = \
+            binned_spectrum, ar_wavelength_rest_binned, normalization_factor, goodness_of_fit, snr = \
                 self.fit_binned(pca, ar_flux_rebinned, ar_ivar_rebinned, ar_mean_flux_constraint, qso_redshift)
 
             spectrum = np.interp(ar_wavelength_rest, ar_wavelength_rest_binned, binned_spectrum,
@@ -246,7 +248,7 @@ class ContinuumFitPCA:
 
             is_good_fit = self.is_good_fit(pca, ar_flux_rebinned, ar_ivar_rebinned, binned_spectrum)
 
-            result_item = FitResult(spectrum, normalization_factor, is_good_fit, goodness_of_fit)
+            result_item = FitResult(spectrum, normalization_factor, is_good_fit, goodness_of_fit, snr)
 
             # append result
             result_list += [result_item]
@@ -255,7 +257,7 @@ class ContinuumFitPCA:
         best_index = np.argmin([j.goodness_of_fit for j in result_list])
         best_result = result_list[best_index]
 
-        return best_result.spectrum, best_result.normalization_factor, best_result.is_good_fit
+        return best_result
 
     @classmethod
     def get_goodness_of_fit(cls, pca, ar_flux, ar_flux_fit):
@@ -280,7 +282,8 @@ class ContinuumFitPCA:
 
     def is_good_fit(self, pca, ar_flux, ar_ivar, ar_flux_fit):
         # threshold is based on signal to noise.
-        snr = self.get_simple_snr(ar_flux, ar_ivar)
+        snr = self.get_simple_snr(ar_flux[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX],
+                                  ar_ivar[pca.LY_A_PEAK_INDEX:pca.RED_END_GOODNESS_OF_FIT_INDEX])
         delta_f = self.get_goodness_of_fit(pca, ar_flux, ar_flux_fit)
 
         return self._is_good_fit(snr, delta_f)

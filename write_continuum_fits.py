@@ -112,17 +112,16 @@ def do_continuum_fit_chunk(qso_record_table):
             local_stats['empty'] += 1
             continue
 
-        fit_spectrum, fit_normalization_factor, is_good_fit = \
-            fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan,
+        fit_result = fit_pca.fit(ar_wavelength / (1 + z), ar_flux, ar_ivar, z, boundary_value=np.nan,
                         mean_flux_constraint_func=median_flux_correction_func)
 
-        if not is_good_fit:
+        if not fit_result.is_good_fit:
             local_stats['bad_fit'] += 1
             l_print_no_barrier("skipped QSO (bad fit): ", qso_rec)
             continue
 
         continuum_chunk.set_wavelength(n, ar_wavelength)
-        continuum_chunk.set_flux(n, fit_spectrum)
+        continuum_chunk.set_flux(n, fit_result.spectrum)
         # TODO: find a way to estimate error, or create a file without ivar values.
 
         local_stats['accepted'] += 1

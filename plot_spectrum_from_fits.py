@@ -95,9 +95,10 @@ class PlotSpectrum:
 
         # begin PCA fit:
         ar_wavelength_rest = self.ar_wavelength / (1 + qso_z)
-        self.fit_spectrum, fit_normalization_factor, is_good_fit = \
-            fit_pca.fit(ar_wavelength_rest, self.ar_flux_correct, self.ar_ivar, qso_z,
-                        boundary_value=np.nan)
+        fit_result = fit_pca.fit(ar_wavelength_rest, self.ar_flux_correct, self.ar_ivar, qso_z,
+                                 boundary_value=np.nan)
+        self.fit_spectrum = fit_result.spectrum
+        is_good_fit = fit_result.is_good_fit
         print("good fit:", is_good_fit)
 
         # begin power-law fit:

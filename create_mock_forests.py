@@ -60,18 +60,18 @@ def profile_main():
 
         # fit continuum
         ar_rest_wavelength = ar_wavelength / (1 + redshift)
-        fit_spectrum, fit_normalization_factor, is_good_fit = \
-            fit_pca.fit(ar_rest_wavelength, ar_flux, ar_ivar, qso_redshift=redshift,
-                        boundary_value=np.nan, mean_flux_constraint_func=None)
+
+        fit_result = fit_pca.fit(ar_rest_wavelength, ar_flux, ar_ivar, qso_redshift=redshift,
+                    boundary_value=np.nan, mean_flux_constraint_func=None)
 
         # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
         # use the same range as in 1404.1801 (2014)
         forest_mask = np.logical_and(ar_wavelength > 1040 * (1 + redshift),
                                      ar_wavelength < 1200 * (1 + redshift))
-        fit_mask = ~np.isnan(fit_spectrum)
+        fit_mask = ~np.isnan(fit_result.spectrum)
         effective_mask = forest_mask & fit_mask
         ar_wavelength_masked = ar_wavelength[effective_mask]
-        ar_fit_spectrum_masked = fit_spectrum[effective_mask]
+        ar_fit_spectrum_masked = fit_result.spectrum[effective_mask]
 
         # convert redshift to distance
         ar_dist = np.asarray(cd.fast_comoving_distance(ar_redshift[effective_mask]))
@@ -98,7 +98,7 @@ def profile_main():
         mock_fraction = 1
         ar_flux[effective_mask] = \
             ar_flux[effective_mask] * (1 - mock_fraction) + \
-            ar_rel_transmittance * fit_spectrum[effective_mask] * mock_fraction
+            ar_rel_transmittance * fit_result.spectrum[effective_mask] * mock_fraction
 
         if draw_graph:
             display_mask = ar_mock_forest_array > 0.
