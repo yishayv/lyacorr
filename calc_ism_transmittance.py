@@ -111,7 +111,8 @@ def ism_transmittance_chunk(qso_record_table):
         extinction = ar_extinction_levels[extinction_bin]
         # rescale according to QSO extinction
         l_print_no_barrier(qso_rec.extinction_g, extinction)
-        ar_flux_new = (ar_ism_resampled - 1) * 6. * qso_rec.extinction_g / extinction
+        ism_scale_factor = 1.
+        ar_flux_new = (ar_ism_resampled - 1) * ism_scale_factor * qso_rec.extinction_g / extinction
 
         ism_delta_t.set_wavelength(i, ar_redshift)
         # use reciprocal to get absorption spectrum, then subtract 1 to get the delta

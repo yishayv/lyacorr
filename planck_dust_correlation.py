@@ -20,9 +20,10 @@ def ra_dec2ang(ra, dec):
     return (90. - dec) * np.pi / 180., ra / 180. * np.pi
 
 
-def main_loop(ar_map, max_bin_angle, outer_disc_mean, outer_disc, max_angular_separation):
+def main_loop(ar_map, ar_map_unc, max_bin_angle, max_angular_separation, outer_disc_mean, outer_disc):
     ar_product = np.zeros(shape=num_bins)
     ar_weights = np.zeros(shape=num_bins)
+    ar_counts = np.zeros(shape=num_bins)
     chosen_indices = np.random.choice(outer_disc, size=100, replace=False)
     for index in chosen_indices:
         vec_a = hp.pix2vec(ar_map_nside, index)
@@ -37,20 +38,25 @@ def main_loop(ar_map, max_bin_angle, outer_disc_mean, outer_disc, max_angular_se
         ar_bins_float = ar_ang_dist / max_bin_angle * num_bins  # type: np.ndarray
         ar_bins = ar_bins_float.astype(int)
         # TODO: filter NaNs earlier so that they don't decrease the correlation
-        pair_product = np.nan_to_num((ar_map[a] - outer_disc_mean) * (ar_map[b] - outer_disc_mean))
-        ar_product += np.bincount(ar_bins, weights=pair_product, minlength=num_bins)
-        ar_weights += np.bincount(ar_bins, minlength=num_bins)
+        ar_pair_product = np.nan_to_num((ar_map[a] - outer_disc_mean) * (ar_map[b] - outer_disc_mean))
+        ar_pair_weights = (ar_map_unc[a] * ar_map_unc[b]) ** (-2)  # type: np.ndarray
+        ar_product += np.bincount(ar_bins, weights=ar_pair_product * ar_pair_weights, minlength=num_bins)
+        ar_weights += np.bincount(ar_bins, weights=ar_pair_weights, minlength=num_bins)
+        ar_counts += np.bincount(ar_bins, minlength=num_bins)
 
-    return ar_product, ar_weights
+    return ar_product, ar_weights, ar_counts
 
 
 # load Planck map on the root node
 ar_map_shape = None
 ar_map_0 = None
+ar_map_unc_0 = None
 ar_map_0_log = None
 if comm.rank == 0:
     ar_map_0 = hp.fitsfunc.read_map("../../data/COM_CompMap_Dust-DL07-AvMaps_2048_R2.00.fits", field=0)
+    ar_map_unc_0 = hp.fitsfunc.read_map("../../data/COM_CompMap_Dust-DL07-AvMaps_2048_R2.00.fits", field=1)
     # ar_map_0_log = np.log(ar_map_0)
+    np.clip(ar_map_unc_0, 1e-2, np.inf, ar_map_unc_0)
 
     # optionally add a mock signal to the map
     mock = False
@@ -68,11 +74,13 @@ if comm.rank == 0:
 
 # send the map to all other nodes
 ar_map_local = comm.bcast(ar_map_0)
+ar_map_unc_local = comm.bcast(ar_map_unc_0)
 
 # initialize correlation bins
 num_bins = 100
 ar_product_total = np.zeros(shape=(10, num_bins))
 ar_weights_total = np.zeros(shape=(10, num_bins))
+ar_counts_total = np.zeros(shape=(10, num_bins))
 
 # sky scan parameters
 num_directions = 4
@@ -110,11 +118,12 @@ for current_direction_index in np.arange(num_directions):
         # initialize bins for reduce operation
         ar_product_reduce = np.zeros(shape=num_bins)
         ar_weights_reduce = np.zeros(shape=num_bins)
+        ar_counts_reduce = np.zeros(shape=num_bins)
 
-        ar_product_local, ar_weights_local = main_loop(
-            ar_map=ar_map_local, max_bin_angle=max_angle_fixed,
-            outer_disc_mean=disc_mean, outer_disc=disc,
-            max_angular_separation=global_max_angular_separation
+        ar_product_local, ar_weights_local, ar_counts_local = main_loop(
+            ar_map=ar_map_local, ar_map_unc=ar_map_unc_local,
+            max_bin_angle=max_angle_fixed, max_angular_separation=global_max_angular_separation,
+            outer_disc_mean=disc_mean, outer_disc=disc
         )
 
         # sum up bins from all nodes
@@ -126,12 +135,17 @@ for current_direction_index in np.arange(num_directions):
             [ar_weights_local, MPI.DOUBLE],
             [ar_weights_reduce, MPI.DOUBLE],
             op=MPI.SUM, root=0)
+        comm.Reduce(
+            [ar_counts_local, MPI.DOUBLE],
+            [ar_counts_reduce, MPI.DOUBLE],
+            op=MPI.SUM, root=0)
 
         if comm.rank == 0:
             r_print("Finished direction ", current_direction_index, ", Iteration ", i)
             ar_product_total[current_direction_index] += ar_product_reduce
             ar_weights_total[current_direction_index] += ar_weights_reduce
             r_print("total weight: ", ar_weights_total[current_direction_index].sum())
+            r_print("total count: ", ar_counts_total[current_direction_index].sum())
 
             angular_separation_bins = np.arange(num_bins, dtype=float) / num_bins * max_angle_fixed * 180. / np.pi
             np.savez(
