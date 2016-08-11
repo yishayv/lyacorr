@@ -120,10 +120,11 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats):
 
     empty_result = LyaForestTransmittance(np.array([]), np.array([]), np.array([]), np.array([]))
 
+    pre_processed_qso_data, result_string = pre_process_spectrum.apply(qso_spec_obj)
+
+    # set z after pre-processing, because BAL QSOs have visually inspected redshift.
     qso_rec = qso_spec_obj.qso_rec
     z = qso_rec.z
-
-    pre_processed_qso_data, result_string = pre_process_spectrum.apply(qso_spec_obj)
 
     if result_string != 'processed':
         # error during pre-processing. log statistics of error causes.

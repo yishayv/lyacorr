@@ -72,9 +72,15 @@ class PlotSpectrum:
         self.wavelength_range = None
         self.qso_data_ = None
         self.qso_data_ = qso_data_
+        # correct for flux mis-calibration, milky-way lines, and extinction
+        # (enabled/disabled by config options)
+        pre_processed_qso_data, result_string = pre_process_spectrum.apply(qso_data_)
+
+        # set z after pre-processing, because BAL QSOs have visually inspected redshift.
         qso_rec = qso_data_.qso_rec
         qso_z = qso_rec.z
         self.qso_z = qso_z
+
         print("Plate, FiberID, MJD:", qso_rec.plate, qso_rec.fiberID, qso_rec.mjd)
         print("Z:", self.qso_z)
 
@@ -84,10 +90,6 @@ class PlotSpectrum:
         self.ar_wavelength = np.array(qso_data_.ar_wavelength)
         self.ar_flux = np.array(qso_data_.ar_flux)
         self.ar_ivar = np.array(qso_data_.ar_ivar)
-
-        # correct for flux mis-calibration, milky-way lines, and extinction
-        # (enabled/disabled by config options)
-        pre_processed_qso_data, result_string = pre_process_spectrum.apply(qso_data_)
 
         if result_string != 'processed':
             # error during pre-processing. log statistics of error causes.

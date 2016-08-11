@@ -37,22 +37,22 @@ class RemoveBALSimple(object):
         if qso_tuple in self.bal_dict:
             i = self.bal_dict[qso_tuple]
             d = self.data
-            z = d.Z_PIPE[i]
+            z_vi = d.Z_VI[i]
             for j in np.arange(d.NCIV_450[i]):
                 for line_center in self.line_centers.values():
                     # note that start<==>max
-                    end = civ_velocity_to_wavelength(line_center, z, d.VMIN_CIV_450[i][j])
-                    start = civ_velocity_to_wavelength(line_center, z, d.VMAX_CIV_450[i][j])
+                    end = civ_velocity_to_wavelength(line_center, z_vi, d.VMIN_CIV_450[i][j])
+                    start = civ_velocity_to_wavelength(line_center, z_vi, d.VMAX_CIV_450[i][j])
                     mask_list += [MaskElement(start, end)]
 
-        return mask_list
+        return mask_list, z_vi
 
     def get_mask(self, plate, mjd, fiber_id, ar_wavelength):
         qso_tuple = (plate, mjd, fiber_id)
         mask = np.zeros_like(ar_wavelength, dtype=bool)
         # if QSO is not in BAL list, return an empty mask
-        mask_list = self.get_mask_list(plate, mjd, fiber_id)
+        mask_list, z_vi = self.get_mask_list(plate, mjd, fiber_id)
         for mask_element in mask_list:
             mask[np.logical_and(mask_element.start < ar_wavelength, ar_wavelength < mask_element.end)] = 1
 
-        return mask
+        return mask, z_vi

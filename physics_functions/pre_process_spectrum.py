@@ -52,11 +52,15 @@ class PreProcessSpectrum:
                 ar_wavelength, ar_flux, ar_ivar, qso_rec.extinction_g)
 
         # mask BAL regions
+        z_vi = None
         if settings.get_enable_bal_removal():
-            bal_mask = self.bal.get_mask(qso_rec.plate, qso_rec.mjd, qso_rec.fiberID, ar_wavelength)
+            bal_mask, z_vi = self.bal.get_mask(qso_rec.plate, qso_rec.mjd, qso_rec.fiberID, ar_wavelength)
             ar_ivar[bal_mask] = 0
 
         new_qso_data = qso_data
+        # if we have a visual inspection value for z, use it instead
+        if z_vi:
+            qso_data.qso_rec.z = z_vi
         new_qso_data.ar_flux = ar_flux
         new_qso_data.ar_ivar = ar_ivar
         result_string = 'processed'

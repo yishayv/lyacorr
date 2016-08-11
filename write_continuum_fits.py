@@ -111,6 +111,7 @@ def do_continuum_fit_chunk(qso_record_table):
         ar_flux = pre_processed_qso_data.ar_flux
         ar_ivar = pre_processed_qso_data.ar_ivar
         qso_rec = pre_processed_qso_data.qso_rec
+        # set z after pre-processing, because BAL QSOs have visually inspected redshift.
         z = qso_rec.z
         assert ar_flux.size == ar_ivar.size
 
