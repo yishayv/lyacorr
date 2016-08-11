@@ -164,7 +164,9 @@ class ContinuumFitPCA:
             ar_full_fit = ar_full_fit * normalization_factor
             ar_red_fit = ar_full_fit[pca.LY_A_PEAK_INDEX:]
             # mask 2.5 sigma absorption
-            ar_absorption_mask = ar_red_flux_rebinned - ar_red_fit < - 2.5 * (ar_red_ivar_rebinned ** -0.5)
+            # suppress error when dividing by 0, because 0 ivar is already masked, so the code has no effect anyway.
+            with np.errstate(divide='ignore'):
+                ar_absorption_mask = ar_red_flux_rebinned - ar_red_fit < - 2.5 * (ar_red_ivar_rebinned ** -0.5)
             # print "masked ", float(ar_absorption_mask.sum())/ar_absorption_mask.size, " of pixels in iteration ", i
             ar_red_ivar_rebinned[ar_absorption_mask] = 0
 
