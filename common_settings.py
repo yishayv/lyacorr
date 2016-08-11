@@ -35,6 +35,8 @@ class Settings:
     opt_qso_metadata_fields = 'qso_metadata_fields'
     # table of QSO metadata (npy)
     opt_qso_metadata_npy = 'qso_metadata_npy'
+    # table of BAL features (fits)
+    opt_qso_bal_fits = 'qso_bal_fits'
     # delta_t array (npy)
     opt_delta_t_npy = 'delta_transmittance_npy'
     # estimated ism component of forest
@@ -109,6 +111,8 @@ class Settings:
     opt_enable_spectrum_flux_correction = 'enable_spectrum_flux_correction'
     # enable extinction correction
     opt_enable_extinction_correction = 'enable_extinction_correction'
+    # enable bal removal
+    opt_enable_bal_removal = 'enable_bal_removal'
     # enable computing the estimator in subsamples, for generating the covariance matrix
     opt_enable_estimator_subsamples = 'enable_estimator_subsamples'
 
@@ -136,6 +140,7 @@ class Settings:
         value_qso_metadata_fits = '../../data/QSOs_test.fit'
         value_qso_metadata_fields = '../../data/QSOs_test_header.csv'
         value_qso_metadata_npy = '../../data/QSO_table.npy'
+        value_qso_bal_fits = '../../data/DR12Q_BAL.fits'
         value_delta_t_npy = '../../data/delta_t.npy'
         value_forest_ism_npy = '../../data/forest_ism.npy'
         value_mean_estimator_bins_npy = '../../data/mean_estimator_bins.npy'
@@ -173,6 +178,7 @@ class Settings:
         value_enable_mw_line_correction = True
         value_enable_spectrum_flux_correction = True
         value_enable_extinction_correction = True
+        value_bal_removal = True
         value_enable_estimator_subsamples = True
 
         value_mock_shell_radius = 150
@@ -193,6 +199,7 @@ class Settings:
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fits, value_qso_metadata_fits)
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fields, value_qso_metadata_fields)
         self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_npy, value_qso_metadata_npy)
+        self.config_parser.set(self.section_file_paths, self.opt_qso_bal_fits, value_qso_bal_fits)
         self.config_parser.set(self.section_file_paths, self.opt_delta_t_npy, value_delta_t_npy)
         self.config_parser.set(self.section_file_paths, self.opt_forest_ism_npy, value_forest_ism_npy)
         self.config_parser.set(self.section_file_paths, self.opt_mean_estimator_bins, value_mean_estimator_bins_npy)
@@ -251,6 +258,8 @@ class Settings:
                                str(value_enable_spectrum_flux_correction))
         self.config_parser.set(self.section_data_processing, self.opt_enable_extinction_correction,
                                str(value_enable_extinction_correction))
+        self.config_parser.set(self.section_data_processing, self.opt_enable_bal_removal,
+                               str(value_bal_removal))
         self.config_parser.set(self.section_data_processing, self.opt_enable_estimator_subsamples,
                                str(value_enable_estimator_subsamples))
 
@@ -303,6 +312,9 @@ class Settings:
 
     def get_qso_metadata_npy(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_metadata_npy)
+
+    def get_qso_bal_fits(self):
+        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_bal_fits)
 
     def get_delta_t_npy(self):
         return self.get_env_expanded_path(self.section_file_paths, self.opt_delta_t_npy)
@@ -411,6 +423,9 @@ class Settings:
 
     def get_enable_extinction_correction(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_extinction_correction)
+
+    def get_enable_bal_removal(self):
+        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_bal_removal)
 
     def get_enable_estimator_subsamples(self):
         return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_estimator_subsamples)

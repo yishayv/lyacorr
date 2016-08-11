@@ -2,6 +2,7 @@ from data_access.qso_data import QSOData
 from physics_functions.deredden_func import DereddenSpectrum
 from physics_functions.spectrum_calibration import SpectrumCalibration
 from physics_functions.remove_mw_lines import MWLines
+from physics_functions.remove_bal import RemoveBALSimple
 import common_settings
 
 settings = common_settings.Settings()
@@ -12,6 +13,7 @@ class PreProcessSpectrum:
         self.deredden_spectrum = DereddenSpectrum()
         self.spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())
         self.mw_lines = MWLines()
+        self.bal = RemoveBALSimple()
 
     def apply(self, qso_data):
         """
@@ -48,6 +50,11 @@ class PreProcessSpectrum:
         if settings.get_enable_extinction_correction():
             ar_flux, ar_ivar = self.deredden_spectrum.apply_correction(
                 ar_wavelength, ar_flux, ar_ivar, qso_rec.extinction_g)
+
+        # mask BAL regions
+        if settings.get_enable_bal_removal():
+            bal_mask = self.bal.get_mask(qso_rec.plate, qso_rec.mjd, qso_rec.fiberID, ar_wavelength)
+            ar_ivar[bal_mask] = 0
 
         new_qso_data = qso_data
         new_qso_data.ar_flux = ar_flux
