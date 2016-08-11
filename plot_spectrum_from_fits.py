@@ -1,24 +1,26 @@
 import os.path
+import sys
+from collections import Counter
 
 import astropy.table as table
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import signal
-# from astropy.convolution import convolve as ap_convolve, Gaussian1DKernel
 import weighted
+from scipy import signal
 
-from data_access import read_spectrum_fits
-from data_access.qso_data import QSOData
+import calc_mean_transmittance
 import common_settings
 import continuum_fit_pca
-import spectrum
-import qso_line_mask
-import calc_mean_transmittance
 import mean_transmittance
+import qso_line_mask
+import spectrum
+from data_access import read_spectrum_fits
+from data_access.qso_data import QSOData
 from physics_functions.deredden_func import DereddenSpectrum
-from physics_functions.spectrum_calibration import SpectrumCalibration
-import sys
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
+from physics_functions.spectrum_calibration import SpectrumCalibration
+
+# from astropy.convolution import convolve as ap_convolve, Gaussian1DKernel
 
 i = 232
 
@@ -92,10 +94,11 @@ class PlotSpectrum:
             print("pre-processing error:", result_string)
 
         self.ar_flux_correct = pre_processed_qso_data.ar_flux
+        self.ar_ivar_correct = pre_processed_qso_data.ar_ivar
 
         # begin PCA fit:
         ar_wavelength_rest = self.ar_wavelength / (1 + qso_z)
-        fit_result = fit_pca.fit(ar_wavelength_rest, self.ar_flux_correct, self.ar_ivar, qso_z,
+        fit_result = fit_pca.fit(ar_wavelength_rest, self.ar_flux_correct, self.ar_ivar_correct, qso_z,
                                  boundary_value=np.nan)
         self.fit_spectrum = fit_result.spectrum
         is_good_fit = fit_result.is_good_fit
@@ -150,7 +153,7 @@ class PlotSpectrum:
         else:
             plt.xlim(3e3, 1e4)
 
-        ar_flux_err = np.reciprocal(np.sqrt(self.ar_ivar))
+        ar_flux_err = np.reciprocal(np.sqrt(self.ar_ivar_correct))
         plt.fill_between(self.ar_wavelength, self.ar_flux_correct - ar_flux_err,
                          self.ar_flux_correct + ar_flux_err, color='lightgray', linewidth=.3)
 
@@ -219,7 +222,9 @@ class PlotSpectrum:
             ar_mean_flux_lookup = m.get_weighted_mean()
             ar_mean_flux_for_z_range = np.interp(self.ar_z, m.ar_z, ar_mean_flux_lookup)
 
-        lya_forest_transmittance = calc_mean_transmittance.qso_transmittance(self.qso_data_, self.fit_spectrum)
+        stats = Counter(
+            {'bad_fit': 0, 'empty_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
+        lya_forest_transmittance = calc_mean_transmittance.qso_transmittance(self.qso_data_, self.fit_spectrum, stats)
         ar_transmittance_err = np.reciprocal(np.sqrt(lya_forest_transmittance.ar_ivar))
         ar_transmittance_mask = np.isnan(ar_transmittance_err) | ~np.isfinite(ar_transmittance_err)
         ar_transmittance_lower = lya_forest_transmittance.ar_transmittance - ar_transmittance_err
