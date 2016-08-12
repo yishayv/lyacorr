@@ -63,11 +63,12 @@ class ContinuumFitPCA:
 
     def fit_red_spectrum(self, pca, ar_red_flux, ar_red_ivar):
         params = lmfit.Parameters()
-        max_c_z = 1.01
+        # disable redshift fit for now, because it tends to get confused in BALQSOs.
+        # max_c_z = 1.001
         max_alpha_lambda = 3
         max_f_1280 = 10
         params.add('f_1280', value=1, min=1. / max_f_1280, max=max_f_1280)
-        params.add('c_z', value=1, min=1. / max_c_z, max=max_c_z)
+        # params.add('c_z', value=1, min=1. / max_c_z, max=max_c_z)
         params.add('alpha_lambda', value=1, min=-max_alpha_lambda, max=+max_alpha_lambda)
         result = lmfit.minimize(fcn=self.red_spectrum_residual,
                                 params=params, args=(pca, ar_red_flux, ar_red_ivar))
@@ -84,8 +85,8 @@ class ContinuumFitPCA:
     def inverse_full_spectrum_adjustment(params, pca, ar_full_flux):
         ar_full_flux = ar_full_flux / np.power(pca.ar_wavelength_bins / pca.LY_A_PEAK_BINNED,
                                                params['alpha_lambda'].value)
-        ar_full_flux = np.interp(pca.ar_wavelength_bins,
-                                 pca.ar_wavelength_bins * params['c_z'].value, ar_full_flux)
+        # ar_full_flux = np.interp(pca.ar_wavelength_bins,
+        #                          pca.ar_wavelength_bins * params['c_z'].value, ar_full_flux)
         ar_full_flux /= params['f_1280'].value
         return ar_full_flux
 
@@ -95,8 +96,8 @@ class ContinuumFitPCA:
         # instead, just multiply everything by this factor
         ar_red_flux = ar_red_flux * params['f_1280'].value
         # red shift correction:
-        ar_red_flux = np.interp(pca.ar_red_wavelength_bins * params['c_z'].value,
-                                pca.ar_red_wavelength_bins, ar_red_flux)
+        # ar_red_flux = np.interp(pca.ar_red_wavelength_bins * params['c_z'].value,
+        #                         pca.ar_red_wavelength_bins, ar_red_flux)
         ar_red_flux *= np.power(pca.ar_red_wavelength_bins / pca.LY_A_PEAK_BINNED,
                                 params['alpha_lambda'].value)
         coefficients = self.least_squares_red_spectrum_(pca, ar_red_flux, ar_red_ivar)
