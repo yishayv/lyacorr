@@ -105,6 +105,8 @@ class PlotSpectrum:
         self.fit_spectrum = fit_result.spectrum
         is_good_fit = fit_result.is_good_fit
         print("good fit:", is_good_fit)
+        print("SNR:", fit_result.snr)
+        print("goodness of fit:", fit_result.goodness_of_fit)
 
         # begin power-law fit:
         # for now we have no real error data, so just use '1's:

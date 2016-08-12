@@ -16,6 +16,9 @@ MaskElement = namedtuple('MaskElement', ('start', 'end'))
 def civ_velocity_to_wavelength(line_center, z, velocity):
     return line_center * (1. - velocity / LIGHT_SPEED_KM_S) * (1 + z)
 
+def civ_rel_velocity_to_wavelength(line_center, z, velocity):
+    beta = velocity / LIGHT_SPEED_KM_S
+    return line_center * np.sqrt((1. - beta)/(1. + beta)) * (1 + z)
 
 class RemoveBALSimple(object):
     def __init__(self):
@@ -23,7 +26,7 @@ class RemoveBALSimple(object):
         self.data = self.bal_fits[1].data
         self.bal_dict = {}
         self.create_dict()
-        self.line_centers = {'CIV': 1550.77, 'Lya': 1215.67, 'NV': 1239.42, 'SiIV+OIV': 1399.8}
+        self.line_centers = {'CIV': 1550.77, 'OVI': 1033.30, 'Lya': 1215.67, 'NV': 1239.42, 'SiIV+OIV': 1397.61}
 
     def create_dict(self):
         d = self.data
@@ -33,6 +36,7 @@ class RemoveBALSimple(object):
     def get_mask_list(self, plate, mjd, fiber_id):
         qso_tuple = (plate, mjd, fiber_id)
         mask_list = []
+        z_vi = None
         # if QSO is not in BAL list, return an empty list
         if qso_tuple in self.bal_dict:
             i = self.bal_dict[qso_tuple]
@@ -41,8 +45,10 @@ class RemoveBALSimple(object):
             for j in np.arange(d.NCIV_450[i]):
                 for line_center in self.line_centers.values():
                     # note that start<==>max
-                    end = civ_velocity_to_wavelength(line_center, z_vi, d.VMIN_CIV_450[i][j])
-                    start = civ_velocity_to_wavelength(line_center, z_vi, d.VMAX_CIV_450[i][j])
+                    # add a safety margin
+                    margin = 0.002
+                    end = civ_rel_velocity_to_wavelength(line_center, z_vi, d.VMIN_CIV_450[i][j]) * (1 + margin)
+                    start = civ_rel_velocity_to_wavelength(line_center, z_vi, d.VMAX_CIV_450[i][j]) * (1 - margin)
                     mask_list += [MaskElement(start, end)]
 
         return mask_list, z_vi

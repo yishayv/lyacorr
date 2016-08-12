@@ -47,6 +47,8 @@ class ContinuumFitPCA:
         ar_red_flux_diff = ar_red_flux - pca.red_mean
         ar_sqrt_weights = np.sqrt(ar_red_ivar)
         x = pca.red_pc * ar_sqrt_weights[:, None]
+        if not np.all(np.isfinite(x)):
+            return np.inf * np.ones(pca.num_components)
         y = ar_red_flux_diff * ar_sqrt_weights
         result = scipy.linalg.lstsq(x, y)
         red_spectrum_coefficients = result[0]
