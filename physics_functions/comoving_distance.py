@@ -1,10 +1,23 @@
-from astropy.cosmology import Planck13, WMAP5, WMAP7, WMAP9
+from astropy.cosmology import Planck13, WMAP5, WMAP7, WMAP9, FlatLambdaCDM
 from astropy import units as u
 import common_settings
+import lookup_table
 
 settings = common_settings.Settings()
 
-import lookup_table
+
+
+
+h = 0.7
+Oc = 0.1090 / h**2
+Ob = 0.0227 / h**2
+Onu = 0.0006 / h**2
+N_nu = 3.
+# magic number for m_nu to obtain Onu*h^2=0.0006
+m_nu = 0.018563030530909796 * u.eV
+Om = Oc + Ob + Onu
+fiducial_delubac = FlatLambdaCDM(
+    H0=h * 100 * u.km / u.s / u.Mpc, Om0=Om, Ob0=Ob, m_nu=m_nu)
 
 
 class ComovingDistance:
@@ -15,7 +28,8 @@ class ComovingDistance:
             {'Planck13': Planck13,
              'WMAP5': WMAP5,
              'WMAP7': WMAP7,
-             'WMAP9': WMAP9}[cosmology]
+             'WMAP9': WMAP9,
+             'Fiducial': fiducial_delubac}[cosmology]
         self.lookup_table = lookup_table.LinearInterpTable(
             lambda x: self._distance_function(x, self.cosmology), z_start, z_end, z_step)
         self.H0 = self.cosmology.H0
