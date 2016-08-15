@@ -16,9 +16,11 @@ MaskElement = namedtuple('MaskElement', ('start', 'end'))
 def civ_velocity_to_wavelength(line_center, z, velocity):
     return line_center * (1. - velocity / LIGHT_SPEED_KM_S) * (1 + z)
 
+
 def civ_rel_velocity_to_wavelength(line_center, z, velocity):
     beta = velocity / LIGHT_SPEED_KM_S
-    return line_center * np.sqrt((1. - beta)/(1. + beta)) * (1 + z)
+    return line_center * np.sqrt((1. - beta) / (1. + beta)) * (1 + z)
+
 
 class RemoveBALSimple(object):
     def __init__(self):
@@ -54,7 +56,6 @@ class RemoveBALSimple(object):
         return mask_list, z_vi
 
     def get_mask(self, plate, mjd, fiber_id, ar_wavelength):
-        qso_tuple = (plate, mjd, fiber_id)
         mask = np.zeros_like(ar_wavelength, dtype=bool)
         # if QSO is not in BAL list, return an empty mask
         mask_list, z_vi = self.get_mask_list(plate, mjd, fiber_id)
