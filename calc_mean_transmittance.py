@@ -193,8 +193,9 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats):
     # calculate the weight of each point as a delta_t (without the mean transmittance part)
     ar_pipeline_ivar_masked = ar_ivar[effective_mask] * np.square(ar_fit_spectrum_masked)
 
-    # effectively remove the points with very high positive or negative transmittance
-    ar_pipeline_ivar_masked[np.logical_or(ar_rel_transmittance_masked > 5, ar_rel_transmittance_masked < -3)] = 0
+    # optional: remove the weighted average of each forest
+    # rel_transmittance_weighted_mean = np.average(ar_rel_transmittance_masked, weights=ar_pipeline_ivar_masked)
+    # ar_rel_transmittance -= rel_transmittance_weighted_mean
 
     l_print_no_barrier("mean transmittance for QSO:", (ar_flux[effective_mask] / ar_fit_spectrum_masked).mean())
 
