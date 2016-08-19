@@ -162,8 +162,10 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats):
 
     redshift_mask = (min_redshift < ar_redshift) & (ar_redshift < max_redshift)
 
+    ivar_mask = ar_ivar > 0
+
     # combine all different masks
-    effective_mask = forest_mask & fit_mask & redshift_mask
+    effective_mask = forest_mask & fit_mask & redshift_mask & ivar_mask
     ar_wavelength_masked = np.asarray(ar_wavelength[effective_mask])
     ar_fit_spectrum_masked = ar_fit_spectrum[effective_mask]
 

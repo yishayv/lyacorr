@@ -158,6 +158,9 @@ class ContinuumFitPCA:
         ar_red_flux_rebinned_normalized = ar_red_flux_rebinned / float(normalization_factor)
 
         ar_full_fit = None
+        if not np.any(ar_red_ivar_rebinned) or not np.any(np.isfinite(ar_red_ivar_rebinned)):
+            return np.zeros_like(pca.ar_wavelength_bins), pca.ar_wavelength_bins, 1, np.inf, 0
+
         for _ in np.arange(3):
             # predict the full spectrum from the red part of the spectrum.
             ar_full_fit = self.fit_function(pca, ar_red_flux_rebinned_normalized,
@@ -168,7 +171,7 @@ class ContinuumFitPCA:
             ar_red_fit = ar_full_fit[pca.LY_A_PEAK_INDEX:]
             # mask 2.5 sigma absorption
             # suppress error when dividing by 0, because 0 ivar is already masked, so the code has no effect anyway.
-            with np.errstate(divide='ignore'):
+            with np.errstate(divide='ignore', invalid='ignore'):
                 ar_absorption_mask = ar_red_flux_rebinned - ar_red_fit < - 2.5 * (ar_red_ivar_rebinned ** -0.5)
             # print "masked ", float(ar_absorption_mask.sum())/ar_absorption_mask.size, " of pixels in iteration ", i
             ar_red_ivar_rebinned[ar_absorption_mask] = 0
@@ -300,8 +303,8 @@ class ContinuumFitPCA:
         # ignore high SNR as well.
         max_delta_f = 1.
         min_delta_f = 0.02
-        min_snr = np.exp(0.1)
-        max_snr = np.exp(3)
+        min_snr = np.exp(-0.1)
+        max_snr = np.exp(3.5)
 
         is_good_fit_result = min_delta_f < goodness_of_fit < max_delta_f and min_snr < snr < max_snr
 
