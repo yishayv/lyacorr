@@ -4,6 +4,7 @@ import numpy as np
 import pyfits
 
 import common_settings
+from python_compat import range
 
 settings = common_settings.Settings()
 
@@ -44,7 +45,7 @@ class RemoveBALSimple(object):
             i = self.bal_dict[qso_tuple]
             d = self.data
             z_vi = d.Z_VI[i]
-            for j in np.arange(d.NCIV_450[i]):
+            for j in range(d.NCIV_450[i]):
                 for line_center in self.line_centers.values():
                     # note that start<==>max
                     # add a safety margin

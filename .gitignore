@@ -5,3 +5,7 @@
 *.so
 *.so.dSYM
 *.dSYM
+*.ipynb
+*.npy
+*.patch
+*.bundle

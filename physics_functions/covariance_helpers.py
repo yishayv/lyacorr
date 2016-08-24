@@ -33,7 +33,7 @@ def jackknife_2d(ar_flux, ar_weights, out=None):
     ar_estimators_except_i = (global_sum - ar_estimators) / (n - 1)
     cov_term_mean = np.nansum(ar_estimators_except_i, axis=0) / n
     cov_term = ar_estimators_except_i - cov_term_mean
-    print cov_term[0]
+    print(cov_term[0])
     cov_sum = np.einsum('ijk,ilm->jklm', cov_term, cov_term)
     print(cov_sum.shape)
 

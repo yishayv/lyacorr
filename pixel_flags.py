@@ -1,6 +1,6 @@
 import numpy as np
 
-__author__ = 'yishay'
+from python_compat import range
 
 
 def reverse_dict(d):
@@ -31,7 +31,7 @@ class PixelFlags:
     @classmethod
     def int_to_string(cls, flags):
         bit_string = ''
-        for i in xrange(32):
+        for i in range(32):
             if flags & 1:
                 if bit_string:
                     bit_string += '|'

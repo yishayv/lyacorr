@@ -5,6 +5,7 @@
 """
 import cProfile
 import itertools
+from python_compat import range, reduce
 
 import numpy as np
 from astropy import coordinates as coord

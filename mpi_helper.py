@@ -1,6 +1,9 @@
 from __future__ import print_function
-from mpi4py import MPI
+
 import numpy as np
+from mpi4py import MPI
+
+from python_compat import range
 
 comm = MPI.COMM_WORLD
 

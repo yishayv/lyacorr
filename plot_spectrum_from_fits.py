@@ -6,7 +6,6 @@ import astropy.table as table
 import matplotlib.pyplot as plt
 import numpy as np
 import weighted
-from scipy import signal
 
 import calc_mean_transmittance
 import common_settings
@@ -19,6 +18,7 @@ from data_access.qso_data import QSOData
 from physics_functions.deredden_func import DereddenSpectrum
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 from physics_functions.spectrum_calibration import SpectrumCalibration
+from python_compat import range
 
 # from astropy.convolution import convolve as ap_convolve, Gaussian1DKernel
 
@@ -55,7 +55,7 @@ def rolling_weighted_median(ar_data, ar_weights, box_size):
     ar_flux_smoothed = np.zeros_like(ar_data)
     box_size_lower = - (box_size // 2)
     box_size_upper = box_size // 2 + (box_size & 1)
-    for j in xrange(ar_data.size):
+    for j in range(ar_data.size):
         start = max(j + box_size_lower, 0)
         end = min(j + box_size_upper, ar_data.size)
         ar_flux_smoothed[j] = weighted.median(ar_data[start:end], ar_weights[start:end])
@@ -147,7 +147,8 @@ class PlotSpectrum:
         assert self.qso_data_, "QSO data not loaded"
 
         # Define function for calculating a power law
-        power_law = lambda x, amp, index: amp * (x ** index)
+        # def power_law(x, amp, index):
+        #     return amp * (x ** index)
 
         if self.flux_range:
             plt.ylim(self.flux_range[0], self.flux_range[1])
@@ -161,13 +162,13 @@ class PlotSpectrum:
         plt.fill_between(self.ar_wavelength, self.ar_flux_correct - ar_flux_err,
                          self.ar_flux_correct + ar_flux_err, color='lightgray', linewidth=.3)
 
-        box_size = 1
-        window_func = signal.boxcar(box_size)
+        # box_size = 1
+        # window_func = signal.boxcar(box_size)
         # convolve and divide by box_size to keep the same scale
         # ar_ivar_smoothed = signal.convolve(ar_ivar, window_func, mode='same')
         # ar_flux_smoothed = signal.convolve(ar_flux_correct * ar_ivar, window_func, mode='same') / (
         #     ar_ivar_smoothed)
-        ar_flux_smoothed = rolling_weighted_median(self.ar_flux, self.ar_ivar, box_size)
+        # ar_flux_smoothed = rolling_weighted_median(self.ar_flux, self.ar_ivar, box_size)
 
         # ar_flux_smoothed = signal.medfilt(ar_flux_correct, 15)
         # b, a = signal.butter(N=3, Wn=0.02, analog=False)

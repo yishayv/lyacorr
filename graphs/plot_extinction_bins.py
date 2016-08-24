@@ -2,12 +2,12 @@ import glob
 import itertools
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.ticker as tic
-import numpy as np
 import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import numpy as np
 
 import data_access.numpy_spectrum_container
+from python_compat import range
 
 label_size = 8
 mpl.rcParams['xtick.labelsize'] = label_size
@@ -33,7 +33,7 @@ plt.show()
 ar_wavelengths = spectra.get_wavelength(0)
 ar_2d_plot = np.zeros(shape=(max_extinction_bins, ar_wavelengths.size))
 
-for n in np.arange(max_extinction_bins):
+for n in range(max_extinction_bins):
     ar_2d_plot[n] = spectra.get_flux(n)
 
 # center around 0
@@ -45,31 +45,34 @@ ar_2d_plot -= ar_2d_plot[9:12, :].mean(axis=0)
 
 
 def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    """
+    transform an iterator as:
+    s -> (s0,s1), (s1,s2), (s2, s3), ...
+    """
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
 
 
-def ism_2d_plot(ar_wavelengths, ar_2d_plot):
+def ism_2d_plot(ar_wavelengths_, ar_2d_plot_):
     split_at = [3000, 4500, 5500, 6500, 7500, 8500, 9500]
     num_subplots = len(split_at) - 1
-    abs_range = np.max(np.abs(ar_2d_plot[:, :]))
-    plt.figure(figsize=(15,8))
+    abs_range = np.max(np.abs(ar_2d_plot_[:, :]))
+    plt.figure(figsize=(15, 8))
 
     for current_subplot, current_range in enumerate(pairwise(split_at)):
-        ar_2d_subplot = ar_2d_plot[:,
-                        np.logical_and(ar_wavelengths > current_range[0], ar_wavelengths < current_range[1])]
+        ar_2d_subplot = ar_2d_plot_[:, np.logical_and(
+            ar_wavelengths_ > current_range[0], ar_wavelengths_ < current_range[1])]
         gs = gridspec.GridSpec(num_subplots, 1)
         ax = plt.subplot(gs[current_subplot])
         # plt.subplots_adjust(left=None, bottom=0.001, right=None, top=0.999, wspace=None, hspace=0.0)
-        extent = [max(current_range[0], ar_wavelengths[0]),
-                  min(current_range[1], ar_wavelengths[-1]),
-                  ar_2d_plot.shape[0], 0]
+        extent = [max(current_range[0], ar_wavelengths_[0]),
+                  min(current_range[1], ar_wavelengths_[-1]),
+                  ar_2d_plot_.shape[0], 0]
         # ax.set_adjustable('box-forced')
 
         ax.imshow(ar_2d_subplot, cmap='gray', interpolation='nearest',
-                   aspect='auto', extent=extent, vmin=-abs_range, vmax=+abs_range)
+                  aspect='auto', extent=extent, vmin=-abs_range, vmax=+abs_range)
         # temp = tic.MaxNLocator(3)
         # ax.yaxis.set_major_locator(temp)
         # ax.set_xticklabels(())

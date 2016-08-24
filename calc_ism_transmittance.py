@@ -11,12 +11,13 @@ from collections import Counter
 import numpy as np
 
 import common_settings
+import data_access.numpy_spectrum_container
 from data_access.numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from data_access.read_spectrum_fits import QSORecord
 from mpi_accumulate import accumulate_over_spectra, comm
 from mpi_helper import l_print_no_barrier
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
-import data_access.numpy_spectrum_container
+from python_compat import range
 
 lya_center = 1215.67
 
@@ -82,7 +83,7 @@ def ism_transmittance_chunk(qso_record_table):
     # warning: np.ndarray is not initialized by default. zeroing manually.
     ism_delta_t.zero()
     n = 0
-    for i in xrange(len(qso_record_table)):
+    for i in range(len(qso_record_table)):
         qso_rec = QSORecord.from_row(qso_record_table[i])
         index = qso_rec.index
 
@@ -100,14 +101,15 @@ def ism_transmittance_chunk(qso_record_table):
         max_extinction_bin = max(20, ar_extinction_levels.size)
 
         if np.isfinite(qso_rec.extinction_g):
-            extinction_bin = int(np.round(np.interp(qso_rec.extinction_g, ar_extinction_levels, np.arange(max_extinction_bin))))
+            extinction_bin = int(
+                np.round(np.interp(qso_rec.extinction_g, ar_extinction_levels, np.arange(max_extinction_bin))))
         else:
             extinction_bin = 0
 
         l_print_no_barrier("extinction_bin = ", extinction_bin)
         ar_ism_resampled = np.interp(ar_wavelength,
-                                 ism_spectra.get_wavelength(extinction_bin),
-                                 ism_spectra.get_flux(extinction_bin))
+                                     ism_spectra.get_wavelength(extinction_bin),
+                                     ism_spectra.get_flux(extinction_bin))
         extinction = ar_extinction_levels[extinction_bin]
         # rescale according to QSO extinction
         l_print_no_barrier(qso_rec.extinction_g, extinction)

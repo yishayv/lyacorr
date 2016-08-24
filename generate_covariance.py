@@ -8,18 +8,19 @@ import collections
 
 import numpy as np
 from astropy import coordinates as coord
-from astropy import units as u
-from astropy.coordinates import matching as matching
-from astropy.coordinates import Angle
 from astropy import table
+from astropy import units as u
+from astropy.coordinates import Angle
+from astropy.coordinates import matching as matching
 from mpi4py import MPI
 
+import calc_covariance
 import common_settings
+import mpi_helper
+from data_access.numpy_spectrum_container import NpSpectrumContainer
 from data_access.read_spectrum_fits import QSORecord
 from physics_functions import comoving_distance
-from data_access.numpy_spectrum_container import NpSpectrumContainer
-import mpi_helper
-import calc_covariance
+from python_compat import range
 
 settings = common_settings.Settings()
 
@@ -205,7 +206,7 @@ def create_random_sample(global_qso_pairs, global_pair_dict, sample_chunk_size):
 
     random_sample_quad = np.zeros((sample_chunk_size, 10))
 
-    for i in np.arange(random_sample_first_qso_pair.shape[0]):
+    for i in range(random_sample_first_qso_pair.shape[0]):
         pair12 = random_sample_first_qso_pair[i]
         # find two more QSOs around the first pair.
         # without loss of generality, we can search around qso1

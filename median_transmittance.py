@@ -1,6 +1,8 @@
 import numpy as np
-from scipy import signal
 import weighted as weighted_module
+from scipy import signal
+
+from python_compat import range
 
 
 class MedianTransmittance:
@@ -16,7 +18,7 @@ class MedianTransmittance:
         self.flux_res = flux_res
 
     def add_flux_pre_binned(self, ar_flux, ar_mask, ar_weights):
-        for n in xrange(self.ar_z.size):
+        for n in range(self.ar_z.size):
             if ar_mask[n]:
                 ar_effective_weight = ar_weights[n]
                 ar_effective_flux = np.asarray(ar_flux[n])
@@ -37,7 +39,7 @@ class MedianTransmittance:
     def get_weighted_median(self, weighted=True):
         ar_median_weights = self.ar_flux_bins if weighted else self.ar_unweighted_flux_bins
         res = np.zeros(self.ar_z.size)
-        for n in xrange(self.ar_z.size):
+        for n in range(self.ar_z.size):
             res[n] = weighted_module.median(np.arange(self.flux_res), ar_median_weights[n])
 
         return res / self.flux_res * self.flux_range + self.flux_offset
@@ -52,6 +54,7 @@ class MedianTransmittance:
     def get_low_pass_median(self, minimum_count=1):
         assert minimum_count > 0
         ar_z, mean = self.get_weighted_median_with_minimum_count(minimum_count)
+        # noinspection PyTupleAssignmentBalance,PyTypeChecker
         b, a = signal.butter(N=3, Wn=0.05, analog=False)
         low_pass_mean = signal.filtfilt(b=b, a=a, x=mean)
         return ar_z, low_pass_mean

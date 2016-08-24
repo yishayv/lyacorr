@@ -37,6 +37,7 @@ class MeanTransmittance:
     def get_low_pass_mean(self, minimum_count=1):
         assert minimum_count > 0
         ar_z, mean = self.get_weighted_mean_with_minimum_count(minimum_count)
+        # noinspection PyTupleAssignmentBalance,PyTypeChecker
         b, a = signal.butter(N=3, Wn=0.05, analog=False)
         low_pass_mean = signal.filtfilt(b=b, a=a, x=mean)
         return ar_z, low_pass_mean

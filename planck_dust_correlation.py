@@ -1,12 +1,12 @@
 import astropy.units as u
 import healpy as hp
 import numpy as np
-import numpy.random as random
 import numpy.random.mtrand
 from astropy.coordinates import SkyCoord, Longitude, Latitude
 from mpi4py import MPI
 
 from mpi_helper import r_print
+from python_compat import range
 
 comm = MPI.COMM_WORLD
 enable_intersection = True
@@ -86,7 +86,7 @@ ar_counts_total = np.zeros(shape=(10, num_bins))
 num_directions = 4
 stripe_step_deg = 10
 
-for current_direction_index in np.arange(num_directions):
+for current_direction_index in range(num_directions):
     # start with a location within the BOSS field
     center_ra = 180.
     center_dec = 30.
@@ -114,7 +114,7 @@ for current_direction_index in np.arange(num_directions):
     global_max_angular_separation = 5. * u.degree  # type: u.Quantity
 
     # work in iterations so that we don't use too much memory
-    for i in np.arange(1):
+    for i in range(2):
         # initialize bins for reduce operation
         ar_product_reduce = np.zeros(shape=num_bins)
         ar_weights_reduce = np.zeros(shape=num_bins)

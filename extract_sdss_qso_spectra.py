@@ -1,23 +1,15 @@
-try:
-    from future_builtins import map
-except ImportError:
-    pass
-
 import cProfile
+import sys
 
-import numpy as np
 import astropy.table as table
+import numpy as np
 
-from data_access import read_spectrum_fits
-from pixel_flags import FlagStats
-from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 import common_settings
+from data_access import read_spectrum_fits
+from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 from data_access.qso_data import QSOData
-
-try:
-    xrange
-except NameError:
-    xrange = range
+from pixel_flags import FlagStats
+from python_compat import range, map
 
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992
@@ -40,7 +32,6 @@ def save_spectrum(qso_spec_obj):
 
 
 def profile_main():
-
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 
     flag_stats = FlagStats()
@@ -63,10 +54,11 @@ def profile_main():
         output_spectra.set_flux(index, i[2])
         output_spectra.set_ivar(index, i[3])
 
-    for bit in xrange(0, 32):
+    for bit in range(0, 32):
         print(flag_stats.to_string(bit))
 
     print('Total count: ' + str(flag_stats.pixel_count))
+
 
 if settings.get_profile():
     cProfile.run('profile_main()', sort=2, filename='extract_sdss_qso_spectra.prof')

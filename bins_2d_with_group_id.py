@@ -106,7 +106,6 @@ class Bins2DWithGroupID(AccumulatorBase):
     def to_4d_array(self):
         if self.dict_bins_2d_data:
             return np.concatenate([np.expand_dims(i.ar_data, axis=0) for i in self.dict_bins_2d_data.values()], axis=0)
-            # return np.concatenate([np.expand_dims(np.arange(self.x_count*self.y_count*3.), axis=0) for i in self.dict_bins_2d_data.values()], axis=0)
         else:
             return np.zeros(shape=(0, self.x_count, self.y_count, 3))
 

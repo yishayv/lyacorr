@@ -1,11 +1,12 @@
-from astropy import table as table
 import numpy as np
-from scipy import interpolate
 import weighted
+from astropy import table as table
+from scipy import interpolate
 
 import common_settings
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 from mpi_accumulate import comm
+from python_compat import range
 
 settings = common_settings.Settings()
 
@@ -14,6 +15,8 @@ def rescale(ar_x, from_range, to_range):
     """
 
     :type ar_x: np.multiarray.ndarray
+    :type from_range: tuple(float)
+    :type to_range: tuple(float)
     """
     scale_factor = np.reciprocal(float(from_range[1] - from_range[0])) * float(to_range[1] - to_range[0])
     return (ar_x - from_range[0]) * scale_factor + to_range[0]
@@ -36,7 +39,7 @@ def update_mean(delta_t_file):
 
     ar_ivar_total = np.zeros_like(ar_z)
     # calculate the weighted sum of the delta transmittance per redshift bin.
-    for i in xrange(delta_t_file.num_spectra):
+    for i in range(delta_t_file.num_spectra):
         ar_z_unbinned = delta_t_file.get_wavelength(i)
         ar_delta_t_unbinned = delta_t_file.get_flux(i)
         ar_ivar_unbinned = delta_t_file.get_ivar(i)
@@ -59,7 +62,7 @@ def update_mean(delta_t_file):
             ar_delta_t_buckets = rescale(ar_delta_t_clipped,
                                          (delta_t_min, delta_t_max), (0, delta_t_num_buckets))
             ar_delta_t_buckets = np.clip(ar_delta_t_buckets.astype(np.int32), 0, delta_t_num_buckets - 1)
-            for j in xrange(ar_z.size):
+            for j in range(ar_z.size):
                 ar_delta_t_histogram[j, ar_delta_t_buckets[j]] += ar_ivar[j]
                 if ar_ivar[j]:
                     pass
@@ -71,7 +74,7 @@ def update_mean(delta_t_file):
                                                         ar_delta_t_sum, ar_delta_t_count)))
 
     ar_delta_t_median = np.zeros_like(ar_z)
-    for i in xrange(ar_z.size):
+    for i in range(ar_z.size):
         ar_delta_t_median[i] = weighted.median(np.arange(delta_t_num_buckets), ar_delta_t_histogram[i])
         if i > 120:
             pass
@@ -101,7 +104,7 @@ def remove_mean(delta_t, ar_delta_t_weighted, ar_ivar_total, ar_z):
 
     n = 0
     # remove the mean (in-place)
-    for i in xrange(delta_t.num_spectra):
+    for i in range(delta_t.num_spectra):
         ar_wavelength = delta_t.get_wavelength(i)
         ar_flux = delta_t.get_flux(i)
         ar_ivar = delta_t.get_ivar(i)
@@ -137,7 +140,7 @@ def remove_median(delta_t, ar_delta_t_median, ar_z):
 
     n = 0
     # remove the mean (in-place)
-    for i in xrange(delta_t.num_spectra):
+    for i in range(delta_t.num_spectra):
         ar_wavelength = delta_t.get_wavelength(i)
         ar_flux = delta_t.get_flux(i)
         ar_ivar = delta_t.get_ivar(i)
@@ -155,10 +158,10 @@ def remove_median(delta_t, ar_delta_t_median, ar_z):
 
 def get_weighted_mean_from_file():
     ar_mean_delta_t_table = np.load(settings.get_mean_delta_t_npy())
-    ar_z, ar_delta_t_weighted, ar_ivar_total, ar_delta_t_sum, ar_delta_t_count = np.vsplit(ar_mean_delta_t_table, 5)
-    mask = ar_ivar_total != 0
+    ar_z_, ar_delta_t_weighted_, ar_ivar_total_, ar_delta_t_sum, ar_delta_t_count = np.vsplit(ar_mean_delta_t_table, 5)
+    mask = ar_ivar_total_ != 0
 
-    return ar_z[mask], ar_delta_t_weighted[mask] / ar_ivar_total[mask]
+    return ar_z_[mask], ar_delta_t_weighted_[mask] / ar_ivar_total_[mask]
 
 
 if __name__ == '__main__':

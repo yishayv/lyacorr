@@ -18,10 +18,7 @@ from mpi_accumulate import accumulate_over_spectra
 from mpi_helper import l_print_no_barrier, r_print
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
-try:
-    _range = xrange
-except NameError:
-    _range = range
+from python_compat import range
 
 MAX_WAVELENGTH_COUNT = 4992
 
@@ -52,7 +49,7 @@ class ContinuumAccumulator:
             # array based mpi gather returns zeros at the end of the global array.
             # use the fact that the object based gather returns the correct number of elements:
             num_spectra = len(object_result)
-            for n in _range(num_spectra):
+            for n in range(num_spectra):
                 index = ar_qso_indices[n]
                 self.continuum_fit_container.set_wavelength(index, continua.get_wavelength(n))
                 self.continuum_fit_container.set_flux(index, continua.get_flux(n))
@@ -97,7 +94,7 @@ def do_continuum_fit_chunk(qso_record_table):
         def median_flux_correction_func(ar_z):
             median_flux_func(ar_z) * (1 - np.interp(ar_z, ar_z_mean_correction, ar_mean_correction))
 
-    for n in _range(len(qso_record_table)):
+    for n in range(len(qso_record_table)):
         current_qso_data = spectra.return_spectrum(n)
 
         pre_processed_qso_data, result_string = pre_process_spectrum.apply(current_qso_data)

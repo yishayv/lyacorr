@@ -4,6 +4,7 @@ import weighted
 
 import common_settings
 import physics_functions.delta_f_snr_bins
+from python_compat import range
 
 settings = common_settings.Settings()
 
@@ -28,7 +29,7 @@ def calc_fit_power_law(delta_f_snr_bins=snr_stats_total):
     snr_bins = delta_f_snr_bins_helper.get_log_snr_axis()
     y_quantile = np.zeros_like(snr_bins)
     y1 = delta_f_snr_bins_helper.get_delta_f_axis()
-    for i in np.arange(50):
+    for i in range(50):
         y_quantile[i] = weighted.quantile(y1, delta_f_snr_bins[i], .9)
     mask = [np.logical_and(-0 < snr_bins, snr_bins < 3)]
     masked_snr_bins = snr_bins[mask]

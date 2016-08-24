@@ -8,6 +8,7 @@ from scipy import signal
 
 import common_settings
 import qso_pca_loader
+from python_compat import range
 
 settings = common_settings.Settings()
 
@@ -161,7 +162,7 @@ class ContinuumFitPCA:
         if not np.any(ar_red_ivar_rebinned) or not np.any(np.isfinite(ar_red_ivar_rebinned)):
             return np.zeros_like(pca.ar_wavelength_bins), pca.ar_wavelength_bins, 1, np.inf, 0
 
-        for _ in np.arange(3):
+        for _ in range(3):
             # predict the full spectrum from the red part of the spectrum.
             ar_full_fit = self.fit_function(pca, ar_red_flux_rebinned_normalized,
                                             ar_red_ivar_rebinned)

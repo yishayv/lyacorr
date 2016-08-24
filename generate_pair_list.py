@@ -8,19 +8,20 @@ import itertools
 
 import numpy as np
 from astropy import coordinates as coord
-from astropy import units as u
-from astropy.coordinates import matching as matching
-from astropy.coordinates import Angle
 from astropy import table
+from astropy import units as u
+from astropy.coordinates import Angle
+from astropy.coordinates import matching as matching
 from mpi4py import MPI
 
+import calc_pixel_pairs
 import common_settings
+import mpi_helper
+from data_access.numpy_spectrum_container import NpSpectrumContainer
 from data_access.read_spectrum_fits import QSORecord
 from physics_functions import comoving_distance
-import calc_pixel_pairs
-from data_access.numpy_spectrum_container import NpSpectrumContainer
-import mpi_helper
 from physics_functions.spherical_math import SkyGroups, find_spherical_mean_deg
+from python_compat import reduce
 
 settings = common_settings.Settings()
 
@@ -186,7 +187,8 @@ def profile_main():
     # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
     # also keep only 1 instance of each pair (keep only: qso1_index_hash < qso2_index_hash)
     local_qso_pairs = local_qso_pairs_with_unity.T[np.logical_and(local_qso_pair_angles > 5e-5,
-        coord_permutation[local_qso_pairs_with_unity[0]] < coord_permutation[local_qso_pairs_with_unity[1]])]
+                                                                  coord_permutation[local_qso_pairs_with_unity[0]] <
+                                                                  coord_permutation[local_qso_pairs_with_unity[1]])]
 
     mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
                        local_qso_pairs.shape[0] - chunk_sizes[comm.rank])

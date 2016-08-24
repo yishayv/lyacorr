@@ -9,6 +9,7 @@ import mock_core_with_shell
 from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 from data_access.qso_data import QSORecord
 from physics_functions import comoving_distance
+from python_compat import range
 
 draw_graph = False
 
@@ -46,7 +47,7 @@ def profile_main():
     total_ar_z = np.array([])
     total_ar_c = np.array([])
 
-    for n in xrange(len(qso_record_list)):
+    for n in range(len(qso_record_list)):
         qso_rec = qso_record_list[n]
         redshift = qso_rec.z
 
@@ -62,7 +63,7 @@ def profile_main():
         ar_rest_wavelength = ar_wavelength / (1 + redshift)
 
         fit_result = fit_pca.fit(ar_rest_wavelength, ar_flux, ar_ivar, qso_redshift=redshift,
-                    boundary_value=np.nan, mean_flux_constraint_func=None)
+                                 boundary_value=np.nan, mean_flux_constraint_func=None)
 
         # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
         # use the same range as in 1404.1801 (2014)

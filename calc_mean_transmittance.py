@@ -26,11 +26,7 @@ from physics_functions import comoving_distance
 from physics_functions import pixel_weight_coefficients
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 from physics_functions.remove_dla import RemoveDlaSimple
-
-try:
-    _range = xrange
-except NameError:
-    _range = range
+from python_compat import range
 
 lya_center = 1215.67
 
@@ -56,7 +52,7 @@ def nu_boxcar(x, y, x_left_func, x_right_func, weights=None):
     y_boxcar = np.zeros_like(y)
     if weights is None:
         weights = np.ones_like(x)
-    for n in xrange(x.size):
+    for n in range(x.size):
         x_left = np.searchsorted(x, x_left_func(x[n]))
         x_right = np.searchsorted(x, x_right_func(x[n]))
         box_weights = weights[x_left:x_right]
@@ -254,7 +250,7 @@ def mean_transmittance_chunk(qso_record_table):
 
     m = mean_transmittance.MeanTransmittance(np.arange(*z_range))
     med = median_transmittance.MedianTransmittance(np.arange(*z_range))
-    for n in _range(len(qso_record_table)):
+    for n in range(len(qso_record_table)):
         qso_spec_obj = spectra.return_spectrum(n)
         index = qso_spec_obj.qso_rec.index
         ar_fit_spectrum = continuum_fit_file.get_flux(index)
@@ -298,7 +294,7 @@ def delta_transmittance_chunk(qso_record_table):
     remove_dla = RemoveDlaSimple()
 
     pixel_weight = pixel_weight_coefficients.PixelWeight(pixel_weight_coefficients.DEFAULT_WEIGHT_Z_RANGE)
-    for n in _range(len(qso_record_table)):
+    for n in range(len(qso_record_table)):
         qso_spec_obj = spectra.return_spectrum(n)
         index = qso_spec_obj.qso_rec.index
 
