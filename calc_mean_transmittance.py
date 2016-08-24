@@ -22,6 +22,7 @@ from data_access.qso_data import QSOData
 from lya_data_structures import LyaForestTransmittanceBinned, LyaForestTransmittance
 from mpi_accumulate import accumulate_over_spectra, comm
 from mpi_helper import l_print_no_barrier, r_print
+from physics_functions import comoving_distance
 from physics_functions import pixel_weight_coefficients
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 from physics_functions.remove_dla import RemoveDlaSimple
@@ -43,6 +44,27 @@ local_mean_stats = Counter(
 local_delta_stats = Counter(
     {'bad_fit': 0, 'empty_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
 pre_process_spectrum = PreProcessSpectrum()
+
+z_start = 1.8
+z_end = 3.6
+z_step = 0.001
+
+cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
+
+
+def nu_boxcar(x, y, x_left_func, x_right_func, weights=None):
+    y_boxcar = np.zeros_like(y)
+    if weights is None:
+        weights = np.ones_like(x)
+    for n in xrange(x.size):
+        x_left = np.searchsorted(x, x_left_func(x[n]))
+        x_right = np.searchsorted(x, x_right_func(x[n]))
+        box_weights = weights[x_left:x_right]
+        if box_weights.sum() > 0:
+            y_boxcar[n] = np.average(y[x_left:x_right], weights=weights[x_left:x_right])
+        else:
+            y_boxcar[n] = y[n]
+    return y_boxcar
 
 
 class DeltaTransmittanceAccumulator:
@@ -315,6 +337,13 @@ def delta_transmittance_chunk(qso_record_table):
             finite_z = ar_z[finite_mask]
             finite_delta_t = ar_delta_t[finite_mask]
             finite_ivar = ar_delta_t_ivar[finite_mask]
+
+            # detrend forests with large enough range in comoving coordinates:
+            finite_distances = cd.fast_comoving_distance(finite_z)
+            if finite_distances[-1] - finite_distances[0] > 500:
+                delta_t_boxcar = nu_boxcar(finite_distances, finite_delta_t, lambda (c): c - 300, lambda (c): c + 300,
+                                           weights=finite_ivar)
+                finite_delta_t = finite_delta_t - delta_t_boxcar
 
             delta_t.set_wavelength(n, finite_z)
             delta_t.set_flux(n, finite_delta_t)
