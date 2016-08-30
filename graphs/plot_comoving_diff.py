@@ -35,9 +35,9 @@ ar_delta_z_wmap9 = [find_bao_redshift(z, WMAP9) for z in ar_z]
 
 # print(scipy.misc.derivative(func=Planck13.comoving_distance, x0=2, dx=0.1))
 # ar_dcmv_dz_planck13 = np.array([scipy.misc.derivative(
-#     func=lambda (x): Planck13.comoving_distance(x).value, x0=z, dx=0.01) for z in ar_z])
+#     func=lambda x: Planck13.comoving_distance(x).value, x0=z, dx=0.01) for z in ar_z])
 # ar_dcmv_dz_wmap7 = np.array([scipy.misc.derivative(
-#     func=lambda (x): WMAP7.comoving_distance(x).value, x0=z, dx=0.01) for z in ar_z])
+#     func=lambda x: WMAP7.comoving_distance(x).value, x0=z, dx=0.01) for z in ar_z])
 # plt.plot(ar_z, -(ar_dcmv_dz_planck13 - ar_dcmv_dz_wmap7) * ar_delta_z_planck13)
 # plt.show()
 del scipy.misc

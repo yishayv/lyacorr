@@ -1,6 +1,10 @@
 import os.path
+import sys
 
-from backports import configparser
+if sys.version_info < (3,):
+    from backports import configparser
+else:
+    import configparser
 
 _SEP = ':'
 

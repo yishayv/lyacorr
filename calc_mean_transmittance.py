@@ -337,7 +337,7 @@ def delta_transmittance_chunk(qso_record_table):
             # detrend forests with large enough range in comoving coordinates:
             finite_distances = cd.fast_comoving_distance(finite_z)
             if finite_distances[-1] - finite_distances[0] > 500:
-                delta_t_boxcar = nu_boxcar(finite_distances, finite_delta_t, lambda (c): c - 300, lambda (c): c + 300,
+                delta_t_boxcar = nu_boxcar(finite_distances, finite_delta_t, lambda c: c - 300, lambda c: c + 300,
                                            weights=finite_ivar)
                 finite_delta_t = finite_delta_t - delta_t_boxcar
 

@@ -9,7 +9,8 @@ DEFAULT_WEIGHT_Z_RANGE = (1.9, 3.6, 0.01)
 
 
 class PixelWeight:
-    def __init__(self, (z_start, z_end, z_step)):
+    def __init__(self, z_range=DEFAULT_WEIGHT_Z_RANGE):
+        z_start, z_end, z_step = z_range
         self.sigma_squared_lss = SigmaSquaredLSS(z_start, z_end, z_step)
         self.weight_eta = WeightEta(z_start, z_end, z_step)
 

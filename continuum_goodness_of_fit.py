@@ -62,7 +62,7 @@ def get_max_delta_f_per_snr_func(fit_result):
     d = power_law_coefficients['d']
 
     # max_delta_f = fit_function(params=fit_result.params(), data=0, x=np.log(snr))
-    return lambda (snr): max_delta_f_per_snr(snr, a, b, c, d)
+    return lambda snr: max_delta_f_per_snr(snr, a, b, c, d)
 
 
 def power_law_to_string(fit_result):
