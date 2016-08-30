@@ -19,7 +19,7 @@ import mpi_helper
 from data_access.read_spectrum_fits import QSORecord
 from physics_functions import comoving_distance
 from physics_functions.spherical_math import SkyGroups, find_spherical_mean_deg
-from python_compat import reduce
+from python_compat import reduce, zip
 
 settings = common_settings.Settings()
 
@@ -203,7 +203,7 @@ def profile_main():
     num_sub_chunks_per_node = settings.get_mpi_num_sub_chunks() // comm.size
     pixel_pair_sub_chunks = mpi_helper.get_chunks(local_qso_pairs.shape[0], num_sub_chunks_per_node)
     sub_chunk_helper = SubChunkHelper(ar_extinction)
-    for i, j, k in itertools.izip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1], itertools.count()):
+    for i, j, k in zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1], itertools.count()):
         sub_chunk_start = j
         sub_chunk_end = j + i
         mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", k, "out of", len(pixel_pair_sub_chunks[0]))

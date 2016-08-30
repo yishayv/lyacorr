@@ -2,7 +2,6 @@ import os.path
 
 import numpy as np
 
-
 MAX_SPECTRA = 200000
 MAX_WAVELENGTH_COUNT = 4992
 NUM_FIELDS = 3
@@ -102,12 +101,14 @@ class NpSpectrumIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         self._n += 1
         if self._n >= self._np_spectrum_container.num_spectra:
             raise StopIteration
         else:
             return self
+
+    next = __next__  # Python 2 compatibility
 
     def get_flux(self):
         return self._np_spectrum_container.get_flux(self._n)

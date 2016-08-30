@@ -4,7 +4,6 @@
     the results in Rank 0 (root).
     The spectra are processed in chunks, and gathered to the root rank after each sub-chunk.
 """
-import itertools
 import pprint
 from collections import Counter
 
@@ -17,7 +16,7 @@ from data_access.read_spectrum_fits import QSORecord
 from mpi_accumulate import accumulate_over_spectra, comm
 from mpi_helper import l_print_no_barrier
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
-from python_compat import range
+from python_compat import range, zip
 
 lya_center = 1215.67
 
@@ -53,9 +52,9 @@ class ISMTransmittanceAccumulator:
     def accumulate(self, result_enum, ar_qso_indices_list, object_results):
         # unused parameter:
         del object_results
-        for ar_chunk, ar_qso_indices in itertools.izip(result_enum, ar_qso_indices_list):
+        for ar_chunk, ar_qso_indices in zip(result_enum, ar_qso_indices_list):
             forest_chunk = NpSpectrumContainer.from_np_array(ar_chunk, readonly=True)
-            for j, n in itertools.izip(NpSpectrumIterator(forest_chunk), ar_qso_indices):
+            for j, n in zip(NpSpectrumIterator(forest_chunk), ar_qso_indices):
                 # if self.n >= self.num_spectra:
                 # break
                 self.forest_ism_file.set_wavelength(n, j.get_wavelength())

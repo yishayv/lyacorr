@@ -1,5 +1,4 @@
 import cProfile
-import itertools
 import pprint
 from collections import Counter
 
@@ -18,7 +17,7 @@ from mpi_accumulate import accumulate_over_spectra
 from mpi_helper import l_print_no_barrier, r_print
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 
-from python_compat import range
+from python_compat import range, zip
 
 MAX_WAVELENGTH_COUNT = 4992
 
@@ -42,7 +41,7 @@ class ContinuumAccumulator:
         self.n = 0
 
     def accumulate(self, result_enum, ar_qso_indices_list, object_all_results):
-        for ar_continua, ar_qso_indices, object_result in itertools.izip(
+        for ar_continua, ar_qso_indices, object_result in zip(
                 result_enum, ar_qso_indices_list, object_all_results):
 
             continua = ContinuumFitContainer.from_np_array_and_object(ar_continua, object_result)

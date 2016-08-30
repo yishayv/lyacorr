@@ -26,7 +26,7 @@ from physics_functions import comoving_distance
 from physics_functions import pixel_weight_coefficients
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 from physics_functions.remove_dla import RemoveDlaSimple
-from python_compat import range
+from python_compat import range, zip
 
 lya_center = 1215.67
 
@@ -79,9 +79,9 @@ class DeltaTransmittanceAccumulator:
 
     def accumulate(self, result_enum, ar_qso_indices_list, object_results):
         del object_results
-        for ar_delta_t, ar_qso_indices in itertools.izip(result_enum, ar_qso_indices_list):
+        for ar_delta_t, ar_qso_indices in zip(result_enum, ar_qso_indices_list):
             delta_t = NpSpectrumContainer.from_np_array(ar_delta_t, readonly=True)
-            for j, n in itertools.izip(NpSpectrumIterator(delta_t), ar_qso_indices):
+            for j, n in zip(NpSpectrumIterator(delta_t), ar_qso_indices):
                 # if self.n >= self.num_spectra:
                 # break
                 self.delta_t_file.set_wavelength(n, j.get_wavelength())

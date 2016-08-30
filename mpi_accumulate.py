@@ -34,8 +34,8 @@ def accumulate_over_spectra(func, accumulator):
     if comm.rank == 0:
         global_acc = accumulator(qso_record_count)
 
-    local_qso_record_table = itertools.islice(qso_record_table, local_start_index,
-                                              local_end_index)  # type: Iterable(table.Row)
+    local_qso_record_table = itertools.islice(qso_record_table, int(local_start_index),
+                                              int(local_end_index))  # type: Iterable(table.Row)
     l_print_no_barrier("-----", qso_record_count, local_start_index, local_end_index, local_size)
     slice_size = settings.get_file_chunk_size()
     qso_chunks_iterable = enumerate(split_seq(slice_size, local_qso_record_table))
