@@ -71,8 +71,8 @@ def profile_main():
                                      ar_wavelength < 1200 * (1 + redshift))
         fit_mask = ~np.isnan(fit_result.spectrum)
         effective_mask = forest_mask & fit_mask
-        ar_wavelength_masked = ar_wavelength[effective_mask]
-        ar_fit_spectrum_masked = fit_result.spectrum[effective_mask]
+        # ar_wavelength_masked = ar_wavelength[effective_mask]
+        # ar_fit_spectrum_masked = fit_result.spectrum[effective_mask]
 
         # convert redshift to distance
         ar_dist = np.asarray(cd.fast_comoving_distance(ar_redshift[effective_mask]))

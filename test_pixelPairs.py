@@ -19,7 +19,8 @@ cd = physics_functions.comoving_distance.ComovingDistance(1.9, 3.6, 0.001)
 
 class TestPixelPairs(TestCase):
     def test_find_nearby_pixels(self):
-        radius = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0).value
+        radius_quantity = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0)  # type: u.Quantity
+        radius = radius_quantity.value
 
         pair_separation_bins_1 = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)
         pair_separation_bins_2 = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)

@@ -1,16 +1,13 @@
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
-
 import os.path
+
+from backports import configparser
 
 _SEP = ':'
 
 
 class Settings:
     def __init__(self):
-        self.config_parser = ConfigParser.SafeConfigParser()
+        self.config_parser = configparser.ConfigParser()
         self.effective_settings_file_name = os.getenv('LYACORR_CONF_FILE', self.default_settings_file_name)
         if not os.path.exists(self.effective_settings_file_name):
             self.write_default_settings()
@@ -188,7 +185,7 @@ class Settings:
         value_mock_resolution = 300
 
         # replace config parser with an empty one
-        self.config_parser = ConfigParser.SafeConfigParser()
+        self.config_parser = configparser.ConfigParser()
         self.config_parser.add_section(self.section_file_paths)
         self.config_parser.set(self.section_file_paths, self.opt_plate_dir_list, value_plate_dir_list)
         self.config_parser.set(self.section_file_paths, self.opt_pca_continuum_tables, value_pca_continuum_tables)

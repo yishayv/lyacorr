@@ -113,7 +113,7 @@ class PlotSpectrum:
         ar_flux_err = np.ones(self.ar_flux.size)
 
         spec = spectrum.Spectrum(self.ar_flux, ar_flux_err, self.ar_wavelength)
-        qso_line_mask.mask_qso_lines(spec, qso_z)
+        qso_line_mask.mask_qso_lines(spec)
 
         # mask the Ly-alpha part of the spectrum
         qso_line_mask.mask_ly_absorption(spec, qso_z)

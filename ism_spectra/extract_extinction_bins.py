@@ -22,4 +22,4 @@ for n, (extinction, filename) in enumerate(sorted(extinction_dict.items())):
     spectra.set_wavelength(n, ar_ism[0])
     spectra.set_flux(n, ar_ism[1])
 
-np.save('../../../data/ExtinctionBins20_values.npy',np.array(extinction_list))
+np.save('../../../data/ExtinctionBins20_values.npy', np.array(extinction_list))

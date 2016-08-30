@@ -77,7 +77,7 @@ def get_line_mask(ar_wavelength, spec_line):
                            np.zeros(ar_wavelength.size - line_end)))
 
 
-def add_line_mask(ar_wavelength, z):
+def add_line_mask(ar_wavelength):
     m = ar_wavelength.mask
     for spec_line in SpecLines:
         current_mask = get_line_mask(ar_wavelength, spec_line)
@@ -94,8 +94,8 @@ def add_range_mask(ar_wavelength, z):
     return m
 
 
-def mask_qso_lines(spec, z):
-    m = add_line_mask(spec.ma_wavelength, z)
+def mask_qso_lines(spec):
+    m = add_line_mask(spec.ma_wavelength)
     spec.ma_wavelength.mask = m
     spec.ma_flux.mask = m
     spec.ma_flux_err.mask = m

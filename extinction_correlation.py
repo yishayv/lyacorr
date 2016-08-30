@@ -5,7 +5,6 @@
 """
 import cProfile
 import itertools
-from python_compat import range, reduce
 
 import numpy as np
 from astropy import coordinates as coord
@@ -15,13 +14,12 @@ from astropy.coordinates import Angle
 from astropy.coordinates import matching as matching
 from mpi4py import MPI
 
-import calc_pixel_pairs
 import common_settings
 import mpi_helper
-from data_access.numpy_spectrum_container import NpSpectrumContainer
 from data_access.read_spectrum_fits import QSORecord
 from physics_functions import comoving_distance
 from physics_functions.spherical_math import SkyGroups, find_spherical_mean_deg
+from python_compat import reduce
 
 settings = common_settings.Settings()
 
@@ -44,7 +42,6 @@ def calc_angular_separation(pairs, pair_angles, ar_extinction, extinction_mean):
         correlation = (extinction1 - extinction_mean) * (extinction2 - extinction_mean)
         bin_number = int(pair_angle / np.pi * 180. * 10.)
         if bin_number < 50 and np.isfinite(correlation):
-
             # sum of products
             ar_angular_separation_bins[0][bin_number] += correlation
             # counts
@@ -58,7 +55,7 @@ class SubChunkHelper:
         self.ar_extinction = ar_extinction
         self.extinction_mean = np.nanmean(ar_extinction)
 
-    def add_pairs_in_sub_chunk(self, local_pair_angles, pairs, pixel_pairs):
+    def add_pairs_in_sub_chunk(self, local_pair_angles, pairs):
         local_angular_separation_bins = \
             calc_angular_separation(pairs, local_pair_angles, self.ar_extinction, self.extinction_mean)
 
@@ -125,13 +122,6 @@ def profile_main():
 
     # initialize data sources
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
-    if settings.get_ism_only_mode():
-        delta_t_filename = settings.get_forest_ism_npy()
-    else:
-        delta_t_filename = settings.get_delta_t_npy()
-
-    delta_t_file = NpSpectrumContainer(True, num_spectra=len(qso_record_table), filename=delta_t_filename,
-                                       max_wavelength_count=1000)
 
     # prepare data for quicker access
     qso_record_list = [QSORecord.from_row(i) for i in qso_record_table]
@@ -145,7 +135,8 @@ def profile_main():
     # TODO: find a more precise value instead of z=1.9
     # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
     # the article assumes h is measured in units of 100km/s/mpc
-    radius = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0).value
+    radius_quantity = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0)  # type: u.Quantity
+    radius = radius_quantity.value
     max_angular_separation = radius / (cd.comoving_distance(1.9) / u.radian)
     mpi_helper.r_print('maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree))
 
@@ -206,19 +197,6 @@ def profile_main():
     mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
     # l_print('angle vector:', x[2])
 
-    if settings.get_enable_weighted_median_estimator():
-        accumulator_type = calc_pixel_pairs.accumulator_types.histogram
-        assert not settings.get_enable_weighted_mean_estimator(), "Median and mean estimators are mutually exclusive."
-        assert not settings.get_enable_estimator_subsamples(), "Subsamples not supported for histogram."
-    elif settings.get_enable_weighted_mean_estimator():
-        if settings.get_enable_estimator_subsamples():
-            accumulator_type = calc_pixel_pairs.accumulator_types.mean_subsample
-        else:
-            accumulator_type = calc_pixel_pairs.accumulator_types.mean
-    else:
-        assert False, "Either median or mean estimators must be specified."
-
-    pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type=accumulator_type)
     # divide the work into sub chunks
     # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
     # divide by comm.size to make sub chunk size independent of number of nodes.
@@ -230,8 +208,7 @@ def profile_main():
         sub_chunk_end = j + i
         mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", k, "out of", len(pixel_pair_sub_chunks[0]))
         sub_chunk_helper.add_pairs_in_sub_chunk(local_qso_pair_angles,
-                                                local_qso_pairs[sub_chunk_start:sub_chunk_end],
-                                                pixel_pairs_object)
+                                                local_qso_pairs[sub_chunk_start:sub_chunk_end])
 
 
 if settings.get_profile():

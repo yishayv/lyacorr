@@ -51,6 +51,8 @@ class ISMTransmittanceAccumulator:
         self.forest_ism_file.zero()
 
     def accumulate(self, result_enum, ar_qso_indices_list, object_results):
+        # unused parameter:
+        del object_results
         for ar_chunk, ar_qso_indices in itertools.izip(result_enum, ar_qso_indices_list):
             forest_chunk = NpSpectrumContainer.from_np_array(ar_chunk, readonly=True)
             for j, n in itertools.izip(NpSpectrumIterator(forest_chunk), ar_qso_indices):
@@ -89,14 +91,14 @@ def ism_transmittance_chunk(qso_record_table):
 
         # read original delta transmittance
         ar_redshift = delta_transmittance_file.get_wavelength(index)
-        ar_flux = delta_transmittance_file.get_flux(index)
+        # ar_flux = delta_transmittance_file.get_flux(index)
         ar_ivar = delta_transmittance_file.get_ivar(index)
 
         # get correction to ISM
         # ar_flux_new, ar_ivar_new, is_corrected = pre_process_spectrum.mw_lines.apply_correction(
         #     ar_wavelength, np.ones_like(ar_flux), ar_ivar, qso_rec.ra, qso_rec.dec)
 
-        ar_wavelength = (ar_redshift + 1) * lya_center
+        ar_wavelength = (ar_redshift + 1) * lya_center  # type: np.ndarray
         # limit maximum bin number because higher extinction bins are not reliable
         max_extinction_bin = max(20, ar_extinction_levels.size)
 

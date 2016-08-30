@@ -80,9 +80,11 @@ def subsample_2d_weighted(ar_flux, ar_weights, out=None):
 
 
 def bootstrap_2d(ar_flux, ar_weights, out=None, iterations=1000):
+    out_shape = ar_flux.shape[1:] * 2
     if not out:
-        out_shape = ar_flux.shape[1:] * 2
         out = np.empty(shape=out_shape)
+
+    assert out_shape == out.shape
     n = ar_flux.shape[0]
     global_weights = np.sum(ar_weights)
     global_flux = np.sum(ar_flux, axis=0)
@@ -101,7 +103,7 @@ def bootstrap_2d(ar_flux, ar_weights, out=None, iterations=1000):
         np.einsum('ij,kl->ijkl', cov_term[bootstrap_sample], cov_term[bootstrap_sample],
                   out=cov_temp)
         cov_nan = np.isnan(cov_temp)
-        cov_count += (1-cov_nan)
+        cov_count += (1 - cov_nan)
         cov_temp[cov_nan] = 0
         cov_sum += cov_temp
 
@@ -110,9 +112,11 @@ def bootstrap_2d(ar_flux, ar_weights, out=None, iterations=1000):
 
 
 def bootstrap_1d(ar_flux, ar_weights, out=None, iterations=1000):
+    out_shape = ar_flux.shape[1:] * 2
     if not out:
-        out_shape = ar_flux.shape[1:] * 2
         out = np.empty(shape=out_shape)
+
+    assert out_shape == out.shape
     n = ar_flux.shape[0]
     global_weights = np.sum(ar_weights)
     global_flux = np.sum(ar_flux, axis=0)

@@ -10,6 +10,11 @@ class RemoveDlaSimple(object):
         self.mask_boxcar = signal.boxcar(self.mask_box_size)
 
     def get_mask(self, ar_flux):
+        """
+
+        :type ar_flux: np.ndarray
+        :rtype: np.ndarray
+        """
         # detect low flux regions using threshold
         # convolve and divide by box_size to keep the same scale
         spec1_smooth = signal.convolve(ar_flux > -0.6, self.detect_boxcar, mode='same') / self.detect_box_size

@@ -10,10 +10,7 @@ import common_settings
 from data_access.qso_data import QSORecord, QSOData
 from pixel_flags import PixelFlags, FlagStats
 
-try:
-    xrange
-except NameError:
-    xrange = range
+from python_compat import range
 
 settings = common_settings.Settings()
 

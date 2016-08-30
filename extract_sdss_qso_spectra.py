@@ -1,5 +1,4 @@
 import cProfile
-import sys
 
 import astropy.table as table
 import numpy as np

@@ -12,10 +12,10 @@ def delta_dist(params, z1, cosmology, bao_scale):
              cosmology.comoving_distance(z=z1)).value - bao_scale]
 
 
-def find_bao_redshift(z, cosmology):
+def find_bao_redshift(z1, cosmology):
     params = lmfit.Parameters()
     params.add('delta_z', 0.1)
-    result = lmfit.minimize(delta_dist, params, kws={'z1': z, 'cosmology': cosmology, 'bao_scale': 100.})
+    result = lmfit.minimize(delta_dist, params, kws={'z1': z1, 'cosmology': cosmology, 'bao_scale': 100.})
     delta_z = result.params['delta_z'].value
     return delta_z
 

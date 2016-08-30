@@ -2,7 +2,6 @@ from unittest import TestCase
 
 from pixel_flags import PixelFlags
 
-
 __author__ = 'yishay'
 
 

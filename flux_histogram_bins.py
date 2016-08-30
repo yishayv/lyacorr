@@ -77,6 +77,10 @@ class FluxHistogramBins(AccumulatorBase):
         """
 
         :type ar_flux: np.array
+        :type x_range: float
+        :type y_range: float
+        :type f_min: float
+        :type f_max: float
         """
         assert ar_flux.ndim == 3
         new_bins = cls(ar_flux.shape[0], ar_flux.shape[1], ar_flux.shape[2], x_range, y_range, f_min, f_max)

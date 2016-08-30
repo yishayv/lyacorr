@@ -1,7 +1,7 @@
 import sys
 
 if sys.version_info < (3,):
-    # noinspection PyUnresolvedReferences
+    # noinspection PyUnresolvedReferences,PyShadowingBuiltins
     from itertools import imap as map
 
     # noinspection PyShadowingBuiltins

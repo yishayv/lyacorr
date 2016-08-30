@@ -227,6 +227,7 @@ class ContinuumFitPCA:
             mean_flux_constraint_func=None):
 
         # loop over available PCA templates and return the best result
+        # noinspection PyPep8Naming
         FitResult = namedtuple('FitResult',
                                ['spectrum', 'normalization_factor', 'is_good_fit', 'goodness_of_fit', 'snr'])
         result_list = []
