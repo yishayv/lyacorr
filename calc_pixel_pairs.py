@@ -178,6 +178,7 @@ class PixelPairs:
         :type spec1_index: int
         :type spec2_index: int
         :type delta_t_file: NpSpectrumContainer
+        :type group_id: int
         :return:
         """
 

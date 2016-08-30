@@ -1,13 +1,14 @@
-import multiprocessing
 import cProfile
+import multiprocessing
 
-import numpy as np
 import astropy.table as table
 import astropy.units as u
+import numpy as np
 
-from data_access.read_spectrum_fits import QSO_fields_dict
 import common_settings
 from data_access import read_spectrum_fits
+from data_access.read_spectrum_fits import QSO_fields_dict
+from python_compat import range
 
 settings = common_settings.Settings()
 
@@ -58,7 +59,7 @@ def profile_main():
     t_.sort(['plate'])
 
     # add indices after sort
-    t_['index'] = xrange(len(t_))
+    t_['index'] = range(len(t_))
 
     np.save(settings.get_qso_metadata_npy(), t_)
 

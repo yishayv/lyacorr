@@ -47,7 +47,8 @@ class MWLines:
         # for now load all data to memory on init (~10mb)
         self.ar_wl, self.ar_spectra = load_spectra(settings.get_mw_stacked_spectra_fits())
 
-    def load_metadata(self, path):
+    @staticmethod
+    def load_metadata(path):
         """
         function loads the metadata which contains the connection between pixel ID to group ID
         """

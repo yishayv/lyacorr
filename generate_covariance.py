@@ -4,7 +4,8 @@
     Partial data is gathered and the correlation estimator file is saved after processing each sub-chunk.
 """
 import cProfile
-import collections
+
+from future.moves.collections import defaultdict
 
 import numpy as np
 from astropy import coordinates as coord
@@ -150,7 +151,7 @@ def profile_main():
         assert isinstance(global_qso_pairs, np.ndarray)
 
         # build a 2-level dictionary of all QSO pairs.
-        global_pair_dict = collections.defaultdict(lambda: collections.defaultdict(lambda: np.inf))
+        global_pair_dict = defaultdict(lambda: defaultdict(lambda: np.inf))
         for qso1, qso2, angle in global_qso_pairs:
             global_pair_dict[qso1][qso2] = angle
 
@@ -215,8 +216,8 @@ def create_random_sample(global_qso_pairs, global_pair_dict, sample_chunk_size):
         angle12 = pair12[2]
 
         qso3_candidates_dict = global_pair_dict[qso1]
-        ar_qso3_candidates = np.fromiter(qso3_candidates_dict.iterkeys(), dtype=float)
-        ar_qso3_candidates_angles = np.fromiter(qso3_candidates_dict.itervalues(), dtype=float)
+        ar_qso3_candidates = np.fromiter(qso3_candidates_dict.keys(), dtype=float)
+        ar_qso3_candidates_angles = np.fromiter(qso3_candidates_dict.values(), dtype=float)
         ar_qso3_candidates_probabilities = 1 / ar_qso3_candidates_angles
         ar_qso3_candidates_probabilities /= ar_qso3_candidates_probabilities.sum()
 
@@ -227,8 +228,8 @@ def create_random_sample(global_qso_pairs, global_pair_dict, sample_chunk_size):
 
             # draw qso4 randomly from QSOs around qso3
             qso4_candidates_dict = global_pair_dict[qso3]
-            ar_qso4_candidates = np.fromiter(qso4_candidates_dict.iterkeys(), dtype=float)
-            ar_qso4_candidates_angles = np.fromiter(qso4_candidates_dict.itervalues(), dtype=float)
+            ar_qso4_candidates = np.fromiter(qso4_candidates_dict.keys(), dtype=float)
+            ar_qso4_candidates_angles = np.fromiter(qso4_candidates_dict.values(), dtype=float)
             ar_qso4_candidates_probabilities = 1 / ar_qso4_candidates_angles
             ar_qso4_candidates_probabilities /= ar_qso4_candidates_probabilities.sum()
             qso4 = np.random.choice(ar_qso4_candidates, 1, p=ar_qso4_candidates_probabilities)[0]
