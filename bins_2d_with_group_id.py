@@ -113,7 +113,7 @@ class Bins2DWithGroupID(AccumulatorBase):
         return self.to_4d_array().reshape((-1, self.x_count * self.y_count * 3,))
 
     def flush(self):
-        np.savez(self.filename, ar_data=self.to_4d_array(), group_ids=np.array(self.dict_bins_2d_data.keys()))
+        np.savez(self.filename, ar_data=self.to_4d_array(), group_ids=np.array(list(self.dict_bins_2d_data.keys())))
 
     def get_max_range(self):
         return self.max_range
@@ -150,7 +150,7 @@ class Bins2DWithGroupID(AccumulatorBase):
                 self.filename, self.max_range,
                 self.x_range, self.y_range,
                 self.x_bin_size, self.y_bin_size,
-                self.dict_bins_2d_data.keys()]
+                list(self.dict_bins_2d_data.keys())]
 
     @classmethod
     def load_from(cls, ar, metadata):

@@ -10,7 +10,8 @@ import numpy  # to get includes
 from Cython.Distutils import build_ext
 
 setup(
+    name='lyacorr_cython_helper',
     cmdclass={'build_ext': build_ext},
-    ext_modules=[Extension("bin_pairs_cython", ["bin_pixel_pairs.pyx"], )],
-    include_dirs=[numpy.get_include(), ],
+    ext_modules=[Extension("lyacorr_cython_helper", ["lyacorr_cython_helper.pyx"], 
+        include_dirs=[numpy.get_include()])]
 )

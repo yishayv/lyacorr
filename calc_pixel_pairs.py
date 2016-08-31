@@ -6,18 +6,19 @@
         - median: a weighted histogram of flux products.
     Also contains a slower reference implementation in pure Python (mean only)
 """
+import bin_pairs_cython
+import lyacorr_cython_helper
 from collections import namedtuple
 
 import numpy as np
 
+import bins_2d
 import bins_2d_with_group_id
 import common_settings
-import bins_2d
-from flux_accumulator import AccumulatorBase
-from data_access.numpy_spectrum_container import NpSpectrumContainer
-import bin_pixel_pairs
 import flux_histogram_bins
 import significant_qso_pairs
+from data_access.numpy_spectrum_container import NpSpectrumContainer
+from flux_accumulator import AccumulatorBase
 
 NUM_BINS_X = 50
 NUM_BINS_Y = 50
@@ -212,14 +213,14 @@ class PixelPairs:
             return
 
         if self.accumulator_type == accumulator_types.mean:
-            ar = bin_pixel_pairs.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                                                 ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-                                                 ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                                                 qso_angle=qso_angle,
-                                                 x_bin_size=accumulator.get_x_bin_size(),
-                                                 y_bin_size=accumulator.get_y_bin_size(),
-                                                 x_bin_count=accumulator.get_x_count(),
-                                                 y_bin_count=accumulator.get_y_count())
+            ar = bin_pairs_cython.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+                                                  ar_flux1=spec1_flux, ar_flux2=spec2_flux,
+                                                  ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+                                                  qso_angle=qso_angle,
+                                                  x_bmin_size=accumulator.get_x_bin_size(),
+                                                  y_bin_size=accumulator.get_y_bin_size(),
+                                                  x_bin_count=accumulator.get_x_count(),
+                                                  y_bin_count=accumulator.get_y_count())
             local_bins = bins_2d.Bins2D(ar.shape[0], ar.shape[1],
                                         accumulator.get_x_range(), accumulator.get_y_range(), ar_existing_data=ar)
 
@@ -228,14 +229,22 @@ class PixelPairs:
 
             accumulator += local_bins
         elif self.accumulator_type == accumulator_types.mean_subsample:
-            ar = bin_pixel_pairs.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                                                 ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-                                                 ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                                                 qso_angle=qso_angle,
-                                                 x_bin_size=accumulator.get_x_bin_size(),
-                                                 y_bin_size=accumulator.get_y_bin_size(),
-                                                 x_bin_count=accumulator.get_x_count(),
-                                                 y_bin_count=accumulator.get_y_count())
+            ar = lyacorr_cython_helper.bin_pixel_pairs(spec1_distances, spec2_distances,
+                                                       spec1_flux, spec2_flux,
+                                                       qso1_weights, qso2_weights,
+                                                       qso_angle,
+                                                       accumulator.get_x_bin_size(),
+                                                       accumulator.get_y_bin_size(),
+                                                       accumulator.get_x_count(),
+                                                       accumulator.get_y_count())
+            # ar = lyacorr_cython_helper.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
+            #                                               ar_flux1=spec1_flux, ar_flux2=spec2_flux,
+            #                                               ar_weights1=qso1_weights, ar_weights2=qso2_weights,
+            #                                               qso_angle=qso_angle,
+            #                                               x_bin_size=accumulator.get_x_bin_size(),
+            #                                               y_bin_size=accumulator.get_y_bin_size(),
+            #                                               x_bin_count=accumulator.get_x_count(),
+            #                                               y_bin_count=accumulator.get_y_count())
             local_bins = bins_2d_with_group_id.Bins2DWithGroupID(
                 ar.shape[0], ar.shape[1], accumulator.get_x_range(), accumulator.get_y_range())
             local_bins.add_array_to_group_id(group_id=group_id, ar_data=ar)
@@ -247,7 +256,7 @@ class PixelPairs:
         elif self.accumulator_type == accumulator_types.histogram:
             assert isinstance(accumulator, flux_histogram_bins.FluxHistogramBins)
             # TODO: try to avoid using implementation details of the accumulator interface
-            accumulator.pair_count = bin_pixel_pairs.bin_pixel_pairs_histogram(
+            accumulator.pair_count = lyacorr_cython_helper.bin_pixel_pairs_histogram(
                 ar_dist1=spec1_distances, ar_dist2=spec2_distances,
                 ar_flux1=spec1_flux, ar_flux2=spec2_flux, ar_weights1=qso1_weights, ar_weights2=qso2_weights,
                 out=accumulator.ar_flux,
