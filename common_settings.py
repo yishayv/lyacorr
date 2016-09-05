@@ -96,6 +96,8 @@ class Settings:
     opt_min_forest_redshift = 'min_forest_redshift'
     # maximum forest redshift to use
     opt_max_forest_redshift = 'max_forest_redshift'
+    # number of distance slices
+    opt_num_dist_slices = 'num_distance_slices'
     # continuum fit method
     opt_continuum_fit_method = 'continuum_fit_method'
     # cosmology (Planck or WMAP[579])
@@ -171,6 +173,7 @@ class Settings:
         value_min_continuum_threshold = 0.5
         value_min_forest_redshift = 1.96
         value_max_forest_redshift = 3.2
+        value_num_distance_slices = 16
         value_continuum_fit_method = 'dot_product'
         value_cosmology = 'Planck13'
         value_healpix_nside = 32
@@ -243,6 +246,8 @@ class Settings:
                                str(value_min_forest_redshift))
         self.config_parser.set(self.section_data_processing, self.opt_max_forest_redshift,
                                str(value_max_forest_redshift))
+        self.config_parser.set(self.section_data_processing, self.opt_num_dist_slices,
+                               str(value_num_distance_slices))
         self.config_parser.set(self.section_data_processing, self.opt_continuum_fit_method,
                                str(value_continuum_fit_method))
         self.config_parser.set(self.section_data_processing, self.opt_cosmology,
@@ -400,6 +405,9 @@ class Settings:
 
     def get_max_forest_redshift(self):
         return self.config_parser.getfloat(self.section_data_processing, self.opt_max_forest_redshift)
+
+    def get_num_distance_slices(self):
+        return self.config_parser.getint(self.section_data_processing, self.opt_num_dist_slices)
 
     def get_continuum_fit_method(self):
         return self.config_parser.get(self.section_data_processing, self.opt_continuum_fit_method)

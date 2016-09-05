@@ -122,7 +122,7 @@ def bin_pixel_pairs(np.ndarray[double] in_array_dist1, np.ndarray[double] in_arr
     #/* r_ = (r1 + r2)/2 * qso_angle */
     y_scale = qso_angle / (2. * y_bin_size)
     # for now just use the comoving distance for distance bins.
-    z_scale = 1. / z_bin_size
+    z_scale = 0.5 / z_bin_size
 
     x_offset = x_start * x_scale
     y_offset = y_start * 2. * y_scale

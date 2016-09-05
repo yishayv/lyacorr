@@ -19,11 +19,12 @@ import significant_qso_pairs
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 from flux_accumulator import AccumulatorBase
 
+settings = common_settings.Settings()
+
 NUM_BINS_X = 50
 NUM_BINS_Y = 50
+NUM_BINS_Z = settings.get_num_distance_slices()
 MAX_Z_RESOLUTION = 1000
-
-settings = common_settings.Settings()
 
 accumulator_types = namedtuple('accumulator_type', ['mean', 'mean_subsample', 'histogram'])
 
@@ -288,12 +289,12 @@ class PixelPairs:
         pair_separation_bins = None
         if self.accumulator_type == accumulator_types.mean:
             pair_separation_bins = bins_3d.Bins3D(
-                dims=np.array([NUM_BINS_X, NUM_BINS_Y, 1]),
+                dims=np.array([NUM_BINS_X, NUM_BINS_Y, NUM_BINS_Z]),
                 ranges=np.array([[0, 0, self.min_distance], [self.radius, self.radius, self.max_distance]]))
             pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
         elif self.accumulator_type == accumulator_types.mean_subsample:
             pair_separation_bins = bins_3d_with_group_id.Bins3DWithGroupID(
-                dims=np.array([NUM_BINS_X, NUM_BINS_Y, 1]),
+                dims=np.array([NUM_BINS_X, NUM_BINS_Y, NUM_BINS_Z]),
                 ranges=np.array([[0, 0, self.min_distance], [self.radius, self.radius, self.max_distance]]))
             pair_separation_bins.set_filename(settings.get_correlation_estimator_subsamples_npz())
         elif self.accumulator_type == accumulator_types.histogram:
