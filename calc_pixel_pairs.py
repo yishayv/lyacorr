@@ -74,6 +74,8 @@ class PixelPairs:
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
         self.significant_qso_pairs = significant_qso_pairs.SignificantQSOPairs()
         self.accumulator_type = accumulator_type
+        self.min_distance = cd.comoving_distance(settings.get_min_forest_redshift())
+        self.max_distance = cd.comoving_distance(settings.get_max_forest_redshift())
 
     def find_nearby_pixels2(self, accumulator, qso_angle,
                             spec1_index, spec2_index, delta_t_file):
@@ -148,7 +150,7 @@ class PixelPairs:
 
         # r_ =  (r1 + r2)/2 * qso_angle
         np.add(spec1_distances[:, None], spec2_distances, out=mean_distance)
-        np.multiply(mean_distance, qso_angle / 2. / accumulator.get_bin_sizes().y(), out=r_transverse)
+        np.multiply(mean_distance, qso_angle / 2. / accumulator.get_bin_sizes().y, out=r_transverse)
 
         # mask all elements that are too far apart
         np.less(r_parallel, range_parallel, out=mask_matrix_parallel)
@@ -177,10 +179,10 @@ class PixelPairs:
         This is a faster implementation that uses a Python/C API module.
         :type accumulator: AccumulatorBase
         :type qso_angle: float64
-        :type spec1_index: int
-        :type spec2_index: int
+        :type spec1_index: int64
+        :type spec2_index: int64
         :type delta_t_file: NpSpectrumContainer
-        :type group_id: int
+        :type group_id: int64
         :return:
         """
 
@@ -218,10 +220,8 @@ class PixelPairs:
                                                        spec1_flux, spec2_flux,
                                                        qso1_weights, qso2_weights,
                                                        qso_angle,
-                                                       accumulator.get_bin_sizes().x,
-                                                       accumulator.get_bin_sizes().y(),
-                                                       accumulator.get_dims().x,
-                                                       accumulator.get_dims().y)
+                                                       accumulator.get_dims(),
+                                                       accumulator.get_ranges())
             local_bins = bins_3d.Bins3D(ar.shape,
                                         accumulator.get_ranges(), ar_existing_data=ar)
 
@@ -234,12 +234,10 @@ class PixelPairs:
                                                        spec1_flux, spec2_flux,
                                                        qso1_weights, qso2_weights,
                                                        qso_angle,
-                                                       accumulator.get_bin_sizes().x,
-                                                       accumulator.get_bin_sizes().y(),
-                                                       accumulator.get_dims().x,
-                                                       accumulator.get_dims().y)
+                                                       accumulator.get_dims(),
+                                                       accumulator.get_ranges())
             local_bins = bins_3d_with_group_id.Bins3DWithGroupID(
-                ar.shape, accumulator.get_ranges())
+                accumulator.get_dims(), accumulator.get_ranges())
             local_bins.add_array_to_group_id(group_id=group_id, ar_data=ar)
 
             flux_contribution = np.nanmax(np.abs(local_bins.dict_bins_3d_data[group_id].ar_flux))
@@ -247,23 +245,15 @@ class PixelPairs:
 
             accumulator += local_bins
         elif self.accumulator_type == accumulator_types.histogram:
-            f_range = accumulator.get_ranges.f
-            f_min = -f_range
-            f_max = f_range
             assert isinstance(accumulator, flux_histogram_bins.FluxHistogramBins)
             # TODO: try to avoid using implementation details of the accumulator interface
-            accumulator.pair_count = lyacorr_cython_helper.bin_pixel_pairs_histogram(
+            accumulator.pair_count += lyacorr_cython_helper.bin_pixel_pairs_histogram(
                 spec1_distances, spec2_distances,
                 spec1_flux, spec2_flux, qso1_weights, qso2_weights,
                 qso_angle,
-                accumulator.get_bin_sizes().x,
-                accumulator.get_bin_sizes().y,
-                accumulator.get_dims().x,
-                accumulator.get_dims().y,
-                f_min, f_max,
-                accumulator.get_dims().f, accumulator.pair_count,
-                accumulator.ar_flux
-                )
+                accumulator.get_dims(),
+                accumulator.get_ranges(),
+                accumulator.ar_flux)
             pass
 
     def apply_to_flux_pairs(self, pairs, pairs_angles, delta_t_file, accumulator):
@@ -298,18 +288,18 @@ class PixelPairs:
         pair_separation_bins = None
         if self.accumulator_type == accumulator_types.mean:
             pair_separation_bins = bins_3d.Bins3D(
-                dims=bins_3d.BinDims(NUM_BINS_X, NUM_BINS_Y, 1),
-                ranges=bins_3d.BinRange(self.radius, self.radius, 4))
+                dims=np.array([NUM_BINS_X, NUM_BINS_Y, 1]),
+                ranges=np.array([[0, 0, self.min_distance], [self.radius, self.radius, self.max_distance]]))
             pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
         elif self.accumulator_type == accumulator_types.mean_subsample:
             pair_separation_bins = bins_3d_with_group_id.Bins3DWithGroupID(
-                dims=bins_3d.BinDims(NUM_BINS_X, NUM_BINS_Y, 1),
-                ranges=bins_3d.BinRange(self.radius, self.radius, 4))
+                dims=np.array([NUM_BINS_X, NUM_BINS_Y, 1]),
+                ranges=np.array([[0, 0, self.min_distance], [self.radius, self.radius, self.max_distance]]))
             pair_separation_bins.set_filename(settings.get_correlation_estimator_subsamples_npz())
         elif self.accumulator_type == accumulator_types.histogram:
             pair_separation_bins = flux_histogram_bins.FluxHistogramBins(
-                dims=flux_histogram_bins.BinDims(NUM_BINS_X, NUM_BINS_Y, 1000),
-                ranges=flux_histogram_bins.BinRange(self.radius, self.radius, 2e-3))
+                dims=np.array([NUM_BINS_X, NUM_BINS_Y, 1000]),
+                ranges=np.array([[0, 0, -2e3], [self.radius, self.radius, 2e3]]))
             pair_separation_bins.set_filename(settings.get_median_estimator_bins())
 
         assert pair_separation_bins

@@ -1,10 +1,6 @@
 import numpy as np
-from collections import namedtuple
 
 from flux_accumulator import AccumulatorBase
-
-BinDims = namedtuple('BinDims', ['x', 'y', 'f'])
-BinRange = namedtuple('BinRange', ['x', 'y', 'f'])
 
 
 class FluxHistogramBins(AccumulatorBase):
@@ -14,7 +10,7 @@ class FluxHistogramBins(AccumulatorBase):
         self.filename = filename
         self.max_range = np.sqrt(np.square(ranges.x) + np.square(ranges.y))
         self.ranges = ranges
-        self.bin_sizes = BinRange([float(range_i) / dim_i for range_i, dim_i in zip(ranges, dims)])
+        self.bin_sizes = np.abs(ranges[1] - ranges[0]) / dims
         self.pair_count = 0
 
     def add_array_with_mask(self, ar_flux, ar_x, ar_y, ar_z, mask, ar_weights):
@@ -110,7 +106,7 @@ class FluxHistogramBins(AccumulatorBase):
 
     @classmethod
     def load_from(cls, ar, metadata):
-        new_bins = cls((1, 1, 1), (1, 1, 1))
+        new_bins = cls(dims=np.array((1, 1, 1)), ranges=np.array(((0,0,0),(1, 1, 1))))
         (new_bins.dims, new_bins.filename, new_bins.max_range,
          new_bins.ranges, new_bins.bin_size, new_bins.pair_count) = metadata
         new_bins.ar_flux = ar

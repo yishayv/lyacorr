@@ -1,24 +1,21 @@
-from collections import namedtuple
-
 import numpy as np
 
 from flux_accumulator import AccumulatorBase
-
-BinDims = namedtuple('BinDims', ['x', 'y', 'z'])
-BinRange = namedtuple('BinRange', ['x', 'y', 'z'])
 
 
 class Bins3D(AccumulatorBase):
     def __init__(self, dims, ranges, ar_existing_data=None, filename=''):
         """
-        :type count BinCount: 
-        :type range BinRange: 
-        :type ar_existing_data np.ndarray: 
-        :type filename str: 
+        :param dims: the shape of the bins
+        :param ranges: a 2-by-3 array representing the minimum and maximum ranges of the 3 coordinates
+        :type dims: np.ndarray
+        :type ranges np.ndarray
+        :type ar_existing_data np.ndarray
+        :type filename str
         """
         if ar_existing_data is not None:
-            expected_shape = (dims.x, dims.y, dims.z, 3)
-            ravelled_shape = (dims.x * dims.y * dims.z * 3,)
+            expected_shape = (dims[0], dims[1], dims[2], 3)
+            ravelled_shape = (dims[0] * dims[1] * dims[2] * 3,)
             if ar_existing_data.shape == ravelled_shape:
                 self.ar_data = ar_existing_data.reshape(expected_shape)
             else:
@@ -26,7 +23,7 @@ class Bins3D(AccumulatorBase):
                     ar_existing_data.shape)
                 self.ar_data = ar_existing_data
         else:
-            self.ar_data = np.zeros((dims.x, dims.y, dims.z, 3))
+            self.ar_data = np.zeros((dims[0], dims[1], dims[2], 3))
         self.ar_flux = None
         self.ar_weights = None
         self.ar_count = None
@@ -35,9 +32,11 @@ class Bins3D(AccumulatorBase):
         self.index_type = ''
         self.update_index_type()
         self.filename = filename
-        self.max_range = np.sqrt(np.square(ranges.x) + np.square(ranges.y))
+        max_x = ranges[1, 0]
+        max_y = ranges[1, 1]
+        self.max_range = np.sqrt(np.square(max_x) + np.square(max_y))
         self.ranges = ranges
-        self.bin_sizes = BinRange([float(range_i) / dim_i for range_i, dim_i in zip(ranges, dims)])
+        self.bin_sizes = np.abs(ranges[1] - ranges[0]) / dims
 
     def add_array_with_mask(self, ar_flux, ar_x, ar_y, ar_z, mask, ar_weights):
         """
@@ -46,6 +45,7 @@ class Bins3D(AccumulatorBase):
         :type ar_flux: np.multiarray.ndarray
         :param ar_x: np.multiarray.ndarray
         :param ar_y: np.multiarray.ndarray
+        :param ar_z: np.multiarray.ndarray
         :param mask: np.multiarray.ndarray
         :param ar_weights: np.multiarray.ndarray
         """
@@ -54,7 +54,7 @@ class Bins3D(AccumulatorBase):
         ar_z_int = ar_z.astype(self.index_type)
         # restrict the mask to pixels inside the bin range.
         m = np.any((ar_x_int >= 0, ar_y_int >= 0,
-                    ar_x_int < self.dims.x, ar_y_int < self.dims.y, mask), axis=0)
+                    ar_x_int < self.dims[0], ar_y_int < self.dims[1], mask), axis=0)
         ar_flux_masked = ar_flux[m]
         ar_weights_masked = ar_weights[m]
         ar_indices_x = ar_x_int[m]
@@ -63,14 +63,14 @@ class Bins3D(AccumulatorBase):
         # make sure we don't invert x, y and z
         # z is the innermost coordinate, x is the outermost.
         # represent bins in 1D. this is faster than a 2D numpy histogram
-        ar_indices_xyz = ar_indices_z + self.dims.z * (ar_indices_y + (self.dims.y * ar_indices_x))
+        ar_indices_xyz = ar_indices_z + self.dims[2] * (ar_indices_y + (self.dims[1] * ar_indices_x))
         # bin data according to x,y values
         flux_hist_1d = np.bincount(ar_indices_xyz, weights=ar_flux_masked * ar_weights_masked,
-                                   minlength=self.dims.y * self.dims.x)
+                                   minlength=self.dims[1] * self.dims[0])
         weights_hist_1d = np.bincount(ar_indices_xyz, weights=ar_weights_masked,
-                                      minlength=self.dims.y * self.dims.x)
+                                      minlength=self.dims[1] * self.dims[0])
         count_hist_1d = np.bincount(ar_indices_xyz, weights=None,
-                                    minlength=self.dims.y * self.dims.x)
+                                    minlength=self.dims[1] * self.dims[0])
         # return from 1D to a 2d array
         flux_hist = flux_hist_1d.reshape(self.dims)
         count_hist = count_hist_1d.reshape(self.dims)
@@ -82,8 +82,8 @@ class Bins3D(AccumulatorBase):
 
     def merge(self, bins_3d_2):
         assert self.ar_data.shape == bins_3d_2.ar_data.shape
-        assert self.ranges == bins_3d_2.ranges
-        assert self.dims == bins_3d_2.dims
+        assert np.all(self.ranges == bins_3d_2.ranges)
+        assert np.all(self.dims == bins_3d_2.dims)
         self.ar_data += bins_3d_2.ar_data
         return self
 
@@ -96,16 +96,16 @@ class Bins3D(AccumulatorBase):
         self.filename = filename
         self.flush()
 
-    def from_3d_array(self, stacked_array):
+    def from_4d_array(self, stacked_array):
         self.ar_data = stacked_array
         self.update_array_slices()
-        self.dims = BinDims(self.ar_count.shape)
+        self.dims = self.ar_count.shape
         self.update_index_type()
 
     def load(self, filename):
         # TODO: to static
         stacked_array = np.load(filename)
-        self.from_3d_array(stacked_array)
+        self.from_4d_array(stacked_array)
 
     def update_index_type(self):
         # choose integer type according to number of bins
@@ -173,7 +173,7 @@ class Bins3D(AccumulatorBase):
 
     @classmethod
     def load_from(cls, ar, metadata):
-        new_bins = cls(BinDims(1, 1, 1), BinRange(1, 1, 1))
+        new_bins = cls(dims=(1, 1, 1), ranges=((1, 1, 1), (1, 1, 1)))
         (new_bins.dims, new_bins.index_type, new_bins.filename, new_bins.max_range,
          new_bins.ranges, new_bins.bin_sizes) = metadata
         new_bins.ar_data = ar

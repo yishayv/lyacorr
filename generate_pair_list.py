@@ -89,8 +89,8 @@ class SubChunkHelper:
             # add new results to existing bins
             if list_pair_separation_bins:
                 for i in list_pair_separation_bins:
-                    for g in i.dict_bins_2d_data.keys():
-                        mpi_helper.l_print_no_barrier(np.sum(i.dict_bins_2d_data[g].ar_count))
+                    for g in i.dict_bins_3d_data.keys():
+                        mpi_helper.l_print_no_barrier(np.sum(i.dict_bins_3d_data[g].ar_count))
                 self.pair_separation_bins = reduce(lambda x, y: x + y, list_pair_separation_bins,
                                                    self.pair_separation_bins)
 

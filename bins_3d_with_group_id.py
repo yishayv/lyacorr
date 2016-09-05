@@ -1,22 +1,26 @@
 import collections
-from collections import namedtuple
 
 import numpy as np
 
 import bins_3d
 from flux_accumulator import AccumulatorBase
 
-BinDims = namedtuple('BinDims', ['x', 'y', 'z'])
-BinRange = namedtuple('BinRange', ['x', 'y', 'z'])
-
 
 class Bins3DWithGroupID(AccumulatorBase):
     def __init__(self, dims, ranges, filename=''):
+        """
+
+        :type dims: np.ndarray
+        :type ranges: np.ndarray
+        :type filename: str
+        """
         self.dims = dims
         self.ranges = ranges
         self.filename = filename
-        self.max_range = np.sqrt(np.square(ranges.x) + np.square(ranges.y))
-        self.bin_sizes = BinRange([float(range_i) / dim_i for range_i, dim_i in zip(ranges, dims)])
+        max_range_x = ranges[1, 0]
+        max_range_y = ranges[1, 1]
+        self.max_range = np.sqrt(np.square(max_range_x) + np.square(max_range_y))
+        self.bin_sizes = np.abs(ranges[1] - ranges[0]) / dims
         self.dict_bins_3d_data = collections.defaultdict(self._bins_creator)
 
     def _bins_creator(self, ar=None):
@@ -28,7 +32,7 @@ class Bins3DWithGroupID(AccumulatorBase):
     def add_to_group_id(self, group_id, bins_3d_data):
         """
         Add flux (and weights) from an existing bins_2d object into the specified group_id
-        :type group_id: int
+        :type group_id: int64
         :type bins_3d_data: bins_3d.Bins3D
         """
         self.dict_bins_3d_data[group_id] += bins_3d_data
@@ -36,7 +40,7 @@ class Bins3DWithGroupID(AccumulatorBase):
     def add_array_to_group_id(self, group_id, ar_data):
         """
         Add flux (and weights) from an existing numpy array into the specified group_id
-        :type group_id: int
+        :type group_id: int64
         :type ar_data: np.multiarray.ndarray
         """
         self.add_to_group_id(group_id, self._bins_creator(ar_data))
@@ -49,8 +53,8 @@ class Bins3DWithGroupID(AccumulatorBase):
         :type other: Bins3DWithGroupID
         :rtype: Bins3DWithGroupID
         """
-        assert self.ranges == other.ranges
-        assert self.dims == other.dims
+        assert np.all(self.ranges == other.ranges)
+        assert np.all(self.dims == other.dims)
         for group_id, bins_2d_data in other.dict_bins_3d_data.items():
             self.dict_bins_3d_data[group_id] += bins_2d_data
         return self
@@ -149,10 +153,9 @@ class Bins3DWithGroupID(AccumulatorBase):
         :type metadata: list
         :rtype : Bins3DWithGroupID
         """
-        new_bins = cls(1, 1, 1, 1)
-        (new_bins.x_count, new_bins.y_count, new_bins.filename, new_bins.max_range,
-         new_bins.x_range, new_bins.y_range, new_bins.x_bin_size, new_bins.y_bin_size,
-         group_ids) = metadata
+        new_bins = cls(dims=np.array([1, 1, 1]), ranges=np.array([[1, 1, 1], [1, 1, 1]]))
+        (new_bins.dims, new_bins.filename, new_bins.max_range,
+         new_bins.ranges, new_bins.bin_sizes, group_ids) = metadata
         for index, group_id in enumerate(group_ids):
             new_bins.dict_bins_3d_data[group_id] = new_bins._bins_creator(ar[index])
         return new_bins
