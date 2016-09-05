@@ -2,7 +2,7 @@ import collections
 
 import numpy as np
 
-import bins_2d
+import bins_3d
 from flux_accumulator import AccumulatorBase
 
 
@@ -19,7 +19,7 @@ class Bins2DWithGroupID(AccumulatorBase):
         self.dict_bins_2d_data = collections.defaultdict(self._bins_creator)
 
     def _bins_creator(self, ar=None):
-        return bins_2d.Bins2D(self.x_count, self.y_count, self.x_range, self.y_range, ar_existing_data=ar)
+        return bins_3d.Bins2D(self.x_count, self.y_count, self.x_range, self.y_range, ar_existing_data=ar)
 
     def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask, ar_weights):
         assert False, "Not implemented"
@@ -28,7 +28,7 @@ class Bins2DWithGroupID(AccumulatorBase):
         """
         Add flux (and weights) from an existing bins_2d object into the specified group_id
         :type group_id: int
-        :type bins_2d_data: bins_2d.Bins2D
+        :type bins_2d_data: bins_3d.Bins2D
         """
         self.dict_bins_2d_data[group_id] += bins_2d_data
 

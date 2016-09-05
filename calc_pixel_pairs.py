@@ -12,8 +12,8 @@ from collections import namedtuple
 
 import numpy as np
 
-import bins_2d
-import bins_2d_with_group_id
+import bins_3d
+import bins_3d_with_group_id
 import common_settings
 import flux_histogram_bins
 import significant_qso_pairs
@@ -221,7 +221,7 @@ class PixelPairs:
                                                   y_bin_size=accumulator.get_y_bin_size(),
                                                   x_bin_count=accumulator.get_x_count(),
                                                   y_bin_count=accumulator.get_y_count())
-            local_bins = bins_2d.Bins2D(ar.shape[0], ar.shape[1],
+            local_bins = bins_3d.Bins2D(ar.shape[0], ar.shape[1],
                                         accumulator.get_x_range(), accumulator.get_y_range(), ar_existing_data=ar)
 
             flux_contribution = np.nanmax(np.abs(local_bins.ar_flux))
@@ -245,7 +245,7 @@ class PixelPairs:
             #                                               y_bin_size=accumulator.get_y_bin_size(),
             #                                               x_bin_count=accumulator.get_x_count(),
             #                                               y_bin_count=accumulator.get_y_count())
-            local_bins = bins_2d_with_group_id.Bins2DWithGroupID(
+            local_bins = bins_3d_with_group_id.Bins2DWithGroupID(
                 ar.shape[0], ar.shape[1], accumulator.get_x_range(), accumulator.get_y_range())
             local_bins.add_array_to_group_id(group_id=group_id, ar_data=ar)
 
@@ -300,10 +300,10 @@ class PixelPairs:
 
         pair_separation_bins = None
         if self.accumulator_type == accumulator_types.mean:
-            pair_separation_bins = bins_2d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
+            pair_separation_bins = bins_3d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
             pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
         elif self.accumulator_type == accumulator_types.mean_subsample:
-            pair_separation_bins = bins_2d_with_group_id.Bins2DWithGroupID(
+            pair_separation_bins = bins_3d_with_group_id.Bins2DWithGroupID(
                 NUM_BINS_X, NUM_BINS_Y, x_range=self.radius, y_range=self.radius)
             pair_separation_bins.set_filename(settings.get_correlation_estimator_subsamples_npz())
         elif self.accumulator_type == accumulator_types.histogram:
