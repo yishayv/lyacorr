@@ -22,8 +22,8 @@ class TestPixelPairs(TestCase):
         radius_quantity = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0)  # type: u.Quantity
         radius = radius_quantity.value
 
-        pair_separation_bins_1 = bins_3d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)
-        pair_separation_bins_2 = bins_3d.Bins2D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)
+        pair_separation_bins_1 = bins_3d.Bins3D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)
+        pair_separation_bins_2 = bins_3d.Bins3D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)
         delta_t_file = NpSpectrumContainer(readonly=False, create_new=True, num_spectra=2, filename=None)
 
         ar_z0 = np.arange(1.95, 3.56, 0.002)

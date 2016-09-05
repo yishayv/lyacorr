@@ -1,36 +1,29 @@
 import numpy as np
+from collections import namedtuple
 
 from flux_accumulator import AccumulatorBase
 
+BinDims = namedtuple('BinDims', ['x', 'y', 'f'])
+BinRange = namedtuple('BinRange', ['x', 'y', 'f'])
+
 
 class FluxHistogramBins(AccumulatorBase):
-    def __init__(self, x_count, y_count, f_count, x_range, y_range, f_min, f_max, filename=''):
-        self.ar_flux = np.zeros((x_count, y_count, f_count))
-        self.x_count = x_count
-        self.y_count = y_count
-        self.f_count = f_count
+    def __init__(self, dims, ranges, filename=''):
+        self.ar_flux = np.zeros(dims)
+        self.dims = dims
         self.filename = filename
-        self.max_range = np.sqrt(np.square(x_range) + np.square(y_range))
-        self.x_range = x_range
-        self.y_range = y_range
-        self.f_min = f_min
-        self.f_max = f_max
-        self.x_bin_size = float(x_range) / x_count
-        self.y_bin_size = float(y_range) / y_count
+        self.max_range = np.sqrt(np.square(ranges.x) + np.square(ranges.y))
+        self.ranges = ranges
+        self.bin_sizes = BinRange([float(range_i) / dim_i for range_i, dim_i in zip(ranges, dims)])
         self.pair_count = 0
 
-    def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask, ar_weights):
+    def add_array_with_mask(self, ar_flux, ar_x, ar_y, ar_z, mask, ar_weights):
         assert False, "Not implemented"
 
     def merge(self, bins2):
         assert self.ar_flux.shape == bins2.ar_flux.shape
-        assert self.x_range == bins2.x_range
-        assert self.y_range == bins2.y_range
-        assert self.x_count == bins2.x_count
-        assert self.y_count == bins2.y_count
-        assert self.f_count == bins2.f_count
-        assert self.f_min == bins2.f_min
-        assert self.f_max == bins2.f_max
+        assert self.ranges == bins2.ranges
+        assert self.dims == bins2.dims
         self.ar_flux += bins2.ar_flux
         self.pair_count += bins2.pair_count
         return self
@@ -41,9 +34,7 @@ class FluxHistogramBins(AccumulatorBase):
 
     def from_3d_array(self, array):
         self.ar_flux = array
-        self.x_count = self.ar_flux.shape[0]
-        self.y_count = self.ar_flux.shape[1]
-        self.f_count = self.ar_flux.shape[2]
+        self.dims = self.ar_flux.shape
 
     def load(self, filename):
         # TODO: to static
@@ -62,8 +53,7 @@ class FluxHistogramBins(AccumulatorBase):
 
         :type other: FluxHistogramBins
         """
-        new_obj = cls(other.x_count, other.y_count, other.f_count, other.x_range, other.y_range,
-                      other.f_min, other.f_max)
+        new_obj = cls(other.dims, other.ranges)
         new_obj.set_filename(other.filename)
         return new_obj
 
@@ -73,17 +63,14 @@ class FluxHistogramBins(AccumulatorBase):
         new_obj.merge(other)
 
     @classmethod
-    def from_np_array(cls, ar_flux, x_range, y_range, f_min, f_max):
+    def from_np_array(cls, ar_flux, ranges):
         """
 
         :type ar_flux: np.array
-        :type x_range: float
-        :type y_range: float
-        :type f_min: float
-        :type f_max: float
+        :type ranges: BinRange
         """
         assert ar_flux.ndim == 3
-        new_bins = cls(ar_flux.shape[0], ar_flux.shape[1], ar_flux.shape[2], x_range, y_range, f_min, f_max)
+        new_bins = cls(ar_flux.shape, ranges)
         new_bins.ar_flux = ar_flux
         return new_bins
 
@@ -102,40 +89,29 @@ class FluxHistogramBins(AccumulatorBase):
     def get_max_range(self):
         return self.max_range
 
-    def get_x_range(self):
-        return self.x_range
+    def get_ranges(self):
+        return self.ranges
 
-    def get_y_range(self):
-        return self.y_range
+    def get_bin_sizes(self):
+        return self.bin_sizes
 
-    def get_x_bin_size(self):
-        return self.x_bin_size
-
-    def get_y_bin_size(self):
-        return self.y_bin_size
-
-    def get_x_count(self):
-        return self.x_count
-
-    def get_y_count(self):
-        return self.y_count
+    def get_dims(self):
+        return self.dims
 
     def get_pair_count(self):
         return self.pair_count
 
     def get_metadata(self):
-        return [self.x_count, self.y_count, self.f_count,
+        return [self.dims,
                 self.filename, self.max_range,
-                self.x_range, self.y_range,
-                self.f_min, self.f_max,
-                self.x_bin_size, self.y_bin_size,
+                self.ranges,
+                self.bin_sizes,
                 self.pair_count]
 
     @classmethod
     def load_from(cls, ar, metadata):
-        new_bins = cls(1, 1, 1, 1, 1, 1, 1)
-        (new_bins.x_count, new_bins.y_count, new_bins.f_count, new_bins.filename, new_bins.max_range,
-         new_bins.x_range, new_bins.y_range, new_bins.f_min, new_bins.f_max, new_bins.x_bin_size,
-         new_bins.y_bin_size, new_bins.pair_count) = metadata
+        new_bins = cls((1, 1, 1), (1, 1, 1))
+        (new_bins.dims, new_bins.filename, new_bins.max_range,
+         new_bins.ranges, new_bins.bin_size, new_bins.pair_count) = metadata
         new_bins.ar_flux = ar
         return new_bins

@@ -22,12 +22,13 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
-    def add_array_with_mask(self, ar_flux, ar_x, ar_y, mask, ar_weights):
+    def add_array_with_mask(self, ar_flux, ar_x, ar_y, ar_z, mask, ar_weights):
         """
         Add flux with two corresponding coordinates, and a mask.
         :type ar_flux: np.multiarray.ndarray
         :type ar_x: np.multiarray.ndarray
         :type ar_y: np.multiarray.ndarray
+        :type ar_z: np.multiarray.ndarray
         :type mask: np.multiarray.ndarray
         :type ar_weights: np.multiarray.ndarray
         :return:
@@ -47,27 +48,15 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
-    def get_x_range(self):
+    def get_ranges(self):
         return
 
     @abstractmethod
-    def get_y_range(self):
+    def get_bin_sizes(self):
         return
 
     @abstractmethod
-    def get_x_bin_size(self):
-        return
-
-    @abstractmethod
-    def get_y_bin_size(self):
-        return
-
-    @abstractmethod
-    def get_x_count(self):
-        return
-
-    @abstractmethod
-    def get_y_count(self):
+    def get_dims(self):
         return
 
     @abstractmethod
