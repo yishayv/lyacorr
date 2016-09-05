@@ -214,14 +214,14 @@ class PixelPairs:
             return
 
         if self.accumulator_type == accumulator_types.mean:
-            ar = lyacorr_cython_helper.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                                                       ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-                                                       ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                                                       qso_angle=qso_angle,
-                                                       x_bmin_size=accumulator.get_bin_sizes().x,
-                                                       y_bin_size=accumulator.get_bin_sizes().y(),
-                                                       x_bin_count=accumulator.get_dims().x,
-                                                       y_bin_count=accumulator.get_dims().y)
+            ar = lyacorr_cython_helper.bin_pixel_pairs(spec1_distances, spec2_distances,
+                                                       spec1_flux, spec2_flux,
+                                                       qso1_weights, qso2_weights,
+                                                       qso_angle,
+                                                       accumulator.get_bin_sizes().x,
+                                                       accumulator.get_bin_sizes().y(),
+                                                       accumulator.get_dims().x,
+                                                       accumulator.get_dims().y)
             local_bins = bins_3d.Bins3D(ar.shape,
                                         accumulator.get_ranges(), ar_existing_data=ar)
 
@@ -238,14 +238,6 @@ class PixelPairs:
                                                        accumulator.get_bin_sizes().y(),
                                                        accumulator.get_dims().x,
                                                        accumulator.get_dims().y)
-            # ar = lyacorr_cython_helper.bin_pixel_pairs(ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-            #                                               ar_flux1=spec1_flux, ar_flux2=spec2_flux,
-            #                                               ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-            #                                               qso_angle=qso_angle,
-            #                                               x_bin_size=accumulator.get_bin_sizes().x,
-            #                                               y_bin_size=accumulator.get_bin_sizes().y,
-            #                                               x_bin_count=accumulator.get_dims().x,
-            #                                               y_bin_count=accumulator.get_dims().y)
             local_bins = bins_3d_with_group_id.Bins3DWithGroupID(
                 ar.shape, accumulator.get_ranges())
             local_bins.add_array_to_group_id(group_id=group_id, ar_data=ar)
@@ -261,16 +253,17 @@ class PixelPairs:
             assert isinstance(accumulator, flux_histogram_bins.FluxHistogramBins)
             # TODO: try to avoid using implementation details of the accumulator interface
             accumulator.pair_count = lyacorr_cython_helper.bin_pixel_pairs_histogram(
-                ar_dist1=spec1_distances, ar_dist2=spec2_distances,
-                ar_flux1=spec1_flux, ar_flux2=spec2_flux, ar_weights1=qso1_weights, ar_weights2=qso2_weights,
-                out=accumulator.ar_flux,
-                qso_angle=qso_angle,
-                x_bin_size=accumulator.get_bin_sizes().x,
-                y_bin_size=accumulator.get_bin_sizes().y,
-                x_bin_count=accumulator.get_dims().x,
-                y_bin_count=accumulator.get_dims().y,
-                f_min=f_min, f_max=f_max,
-                f_bin_count=accumulator.get_dims().f, pair_count=accumulator.pair_count)
+                spec1_distances, spec2_distances,
+                spec1_flux, spec2_flux, qso1_weights, qso2_weights,
+                qso_angle,
+                accumulator.get_bin_sizes().x,
+                accumulator.get_bin_sizes().y,
+                accumulator.get_dims().x,
+                accumulator.get_dims().y,
+                f_min, f_max,
+                accumulator.get_dims().f, accumulator.pair_count,
+                accumulator.ar_flux
+                )
             pass
 
     def apply_to_flux_pairs(self, pairs, pairs_angles, delta_t_file, accumulator):

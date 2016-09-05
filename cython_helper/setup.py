@@ -11,7 +11,9 @@ from Cython.Distutils import build_ext
 
 setup(
     name='lyacorr_cython_helper',
+    version='0.0.1',
     cmdclass={'build_ext': build_ext},
-    ext_modules=[Extension("lyacorr_cython_helper", ["lyacorr_cython_helper.pyx"], 
-        include_dirs=[numpy.get_include()])]
+    ext_modules=[Extension("lyacorr_cython_helper", ["lyacorr_cython_helper.pyx"],
+        include_dirs=[numpy.get_include()])],
+    modules=['version_helper.py']
 )
