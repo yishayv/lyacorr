@@ -106,7 +106,7 @@ class FluxHistogramBins(AccumulatorBase):
 
     @classmethod
     def load_from(cls, ar, metadata):
-        new_bins = cls(dims=np.array((1, 1, 1)), ranges=np.array(((0,0,0),(1, 1, 1))))
+        new_bins = cls(dims=np.array((1, 1, 1)), ranges=np.array(((0, 0, 0), (1, 1, 1))))
         (new_bins.dims, new_bins.filename, new_bins.max_range,
          new_bins.ranges, new_bins.bin_size, new_bins.pair_count) = metadata
         new_bins.ar_flux = ar

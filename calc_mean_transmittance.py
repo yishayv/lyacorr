@@ -5,7 +5,6 @@
     the results in Rank 0 (root).
     The spectra are processed in chunks, and gathered to the root rank after each sub-chunk.
 """
-import itertools
 import pprint
 from collections import Counter
 

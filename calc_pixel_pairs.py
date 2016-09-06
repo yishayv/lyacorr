@@ -231,20 +231,23 @@ class PixelPairs:
 
             accumulator += local_bins
         elif self.accumulator_type == accumulator_types.mean_subsample:
-            ar = lyacorr_cython_helper.bin_pixel_pairs(spec1_distances, spec2_distances,
-                                                       spec1_flux, spec2_flux,
-                                                       qso1_weights, qso2_weights,
-                                                       qso_angle,
-                                                       accumulator.get_dims(),
-                                                       accumulator.get_ranges())
-            local_bins = bins_3d_with_group_id.Bins3DWithGroupID(
-                accumulator.get_dims(), accumulator.get_ranges())
-            local_bins.add_array_to_group_id(group_id=group_id, ar_data=ar)
+            # local_bins = bins_3d_with_group_id.Bins3DWithGroupID(
+            #     accumulator.get_dims(), accumulator.get_ranges())  # type: bins_3d_with_group_id.Bins3DWithGroupID
+            # retrieve or create storage for this array
+            ar_view = accumulator.get_group_view(group_id).ar_data
+            lyacorr_cython_helper.bin_pixel_pairs(spec1_distances, spec2_distances,
+                                                  spec1_flux, spec2_flux,
+                                                  qso1_weights, qso2_weights,
+                                                  qso_angle,
+                                                  accumulator.get_dims(),
+                                                  accumulator.get_ranges(),
+                                                  ar_view)
 
-            flux_contribution = np.nanmax(np.abs(local_bins.dict_bins_3d_data[group_id].ar_flux))
-            self.significant_qso_pairs.add_if_larger(spec1_index, spec2_index, flux_contribution)
+            # disabled for performance reasons
+            # flux_contribution = np.nanmax(np.abs(local_bins.dict_bins_3d_data[group_id].ar_flux))
+            # self.significant_qso_pairs.add_if_larger(spec1_index, spec2_index, flux_contribution)
 
-            accumulator += local_bins
+            # accumulator += local_bins
         elif self.accumulator_type == accumulator_types.histogram:
             assert isinstance(accumulator, flux_histogram_bins.FluxHistogramBins)
             # TODO: try to avoid using implementation details of the accumulator interface

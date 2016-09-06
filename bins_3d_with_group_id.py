@@ -59,6 +59,12 @@ class Bins3DWithGroupID(AccumulatorBase):
             self.dict_bins_3d_data[group_id] += bins_2d_data
         return self
 
+    def get_group_view(self, group_id):
+        if group_id not in self.dict_bins_3d_data:
+            # create a new group_id key with a zeros array
+            self.add_array_to_group_id(group_id, None)
+        return self.dict_bins_3d_data[group_id]
+
     def save(self, filename):
         self.filename = filename
         self.flush()
