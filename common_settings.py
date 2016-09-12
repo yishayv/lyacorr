@@ -80,6 +80,8 @@ class Settings:
     section_performance = 'Performance'
     # default chunk size for multiprocessing
     opt_file_chunk_size = 'file_chunk_size'
+    # size of QSO bundle to match against all other QSOs.
+    opt_qso_bundle_size = 'mpi_qso_bundle'
     # divide MPI tasks to sub-chunks
     opt_mpi_num_sub_chunks = 'mpi_num_sub_chunks'
     # don't use multiprocessing for easier profiling and debugging
@@ -165,7 +167,8 @@ class Settings:
         value_correlation_estimator_subsamples_npz = '../../data/estimator_subsamples.npz'
 
         value_file_chunk_size = 10000
-        value_mpi_num_sub_chunks = 1440
+        value_qso_bundle_size = 500
+        value_mpi_num_sub_chunks = 32
         value_single_process = False
         value_profile = False
 
@@ -233,6 +236,7 @@ class Settings:
 
         self.config_parser.add_section(self.section_performance)
         self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
+        self.config_parser.set(self.section_performance, self.opt_qso_bundle_size, str(value_qso_bundle_size))
         self.config_parser.set(self.section_performance, self.opt_mpi_num_sub_chunks, str(value_mpi_num_sub_chunks))
         self.config_parser.set(self.section_performance, self.opt_single_process, str(value_single_process))
         self.config_parser.set(self.section_performance, self.opt_profile, str(value_profile))
@@ -383,6 +387,9 @@ class Settings:
 
     def get_file_chunk_size(self):
         return self.config_parser.getint(self.section_performance, self.opt_file_chunk_size)
+
+    def get_qso_bundle_size(self):
+        return self.config_parser.getint(self.section_performance, self.opt_qso_bundle_size)
 
     def get_mpi_num_sub_chunks(self):
         return self.config_parser.getint(self.section_performance, self.opt_mpi_num_sub_chunks)

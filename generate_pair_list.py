@@ -19,9 +19,10 @@ import common_settings
 import mpi_helper
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 from data_access.read_spectrum_fits import QSORecord
+from mpi_accumulate import split_seq
 from physics_functions import comoving_distance
 from physics_functions.spherical_math import SkyGroups, find_spherical_mean_deg
-from python_compat import reduce, zip
+from python_compat import reduce, zip, range
 
 settings = common_settings.Settings()
 
@@ -102,6 +103,70 @@ class SubChunkHelper:
                 print('no results received.')
 
 
+def generate_pairs(ar_dec, ar_ra, chunk_sizes, coord_permutation, coord_set, local_end_index, local_start_index,
+                   max_angular_separation):
+    """
+    Generate QSO pairs, in bundles.
+    Each time, a bundle of QSOs is matched against the full list
+    :param ar_dec: declination array
+    :param ar_ra: right ascension array
+    :param chunk_sizes:
+    :param coord_permutation: pseudo-random permutation of qso indices, for counting each pair only once
+    :param coord_set: coordinate set of all QSOs
+    :param local_end_index: last QSO index for this MPI node
+    :param local_start_index: first QSO index for this MPI node
+    :param max_angular_separation: maximum angular separation for sky search
+    :return:
+    """
+    mpi_helper.l_print('matching objects in range:', local_start_index, 'to', local_end_index)
+    # each node matches a range of objects against the full list.
+
+    qso_bundle_size = settings.get_qso_bundle_size()
+
+    bundles = split_seq(qso_bundle_size, range(local_start_index, local_end_index))
+
+    for current_bundle in bundles:
+        count = matching.search_around_sky(coord_set[current_bundle[0]:current_bundle[-1]],
+                                           coord_set,
+                                           max_angular_separation)
+        # search around sky returns indices in the input lists.
+        # each node should add its offset to get the QSO index in the original list (only for x[0]).
+        # qso2 contains the unmodified index to the full list of QSOs.
+        # the third vector is a count so we can keep a reference to the angles vector.
+        qso_index_1 = count[0] + current_bundle[0]
+        qso_index_2 = count[1]
+        # find the mean ra,dec for each pair
+        qso_ra_pairs = np.vstack((ar_ra[qso_index_1], ar_ra[qso_index_2]))
+        qso_dec_pairs = np.vstack((ar_dec[qso_index_1], ar_dec[qso_index_2]))
+        # we can safely assume that separations are small enough so we don't have catastrophic cancellation of the mean,
+        # so checking the unit radius value is not required
+        pair_means_ra, local_pair_means_dec, _ = find_spherical_mean_deg(qso_ra_pairs, qso_dec_pairs,
+                                                                         axis=0)
+        sky_groups = SkyGroups(nside=settings.get_healpix_nside())
+        group_id = sky_groups.get_group_ids(pair_means_ra, local_pair_means_dec)
+        qso_pairs_with_unity = np.vstack((qso_index_1,
+                                          qso_index_2,
+                                          group_id,
+                                          np.arange(count[0].size)))
+        qso_pair_angles = count[2].to(u.rad).value
+        mpi_helper.l_print('number of QSO pairs (including identity pairs):', count[0].size)
+        mpi_helper.l_print('angle vector size:', qso_pair_angles.size)
+        # remove pairs of the same QSO.
+        # qso_pairs = qso_pairs_with_unity.T[qso_pairs_with_unity[1] != qso_pairs_with_unity[0]]
+        # remove pairs of the same QSO, which have different [plate,mjd,fiber]
+        # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
+        # also keep only 1 instance of each pair (keep only: qso1_index_hash < qso2_index_hash)
+        qso_pairs = qso_pairs_with_unity.T[np.logical_and(qso_pair_angles > 5e-5,
+                                                          coord_permutation[qso_pairs_with_unity[0]] <
+                                                          coord_permutation[qso_pairs_with_unity[1]])]
+        mpi_helper.l_print('total number of redundant objects removed:', qso_pairs_with_unity.shape[1] -
+                           qso_pairs.shape[0] - chunk_sizes[comm.rank])
+        # l_print(pairs)
+        mpi_helper.l_print('number of QSO pairs:', qso_pairs.shape[0])
+        # l_print('angle vector:', x[2])
+        yield qso_pair_angles, qso_pairs
+
+
 def profile_main():
     # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
     # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
@@ -148,55 +213,6 @@ def profile_main():
 
     local_start_index = chunk_offsets[comm.rank]
     local_end_index = local_start_index + chunk_sizes[comm.rank]
-    mpi_helper.l_print('matching objects in range:', local_start_index, 'to', local_end_index)
-    # each node matches a range of objects against the full list.
-    count = matching.search_around_sky(coord_set[local_start_index:local_end_index],
-                                       coord_set,
-                                       max_angular_separation)
-
-    # search around sky returns indices in the input lists.
-    # each node should add its offset to get the QSO index in the original list (only for x[0]).
-    # qso2 contains the unmodified index to the full list of QSOs.
-    # the third vector is a count so we can keep a reference to the angles vector.
-    local_qso_index_1 = count[0] + local_start_index
-    local_qso_index_2 = count[1]
-
-    # find the mean ra,dec for each pair
-    local_qso_ra_pairs = np.vstack((ar_ra[local_qso_index_1], ar_ra[local_qso_index_2]))
-    local_qso_dec_pairs = np.vstack((ar_dec[local_qso_index_1], ar_dec[local_qso_index_2]))
-    # we can safely assume that separations are small enough so we don't have catastrophic cancellation of the mean,
-    # so checking the unit radius value is not required
-    local_pair_means_ra, local_pair_means_dec, _ = find_spherical_mean_deg(local_qso_ra_pairs, local_qso_dec_pairs,
-                                                                           axis=0)
-
-    sky_groups = SkyGroups(nside=settings.get_healpix_nside())
-    group_id = sky_groups.get_group_ids(local_pair_means_ra, local_pair_means_dec)
-
-    local_qso_pairs_with_unity = np.vstack((local_qso_index_1,
-                                            local_qso_index_2,
-                                            group_id,
-                                            np.arange(count[0].size)))
-
-    local_qso_pair_angles = count[2].to(u.rad).value
-    mpi_helper.l_print('number of QSO pairs (including identity pairs):', count[0].size)
-    mpi_helper.l_print('angle vector size:', local_qso_pair_angles.size)
-
-    # remove pairs of the same QSO.
-    # local_qso_pairs = local_qso_pairs_with_unity.T[local_qso_pairs_with_unity[1] != local_qso_pairs_with_unity[0]]
-
-    # remove pairs of the same QSO, which have different [plate,mjd,fiber]
-    # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
-    # also keep only 1 instance of each pair (keep only: qso1_index_hash < qso2_index_hash)
-    local_qso_pairs = local_qso_pairs_with_unity.T[np.logical_and(local_qso_pair_angles > 5e-5,
-                                                                  coord_permutation[local_qso_pairs_with_unity[0]] <
-                                                                  coord_permutation[local_qso_pairs_with_unity[1]])]
-
-    mpi_helper.l_print('total number of redundant objects removed:', local_qso_pairs_with_unity.shape[1] -
-                       local_qso_pairs.shape[0] - chunk_sizes[comm.rank])
-
-    # l_print(pairs)
-    mpi_helper.l_print('number of QSO pairs:', local_qso_pairs.shape[0])
-    # l_print('angle vector:', x[2])
 
     if settings.get_enable_weighted_median_estimator():
         accumulator_type = calc_pixel_pairs.accumulator_types.histogram
@@ -213,17 +229,24 @@ def profile_main():
     pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type=accumulator_type)
     # divide the work into sub chunks
     # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
-    # divide by comm.size to make sub chunk size independent of number of nodes.
-    num_sub_chunks_per_node = settings.get_mpi_num_sub_chunks() // comm.size
-    pixel_pair_sub_chunks = mpi_helper.get_chunks(local_qso_pairs.shape[0], num_sub_chunks_per_node)
+    # NOTE: we no longer divide by comm.size to make sub chunk size independent of number of nodes,
+    #       because pairs are generated in bundles, instead of once at the beginning.
+    num_sub_chunks_per_node = settings.get_mpi_num_sub_chunks()
+
     sub_chunk_helper = SubChunkHelper()
-    for i, j, k in zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1], itertools.count()):
-        sub_chunk_start = j
-        sub_chunk_end = j + i
-        mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", k, "out of", len(pixel_pair_sub_chunks[0]))
-        sub_chunk_helper.add_pairs_in_sub_chunk(delta_t_file, local_qso_pair_angles,
-                                                local_qso_pairs[sub_chunk_start:sub_chunk_end],
-                                                pixel_pairs_object)
+    for local_qso_pair_angles, local_qso_pairs in generate_pairs(
+            ar_dec, ar_ra, chunk_sizes, coord_permutation, coord_set, local_end_index, local_start_index,
+            max_angular_separation):
+
+        pixel_pair_sub_chunks = mpi_helper.get_chunks(local_qso_pairs.shape[0], num_sub_chunks_per_node)
+        for i, j, k in zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1], itertools.count()):
+            sub_chunk_start = j
+            sub_chunk_end = j + i
+            mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", k, "out of",
+                               len(pixel_pair_sub_chunks[0]))
+            sub_chunk_helper.add_pairs_in_sub_chunk(delta_t_file, local_qso_pair_angles,
+                                                    local_qso_pairs[sub_chunk_start:sub_chunk_end],
+                                                    pixel_pairs_object)
 
 
 if settings.get_profile():
