@@ -81,7 +81,7 @@ class Settings:
     # default chunk size for multiprocessing
     opt_file_chunk_size = 'file_chunk_size'
     # size of QSO bundle to match against all other QSOs.
-    opt_qso_bundle_size = 'mpi_qso_bundle'
+    opt_qso_bundle_size = 'qso_bundle_size'
     # divide MPI tasks to sub-chunks
     opt_mpi_num_sub_chunks = 'mpi_num_sub_chunks'
     # don't use multiprocessing for easier profiling and debugging
