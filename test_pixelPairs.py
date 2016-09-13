@@ -1,12 +1,12 @@
 from unittest import TestCase
 
+import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
-import matplotlib.pyplot as plt
 
+import bins_3d
 import calc_pixel_pairs
 import physics_functions.comoving_distance
-import bins_3d
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 
 NUM_BINS_X = 50
@@ -22,8 +22,6 @@ class TestPixelPairs(TestCase):
         radius_quantity = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0)  # type: u.Quantity
         radius = radius_quantity.value
 
-        pair_separation_bins_1 = bins_3d.Bins3D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)
-        pair_separation_bins_2 = bins_3d.Bins3D(NUM_BINS_X, NUM_BINS_Y, x_range=radius, y_range=radius)
         delta_t_file = NpSpectrumContainer(readonly=False, create_new=True, num_spectra=2, filename=None)
 
         ar_z0 = np.arange(1.95, 3.56, 0.002)
@@ -36,8 +34,14 @@ class TestPixelPairs(TestCase):
         delta_t_file.set_flux(1, np.sin(ar_z1 * 50))
         delta_t_file.set_ivar(1, ar_z1)
 
-        pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius, 'mean')
+        pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius, calc_pixel_pairs.accumulator_types.mean)
         qso_angle = 0.04
+
+        bin_dims = np.array([NUM_BINS_X, NUM_BINS_Y, 1])
+        bin_ranges = np.array([[0, 0, pixel_pairs.min_distance],
+                               [pixel_pairs.radius, pixel_pairs.radius, pixel_pairs.max_distance]])
+        pair_separation_bins_1 = bins_3d.Bins3D(dims=bin_dims, ranges=bin_ranges)
+        pair_separation_bins_2 = bins_3d.Bins3D(dims=bin_dims, ranges=bin_ranges)
 
         pixel_pairs.find_nearby_pixels(accumulator=pair_separation_bins_1, qso_angle=qso_angle, spec1_index=0,
                                        spec2_index=1,
@@ -58,6 +62,7 @@ class TestPixelPairs(TestCase):
         if plot:
             # plt.set_cmap('gray')
             with np.errstate(divide='ignore', invalid='ignore'):
-                ar_est = pair_separation_bins_1.ar_flux / pair_separation_bins_1.ar_weights
+                ar_est = (np.sum(pair_separation_bins_1.ar_flux, axis=2) /
+                          np.sum(pair_separation_bins_1.ar_weights, axis=2))
             plt.imshow(ar_est, interpolation='nearest')
             plt.show()

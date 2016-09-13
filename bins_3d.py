@@ -49,12 +49,15 @@ class Bins3D(AccumulatorBase):
         :param mask: np.multiarray.ndarray
         :param ar_weights: np.multiarray.ndarray
         """
-        ar_x_int = ar_x.astype(self.index_type)
-        ar_y_int = ar_y.astype(self.index_type)
-        ar_z_int = ar_z.astype(self.index_type)
+
+        ar_x_int = ((ar_x - self.ranges[0, 0]) / self.bin_sizes[0]).astype(self.index_type)
+        ar_y_int = ((ar_y - self.ranges[0, 1]) / self.bin_sizes[1]).astype(self.index_type)
+        ar_z_int = ((ar_z - self.ranges[0, 2]) / self.bin_sizes[2]).astype(self.index_type)
         # restrict the mask to pixels inside the bin range.
-        m = np.any((ar_x_int >= 0, ar_y_int >= 0,
-                    ar_x_int < self.dims[0], ar_y_int < self.dims[1], mask), axis=0)
+        m = np.all((0 <= ar_x_int, ar_x_int < self.dims[0],
+                    0 <= ar_y_int, ar_y_int < self.dims[1],
+                    0 <= ar_z_int, ar_z_int < self.dims[2],
+                    mask), axis=0)
         ar_flux_masked = ar_flux[m]
         ar_weights_masked = ar_weights[m]
         ar_indices_x = ar_x_int[m]
@@ -65,12 +68,12 @@ class Bins3D(AccumulatorBase):
         # represent bins in 1D. this is faster than a 2D numpy histogram
         ar_indices_xyz = ar_indices_z + self.dims[2] * (ar_indices_y + (self.dims[1] * ar_indices_x))
         # bin data according to x,y values
-        flux_hist_1d = np.bincount(ar_indices_xyz, weights=ar_flux_masked * ar_weights_masked,
-                                   minlength=self.dims[1] * self.dims[0])
+        flux_hist_1d = np.bincount(ar_indices_xyz, weights=ar_flux_masked,
+                                   minlength=int(np.prod(self.dims)))
         weights_hist_1d = np.bincount(ar_indices_xyz, weights=ar_weights_masked,
-                                      minlength=self.dims[1] * self.dims[0])
+                                      minlength=int(np.prod(self.dims)))
         count_hist_1d = np.bincount(ar_indices_xyz, weights=None,
-                                    minlength=self.dims[1] * self.dims[0])
+                                    minlength=int(np.prod(self.dims)))
         # return from 1D to a 2d array
         flux_hist = flux_hist_1d.reshape(self.dims)
         count_hist = count_hist_1d.reshape(self.dims)

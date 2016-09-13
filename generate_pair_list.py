@@ -19,7 +19,6 @@ import common_settings
 import mpi_helper
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 from data_access.read_spectrum_fits import QSORecord
-from mpi_accumulate import split_seq
 from physics_functions import comoving_distance
 from physics_functions.spherical_math import SkyGroups, find_spherical_mean_deg
 from python_compat import reduce, zip, range
@@ -33,6 +32,21 @@ z_step = 0.001
 cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
 
 comm = MPI.COMM_WORLD
+
+
+def get_bundles(start, end, size):
+    """
+    split a range into bundles.
+    each bundle is a tuple with an offset and size.
+    :type start: int
+    :type end: int
+    :type size: int
+    :rtype: tuple(int, int)
+    """
+    offsets = range(start, end, size)
+    sizes = [size] * len(offsets)
+    sizes[-1] = end - offsets[-1]
+    return zip(offsets, sizes)
 
 
 class SubChunkHelper:
@@ -103,14 +117,13 @@ class SubChunkHelper:
                 print('no results received.')
 
 
-def generate_pairs(ar_dec, ar_ra, chunk_sizes, coord_permutation, coord_set, local_end_index, local_start_index,
+def generate_pairs(ar_dec, ar_ra, coord_permutation, coord_set, local_end_index, local_start_index,
                    max_angular_separation):
     """
     Generate QSO pairs, in bundles.
     Each time, a bundle of QSOs is matched against the full list
     :param ar_dec: declination array
     :param ar_ra: right ascension array
-    :param chunk_sizes:
     :param coord_permutation: pseudo-random permutation of qso indices, for counting each pair only once
     :param coord_set: coordinate set of all QSOs
     :param local_end_index: last QSO index for this MPI node
@@ -118,22 +131,33 @@ def generate_pairs(ar_dec, ar_ra, chunk_sizes, coord_permutation, coord_set, loc
     :param max_angular_separation: maximum angular separation for sky search
     :return:
     """
-    mpi_helper.l_print('matching objects in range:', local_start_index, 'to', local_end_index)
     # each node matches a range of objects against the full list.
 
     qso_bundle_size = settings.get_qso_bundle_size()
 
-    bundles = split_seq(qso_bundle_size, range(local_start_index, local_end_index))
+    bundles = list(get_bundles(local_start_index, local_end_index, qso_bundle_size))
+    num_bundles = len(bundles)
 
-    for current_bundle in bundles:
-        count = matching.search_around_sky(coord_set[current_bundle[0]:current_bundle[-1]],
+    # if the number of bundles is not the same across all MPI nodes (which should be rare),
+    # we are not allowed to use the synchronized version of print.
+    num_bundles = comm.allgather(num_bundles)
+    mpi_helper.r_print("number of QSO bundles per node:", num_bundles)
+    is_num_bundles_equal = np.all(np.array(num_bundles) == num_bundles[0])
+    print_func = mpi_helper.l_print if is_num_bundles_equal else mpi_helper.l_print_no_barrier
+    mpi_helper.r_print('using print function:', print_func.__name__)
+
+    for bundle_start, bundle_size in bundles:
+        print_func('matching ', bundle_size, ' objects, starting at :', bundle_start)
+        print_func('node progress:{:.1f}%'.format(
+            100. * (bundle_start - local_start_index) / (local_end_index - local_start_index)))
+        count = matching.search_around_sky(coord_set[bundle_start:bundle_start + bundle_size],
                                            coord_set,
                                            max_angular_separation)
         # search around sky returns indices in the input lists.
         # each node should add its offset to get the QSO index in the original list (only for x[0]).
         # qso2 contains the unmodified index to the full list of QSOs.
         # the third vector is a count so we can keep a reference to the angles vector.
-        qso_index_1 = count[0] + current_bundle[0]
+        qso_index_1 = count[0] + bundle_start
         qso_index_2 = count[1]
         # find the mean ra,dec for each pair
         qso_ra_pairs = np.vstack((ar_ra[qso_index_1], ar_ra[qso_index_2]))
@@ -149,21 +173,17 @@ def generate_pairs(ar_dec, ar_ra, chunk_sizes, coord_permutation, coord_set, loc
                                           group_id,
                                           np.arange(count[0].size)))
         qso_pair_angles = count[2].to(u.rad).value
-        mpi_helper.l_print('number of QSO pairs (including identity pairs):', count[0].size)
-        mpi_helper.l_print('angle vector size:', qso_pair_angles.size)
-        # remove pairs of the same QSO.
-        # qso_pairs = qso_pairs_with_unity.T[qso_pairs_with_unity[1] != qso_pairs_with_unity[0]]
+        print_func('number of QSO pairs (including identity pairs):', count[0].size)
+        print_func('angle vector size:', qso_pair_angles.size)
         # remove pairs of the same QSO, which have different [plate,mjd,fiber]
         # assume that QSOs within roughly 10 arc-second (5e-5 rads) are the same object.
         # also keep only 1 instance of each pair (keep only: qso1_index_hash < qso2_index_hash)
         qso_pairs = qso_pairs_with_unity.T[np.logical_and(qso_pair_angles > 5e-5,
                                                           coord_permutation[qso_pairs_with_unity[0]] <
                                                           coord_permutation[qso_pairs_with_unity[1]])]
-        mpi_helper.l_print('total number of redundant objects removed:', qso_pairs_with_unity.shape[1] -
-                           qso_pairs.shape[0] - chunk_sizes[comm.rank])
-        # l_print(pairs)
-        mpi_helper.l_print('number of QSO pairs:', qso_pairs.shape[0])
-        # l_print('angle vector:', x[2])
+        print_func('total number of redundant objects removed:',
+                   qso_pairs_with_unity.shape[1] - qso_pairs.shape[0])
+        print_func('number of QSO pairs:', qso_pairs.shape[0])
         yield qso_pair_angles, qso_pairs
 
 
@@ -235,7 +255,7 @@ def profile_main():
 
     sub_chunk_helper = SubChunkHelper()
     for local_qso_pair_angles, local_qso_pairs in generate_pairs(
-            ar_dec, ar_ra, chunk_sizes, coord_permutation, coord_set, local_end_index, local_start_index,
+            ar_dec, ar_ra, coord_permutation, coord_set, local_end_index, local_start_index,
             max_angular_separation):
 
         pixel_pair_sub_chunks = mpi_helper.get_chunks(local_qso_pairs.shape[0], num_sub_chunks_per_node)

@@ -95,8 +95,8 @@ class PixelPairs:
 
         # the maximum distance that can be stored in the accumulator
         r = float(accumulator.get_max_range())
-        range_parallel = np.float32(accumulator.get_ranges().x)
-        range_transverse = np.float32(accumulator.get_ranges().y)
+        range_parallel = np.float32(accumulator.get_ranges()[1, 0])
+        range_transverse = np.float32(accumulator.get_ranges()[1, 1])
 
         spec1_z = delta_t_file.get_wavelength(spec1_index)
         spec2_z = delta_t_file.get_wavelength(spec2_index)
@@ -147,11 +147,11 @@ class PixelPairs:
         # r|| = abs(r1 - r2)
         np.subtract(spec1_distances[:, None], spec2_distances, out=r_parallel)
         np.abs(r_parallel, out=r_parallel)
-        np.multiply(r_parallel, 1. / accumulator.get_bin_sizes().x, out=r_parallel)
 
         # r_ =  (r1 + r2)/2 * qso_angle
         np.add(spec1_distances[:, None], spec2_distances, out=mean_distance)
-        np.multiply(mean_distance, qso_angle / 2. / accumulator.get_bin_sizes().y, out=r_transverse)
+        np.multiply(mean_distance, 1. / 2, out=mean_distance)
+        np.multiply(mean_distance, qso_angle, out=r_transverse)
 
         # mask all elements that are too far apart
         np.less(r_parallel, range_parallel, out=mask_matrix_parallel)
@@ -223,7 +223,7 @@ class PixelPairs:
                                                        qso_angle,
                                                        accumulator.get_dims(),
                                                        accumulator.get_ranges())
-            local_bins = bins_3d.Bins3D(ar.shape,
+            local_bins = bins_3d.Bins3D(accumulator.get_dims(),
                                         accumulator.get_ranges(), ar_existing_data=ar)
 
             flux_contribution = np.nanmax(np.abs(local_bins.ar_flux))
@@ -234,6 +234,7 @@ class PixelPairs:
             # local_bins = bins_3d_with_group_id.Bins3DWithGroupID(
             #     accumulator.get_dims(), accumulator.get_ranges())  # type: bins_3d_with_group_id.Bins3DWithGroupID
             # retrieve or create storage for this array
+            assert isinstance(accumulator, bins_3d_with_group_id.Bins3DWithGroupID)
             ar_view = accumulator.get_group_view(group_id).ar_data
             lyacorr_cython_helper.bin_pixel_pairs(spec1_distances, spec2_distances,
                                                   spec1_flux, spec2_flux,
