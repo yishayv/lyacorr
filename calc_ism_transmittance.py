@@ -110,7 +110,7 @@ def ism_transmittance_chunk(qso_record_table):
         l_print_no_barrier("extinction_bin = ", extinction_bin)
         ar_ism_resampled = np.interp(ar_wavelength,
                                      ism_spectra.get_wavelength(extinction_bin),
-                                     ism_spectra.get_flux(extinction_bin))
+                                     ism_spectra.get_flux(extinction_bin), left=np.nan, right=np.nan)
         extinction = ar_extinction_levels[extinction_bin]
         # rescale according to QSO extinction
         l_print_no_barrier(qso_rec.extinction_g, extinction)
