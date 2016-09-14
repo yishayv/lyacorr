@@ -43,7 +43,7 @@ def update_mean(delta_t_file):
         ar_z_unbinned = delta_t_file.get_wavelength(i)
         ar_delta_t_unbinned = delta_t_file.get_flux(i)
         ar_ivar_unbinned = delta_t_file.get_ivar(i)
-        if ar_z_unbinned.size:
+        if ar_z_unbinned.size > 2:
             f_delta_t = interpolate.interp1d(ar_z_unbinned, ar_delta_t_unbinned,
                                              kind='nearest', bounds_error=False,
                                              fill_value=0, assume_sorted=True)
