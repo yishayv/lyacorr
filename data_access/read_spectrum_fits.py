@@ -33,11 +33,11 @@ OR_MASK = PixelFlags.string_to_int(
     'BRIGHTSKY')
 
 
-def generate_qso_details():
+def generate_qso_details(qso_file=QSO_FILE):
     """
     iterate over the QSO table, yielding a dictionary containing the values for each QSO
     """
-    data = pyfits.getdata(QSO_FILE)
+    data = pyfits.getdata(qso_file)
     for obj in data:
         yield obj
 
@@ -114,30 +114,30 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             or_mask_data = hdu_list[3].data
             last_fits_partial_path = fits_partial_path
 
-            assert flux_data is not None
-            assert ivar_data is not None
-            assert and_mask_data is not None
-            assert or_mask_data is not None
-            assert o_grid is not None
-            # return requested spectrum
-            ar_flux = flux_data[qso_rec.fiberID - 1]
-            ar_ivar = ivar_data[qso_rec.fiberID - 1]
-            assert ar_flux.size == ar_ivar.size
+        assert flux_data is not None
+        assert ivar_data is not None
+        assert and_mask_data is not None
+        assert or_mask_data is not None
+        assert o_grid is not None
+        # return requested spectrum
+        ar_flux = flux_data[qso_rec.fiberID - 1]
+        ar_ivar = ivar_data[qso_rec.fiberID - 1]
+        assert ar_flux.size == ar_ivar.size
 
-            current_and_mask_data = np.asarray(and_mask_data[qso_rec.fiberID - 1])
-            current_or_mask_data = np.asarray(or_mask_data[qso_rec.fiberID - 1])
-            ar_effective_mask = np.logical_or(current_and_mask_data & AND_MASK,
-                                              current_or_mask_data & OR_MASK)
+        current_and_mask_data = np.asarray(and_mask_data[qso_rec.fiberID - 1])
+        current_or_mask_data = np.asarray(or_mask_data[qso_rec.fiberID - 1])
+        ar_effective_mask = np.logical_or(current_and_mask_data & AND_MASK,
+                                          current_or_mask_data & OR_MASK)
 
-            if flag_stats is not None:
-                for bit in range(0, 32):
-                    flag_stats.flag_count[bit, 0] += (current_and_mask_data & 1).sum()
-                    flag_stats.flag_count[bit, 1] += (current_or_mask_data & 1).sum()
-                    current_and_mask_data >>= 1
-                    current_or_mask_data >>= 1
-                flag_stats.pixel_count += current_and_mask_data.size
+        if flag_stats is not None:
+            for bit in range(0, 32):
+                flag_stats.flag_count[bit, 0] += (current_and_mask_data & 1).sum()
+                flag_stats.flag_count[bit, 1] += (current_or_mask_data & 1).sum()
+                current_and_mask_data >>= 1
+                current_or_mask_data >>= 1
+            flag_stats.pixel_count += current_and_mask_data.size
 
-            # temporary: set ivar to 0 for all bad pixels
-            ar_ivar[ar_effective_mask != 0] = 0
+        # temporary: set ivar to 0 for all bad pixels
+        ar_ivar[ar_effective_mask != 0] = 0
 
-            yield QSOData(qso_rec, o_grid, ar_flux, ar_ivar)
+        yield QSOData(qso_rec, o_grid, ar_flux, ar_ivar)
