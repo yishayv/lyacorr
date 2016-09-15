@@ -26,35 +26,37 @@ def create_record(i):
             i[QSO_fields_dict['fiberID']], i[QSO_fields_dict['extinction_g']]]
 
 
-def create_qso_table():
+def create_qso_table(data=None):
     t = table.Table()
-    t.add_columns([table.Column(name='index', dtype='i8', unit=None),
-                   table.Column(name='specObjID', dtype='i8', unit=None),
-                   table.Column(name='z', unit=u.dimensionless_unscaled),
-                   table.Column(name='ra', unit=u.degree),
-                   table.Column(name='dec', unit=u.degree),
-                   table.Column(name='plate', dtype='i4', unit=None),
-                   table.Column(name='mjd', dtype='i4', unit=None),
-                   table.Column(name='fiberID', dtype='i4', unit=None),
-                   table.Column(name='extinction_g', unit=u.dimensionless_unscaled)])
+    t.add_columns([table.Column(data[0], name='index', dtype='i8', unit=None),
+                   table.Column(data[1], name='specObjID', dtype='i8', unit=None),
+                   table.Column(data[2], name='z', unit=u.dimensionless_unscaled),
+                   table.Column(data[3], name='ra', unit=u.degree),
+                   table.Column(data[4], name='dec', unit=u.degree),
+                   table.Column(data[5], name='plate', dtype='i4', unit=None),
+                   table.Column(data[6], name='mjd', dtype='i4', unit=None),
+                   table.Column(data[7], name='fiberID', dtype='i4', unit=None),
+                   table.Column(data[8], name='extinction_g', unit=u.dimensionless_unscaled)])
     return t
 
 
-def fill_qso_table(t):
+def fill_qso_table():
     qso_record_list = map(create_record, read_spectrum_fits.generate_qso_details(galaxy_file_fits))
 
     # remove None values
     qso_record_list = [i for i in qso_record_list if i is not None]
 
-    for i in qso_record_list:
-        t.add_row(i)
+    # transpose the list so that we add columns rather than
+    column_list = list(map(list, zip(*qso_record_list)))
+
+    # create an astropy table
+    t = create_qso_table(column_list)
 
     return t
 
 
 def profile_main():
-    t_ = create_qso_table()
-    fill_qso_table(t_)
+    t_ = fill_qso_table()
     t_.sort(['plate'])
 
     # add indices after sort
