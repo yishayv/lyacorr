@@ -62,7 +62,7 @@ def fill_galaxy_table():
 
     local_start_index = chunk_offsets[comm.rank]
     local_end_index = local_start_index + chunk_sizes[comm.rank]
-    update_gather_mask = get_update_mask(num_update_gather, chunk_sizes[comm.rank])
+    update_gather_mask = get_update_mask(num_progress_updates, chunk_sizes[comm.rank])
 
     galaxy_record_list = []
     for n, record in enumerate(fits_data[local_start_index:local_end_index]):

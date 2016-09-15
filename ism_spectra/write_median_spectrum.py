@@ -80,7 +80,13 @@ def profile_main():
         ar_flux_int[ar_flux_int >= num_bins] = num_bins - 1
         ar_flux_int[ar_flux_int < 0] = 0
 
-        histogram[ar_flux_int, range(spec_size)] += ar_ivar
+        mask = np.logical_and(np.isfinite(ar_flux), ar_ivar > 0)
+
+        x = ar_flux_int[mask]
+        y = np.arange(spec_size)[mask]
+        c = ar_ivar[mask]
+        
+        histogram[x, y] += c
 
         if update_gather_mask[n]:
             reduce_and_save()
