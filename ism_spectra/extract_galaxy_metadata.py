@@ -7,11 +7,12 @@ import numpy as np
 import common_settings
 from data_access import read_spectrum_fits
 from data_access.read_spectrum_fits import QSO_fields_dict
-from python_compat import range
+from python_compat import range, map
 
 settings = common_settings.Settings()
 
-galaxy_file = '../../data/GalaxySpectra_test.fit'
+galaxy_file_fits = settings.get_galaxy_metadata_fits()
+galaxy_file_npy = settings.get_galaxy_metadata_npy()
 
 
 def create_record(i):
@@ -40,7 +41,7 @@ def create_qso_table():
 
 
 def fill_qso_table(t):
-    qso_record_list = map(create_record, read_spectrum_fits.generate_qso_details(galaxy_file))
+    qso_record_list = map(create_record, read_spectrum_fits.generate_qso_details(galaxy_file_fits))
 
     # remove None values
     qso_record_list = [i for i in qso_record_list if i is not None]
@@ -59,10 +60,10 @@ def profile_main():
     # add indices after sort
     t_['index'] = range(len(t_))
 
-    np.save('../../data/galaxy_metadata.npy', t_)
+    np.save(galaxy_file_npy, t_)
 
 
 if settings.get_profile():
-    cProfile.run('profile_main()', filename='write_extinction_bins.prof', sort=2)
+    cProfile.run('profile_main()', filename='extract_galaxy_metadata.prof', sort=2)
 else:
     profile_main()

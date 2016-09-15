@@ -133,6 +133,14 @@ class Settings:
     # resolution of the 3d grid
     opt_mock_resolution = 'resolution'
 
+    section_stacked_ism = 'StackedISM'
+    # galaxy/qso metadata
+    opt_galaxy_metadata_fits = 'galaxy_metadata_fits'
+    # galaxy/qso metadata as an astropy table
+    opt_galaxy_metadata_npy = 'galaxy_metadata_npy'
+    # histogram output file
+    opt_ism_histogram_npz = 'ism_histogram_npz'
+
     def write_default_settings(self):
         value_plate_dir_list = _SEP.join(['/mnt/gastro/sdss/spectro/redux/v5_7_0',
                                           '/mnt/gastro/sdss/spectro/redux/v5_7_2'])
@@ -462,3 +470,14 @@ class Settings:
 
     def get_mock_resolution(self):
         return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_resolution)
+
+    # stacked ISM spectra
+
+    def get_galaxy_metadata_fits(self):
+        return self.get_env_expanded_path(self.section_stacked_ism, self.opt_galaxy_metadata_fits)
+
+    def get_galaxy_metadata_npy(self):
+        return self.get_env_expanded_path(self.section_stacked_ism, self.opt_galaxy_metadata_npy)
+
+    def get_ism_histogram_npz(self):
+        return self.get_env_expanded_path(self.section_stacked_ism, self.opt_ism_histogram_npz)

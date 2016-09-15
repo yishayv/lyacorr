@@ -34,6 +34,9 @@ global_histogram = np.zeros(shape=(num_bins, spec_size))
 
 num_update_gather = 10
 
+galaxy_metadata_file_npy = settings.get_galaxy_metadata_npy()
+histogram_output_npz = settings.get_ism_histogram_npz()
+
 
 def reduce_and_save():
     comm.Reduce(
@@ -41,7 +44,8 @@ def reduce_and_save():
         [global_histogram, MPI.DOUBLE],
         op=MPI.SUM, root=0)
     if comm.rank == 0:
-        np.save('../../data/galaxy_histogram.npy', global_histogram)
+        np.savez(histogram_output_npz, histogram=global_histogram, ar_wavelength=ar_wavelength,
+                 flux_range=[flux_min, flux_max])
 
 
 def get_update_mask(num_updates, num_items):
@@ -52,7 +56,7 @@ def get_update_mask(num_updates, num_items):
 
 
 def profile_main():
-    galaxy_record_table = table.Table(np.load('../../data/galaxy_metadata.npy'))
+    galaxy_record_table = table.Table(np.load(galaxy_metadata_file_npy))
     galaxy_record_table.sort(['plate'])
 
     chunk_sizes, chunk_offsets = get_chunks(len(galaxy_record_table), comm.size)
