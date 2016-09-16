@@ -1,3 +1,5 @@
+import errno
+import os
 import os.path
 import sys
 
@@ -14,284 +16,16 @@ class Settings:
         self.config_parser = configparser.ConfigParser()
         self.effective_settings_file_name = os.getenv('LYACORR_CONF_FILE', self.default_settings_file_name)
         if not os.path.exists(self.effective_settings_file_name):
-            self.write_default_settings()
+            raise IOError(errno.ENOENT, os.strerror(errno.ENOENT), self.effective_settings_file_name)
         self.config_parser.read(self.effective_settings_file_name)
 
     default_settings_file_name = 'lyacorr.rc'
 
     section_file_paths = 'FilePaths'
-    # list of paths, separated by comma
-    opt_plate_dir_list = 'plate_dir'
-    # list of 3 required tables (in order)
-    opt_pca_continuum_tables = 'pca_continuum_tables'
-    # spectra for only QSOs (hdf5 format):
-    opt_qso_spectra_hdf5 = 'qso_spectra_hdf5'
-    # mean transmittance (npy)
-    opt_mean_transmittance_npy = 'mean_transmittance_npy'
-    # median transmittance (npy)
-    opt_median_transmittance_npy = 'median_transmittance_npy'
-    # table of QSO metadata (fits)
-    opt_qso_metadata_fits = 'qso_metadata_fits'
-    # fields for the table of QSO metadata (fits)
-    opt_qso_metadata_fields = 'qso_metadata_fields'
-    # table of QSO metadata (npy)
-    opt_qso_metadata_npy = 'qso_metadata_npy'
-    # table of BAL features (fits)
-    opt_qso_bal_fits = 'qso_bal_fits'
-    # delta_t array (npy)
-    opt_delta_t_npy = 'delta_transmittance_npy'
-    # estimated ism component of forest
-    opt_forest_ism_npy = 'forest_ism_npy'
-    # correlation estimator bins (weighted mean)
-    opt_mean_estimator_bins = 'mean_estimator_bins_npy'
-    # correlation estimator bins (weighted median)
-    opt_median_estimator_bins = 'median_estimator_bins_npy'
-    # sigma squared LSS
-    opt_sigma_sq_lss = 'sigma_squared_lss_txt'
-    # eta correction function for weights
-    opt_weight_eta = 'weight_eta_function_txt'
-    # continuum fit spectra
-    opt_continuum_fit_npy = 'continuum_fit_npy'
-    # continuum fit metadata
-    opt_continuum_fit_metadata_npy = 'continuum_fit_metadata_npy'
-    # goodness-of-fit for QSO continua, as a function of signal-to-noise ratio.
-    opt_fit_snr_stats_npy = 'fit_snr_stats_npy'
-    # mean delta_t per redshift
-    opt_mean_delta_t_npy = 'mean_delta_t_npy'
-    # median delta_t per redshift
-    opt_median_delta_t_npy = 'median_delta_t_npy'
-    # list of QSO pairs with most significant contribution to the correlation estimator.
-    opt_significant_qso_pairs_npy = 'significant_qso_pairs_npy'
-    # photometric correction to SDSS spectra.
-    opt_tp_correction_hdf5 = 'tp_correction_hdf5'
-    # stacked spectra for Milky-Way line removal
-    opt_mw_stacked_spectra_fits = 'mw_stacked_spectra_fits'
-    # mapping from pixel ID to group ID for Milky-Way line removal
-    opt_mw_pixel_to_group_mapping_fits = 'mw_pixel_to_group_mapping_fits'
-    # MW lines stacked by extinction
-    opt_ism_extinction_spectra = 'ism_extinction_spectra_npy'
-    # extinction levels for the previous array
-    opt_ism_extinction_levels = 'ism_extinction_levels_npy'
-    # covariance matrix output
-    opt_correlation_estimator_covariance_npy = 'correlation_estimator_covariance_npy'
-    # correlation estimator sub-samples
-    opt_correlation_estimator_subsamples_npz = 'correlation_estimator_subsamples_npz'
-
     section_performance = 'Performance'
-    # default chunk size for multiprocessing
-    opt_file_chunk_size = 'file_chunk_size'
-    # size of QSO bundle to match against all other QSOs.
-    opt_qso_bundle_size = 'qso_bundle_size'
-    # divide MPI tasks to sub-chunks
-    opt_mpi_num_sub_chunks = 'mpi_num_sub_chunks'
-    # don't use multiprocessing for easier profiling and debugging
-    opt_single_process = 'single_process'
-    # enable/disable cProfile
-    opt_profile = 'profile'
-
     section_data_processing = 'DataProcessing'
-    # replace actual forest with estimated ISM
-    opt_ism_only_mode = 'ism_only_mode'
-    # low continuum flux cutoff
-    opt_min_continuum_threshold = 'min_continuum_threshold'
-    # minimum forest redshift to use
-    opt_min_forest_redshift = 'min_forest_redshift'
-    # maximum forest redshift to use
-    opt_max_forest_redshift = 'max_forest_redshift'
-    # number of distance slices
-    opt_num_dist_slices = 'num_distance_slices'
-    # continuum fit method
-    opt_continuum_fit_method = 'continuum_fit_method'
-    # cosmology (Planck or WMAP[579])
-    opt_cosmology = 'cosmology'
-    # healpix nside parameter
-    opt_healpix_nside = 'healpix_nside'
-    # enable/disable weighted mean estimator
-    opt_enable_weighted_mean_estimator = 'enable_weighted_mean_estimator'
-    # enabled/disable weighted median estimator
-    opt_enable_weighted_median_estimator = 'enable_weighted_median_estimator'
-    # enable MW line correction
-    opt_enable_mw_line_correction = 'enable_mw_line_correction'
-    # enable spectrum flux correction
-    opt_enable_spectrum_flux_correction = 'enable_spectrum_flux_correction'
-    # enable extinction correction
-    opt_enable_extinction_correction = 'enable_extinction_correction'
-    # enable bal removal
-    opt_enable_bal_removal = 'enable_bal_removal'
-    # enable computing the estimator in subsamples, for generating the covariance matrix
-    opt_enable_estimator_subsamples = 'enable_estimator_subsamples'
-
     section_mock_parameters = 'MockParameters'
-    # scale of shell in Mpc
-    opt_mock_shell_radius = 'shell_radius'
-    # fractional width of the shell
-    opt_mock_shell_fractional_width = 'shell_fractional_width'
-    # separation from the outermost shell element in Mpc
-    opt_mock_shell_separation = 'shell_separation'
-    # core size in Mpc
-    opt_mock_core_radius = 'core_radius'
-    # resolution of the 3d grid
-    opt_mock_resolution = 'resolution'
-
     section_stacked_ism = 'StackedISM'
-    # galaxy/qso metadata
-    opt_galaxy_metadata_fits = 'galaxy_metadata_fits'
-    # galaxy/qso metadata as an astropy table
-    opt_galaxy_metadata_npy = 'galaxy_metadata_npy'
-    # histogram output file
-    opt_ism_histogram_npz = 'ism_histogram_npz'
-
-    def write_default_settings(self):
-        value_plate_dir_list = _SEP.join(['/mnt/gastro/sdss/spectro/redux/v5_7_0',
-                                          '/mnt/gastro/sdss/spectro/redux/v5_7_2'])
-        value_pca_continuum_tables = _SEP.join(['../../data/Suzuki/datafile4.txt',
-                                                '../../data/Suzuki/datafile3.txt',
-                                                '../../data/Suzuki/projection_matrix.csv'])
-        value_qso_spectra_hdf5 = '/mnt/gastro/yishay/sdss_QSOs/spectra.hdf5'
-        value_mean_transmittance_npy = '../../data/mean_transmittance.npy'
-        value_median_transmittance_npy = '../../data/median_transmittance.npy'
-        value_qso_metadata_fits = '../../data/QSOs_test.fit'
-        value_qso_metadata_fields = '../../data/QSOs_test_header.csv'
-        value_qso_metadata_npy = '../../data/QSO_table.npy'
-        value_qso_bal_fits = '../../data/DR12Q_BAL.fits'
-        value_delta_t_npy = '../../data/delta_t.npy'
-        value_forest_ism_npy = '../../data/forest_ism.npy'
-        value_mean_estimator_bins_npy = '../../data/mean_estimator_bins.npy'
-        value_median_estimator_bins_npy = '../../data/median_estimator_bins.npy'
-        value_sigma_sq_lss = '../../data/Sigma_sq_LSS.txt'
-        value_weight_eta = '../../data/Weight_eta_func.txt'
-        value_continuum_fit_npy = '../../data/continuum_fit.npy'
-        value_continuum_fit_metadata_npy = '../../data/continuum_fit_metadata.npy'
-        value_fit_snr_stats_npy = '../../data/fit_snr_stats.npy'
-        value_mean_delta_t_npy = '../../data/mean_delta_t.npy'
-        value_median_delta_t_npy = '../../data/median_delta_t.npy'
-        value_significant_qso_pairs_npy = '../../data/significant_qso_pairs.npy'
-        value_tp_correction_hdf5 = '../../data/tp_correction/tpcorr.hdf5'
-        value_mw_stacked_spectra_fits = '../../data/MW_lines/coor_bins.fits'
-        value_mw_pixel_to_group_mapping_fits = '../../data/MW_lines/maps.fits'
-        value_ism_extinction_spectra = '../../data/ExtinctionBins20.npy'
-        value_ism_extinction_levels = '../../data/ExtinctionBins20_values.npy'
-        value_correlation_estimator_covariance_npy = '../../data/covariance.npy'
-        value_correlation_estimator_subsamples_npz = '../../data/estimator_subsamples.npz'
-
-        value_file_chunk_size = 10000
-        value_qso_bundle_size = 500
-        value_mpi_num_sub_chunks = 32
-        value_single_process = False
-        value_profile = False
-
-        value_ism_only_mode = False
-        value_min_continuum_threshold = 0.5
-        value_min_forest_redshift = 1.96
-        value_max_forest_redshift = 3.2
-        value_num_distance_slices = 16
-        value_continuum_fit_method = 'dot_product'
-        value_cosmology = 'Planck13'
-        value_healpix_nside = 32
-        value_enable_weighted_mean_estimator = True
-        value_enable_weighted_median_estimator = True
-        value_enable_mw_line_correction = True
-        value_enable_spectrum_flux_correction = True
-        value_enable_extinction_correction = True
-        value_bal_removal = True
-        value_enable_estimator_subsamples = True
-
-        value_mock_shell_radius = 150
-        value_mock_shell_fractional_width = 0.005
-        value_mock_shell_separation = 200
-        value_mock_core_radius = 15
-        value_mock_resolution = 300
-
-        # replace config parser with an empty one
-        self.config_parser = configparser.ConfigParser()
-        self.config_parser.add_section(self.section_file_paths)
-        self.config_parser.set(self.section_file_paths, self.opt_plate_dir_list, value_plate_dir_list)
-        self.config_parser.set(self.section_file_paths, self.opt_pca_continuum_tables, value_pca_continuum_tables)
-        self.config_parser.set(self.section_file_paths, self.opt_qso_spectra_hdf5, value_qso_spectra_hdf5)
-        self.config_parser.set(self.section_file_paths, self.opt_mean_transmittance_npy, value_mean_transmittance_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_median_transmittance_npy,
-                               value_median_transmittance_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fits, value_qso_metadata_fits)
-        self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_fields, value_qso_metadata_fields)
-        self.config_parser.set(self.section_file_paths, self.opt_qso_metadata_npy, value_qso_metadata_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_qso_bal_fits, value_qso_bal_fits)
-        self.config_parser.set(self.section_file_paths, self.opt_delta_t_npy, value_delta_t_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_forest_ism_npy, value_forest_ism_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_mean_estimator_bins, value_mean_estimator_bins_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_median_estimator_bins, value_median_estimator_bins_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_sigma_sq_lss, value_sigma_sq_lss)
-        self.config_parser.set(self.section_file_paths, self.opt_weight_eta, value_weight_eta)
-        self.config_parser.set(self.section_file_paths, self.opt_continuum_fit_npy, value_continuum_fit_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_continuum_fit_metadata_npy,
-                               value_continuum_fit_metadata_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_fit_snr_stats_npy, value_fit_snr_stats_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_mean_delta_t_npy, value_mean_delta_t_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_median_delta_t_npy, value_median_delta_t_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_significant_qso_pairs_npy,
-                               value_significant_qso_pairs_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_tp_correction_hdf5, value_tp_correction_hdf5)
-        self.config_parser.set(self.section_file_paths, self.opt_mw_stacked_spectra_fits, value_mw_stacked_spectra_fits)
-        self.config_parser.set(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits,
-                               value_mw_pixel_to_group_mapping_fits)
-        self.config_parser.set(self.section_file_paths, self.opt_ism_extinction_spectra,
-                               value_ism_extinction_spectra)
-        self.config_parser.set(self.section_file_paths, self.opt_ism_extinction_levels,
-                               value_ism_extinction_levels)
-        self.config_parser.set(self.section_file_paths, self.opt_correlation_estimator_covariance_npy,
-                               value_correlation_estimator_covariance_npy)
-        self.config_parser.set(self.section_file_paths, self.opt_correlation_estimator_subsamples_npz,
-                               value_correlation_estimator_subsamples_npz)
-
-        self.config_parser.add_section(self.section_performance)
-        self.config_parser.set(self.section_performance, self.opt_file_chunk_size, str(value_file_chunk_size))
-        self.config_parser.set(self.section_performance, self.opt_qso_bundle_size, str(value_qso_bundle_size))
-        self.config_parser.set(self.section_performance, self.opt_mpi_num_sub_chunks, str(value_mpi_num_sub_chunks))
-        self.config_parser.set(self.section_performance, self.opt_single_process, str(value_single_process))
-        self.config_parser.set(self.section_performance, self.opt_profile, str(value_profile))
-
-        self.config_parser.add_section(self.section_data_processing)
-        self.config_parser.set(self.section_data_processing, self.opt_ism_only_mode,
-                               str(value_ism_only_mode))
-        self.config_parser.set(self.section_data_processing, self.opt_min_continuum_threshold,
-                               str(value_min_continuum_threshold))
-        self.config_parser.set(self.section_data_processing, self.opt_min_forest_redshift,
-                               str(value_min_forest_redshift))
-        self.config_parser.set(self.section_data_processing, self.opt_max_forest_redshift,
-                               str(value_max_forest_redshift))
-        self.config_parser.set(self.section_data_processing, self.opt_num_dist_slices,
-                               str(value_num_distance_slices))
-        self.config_parser.set(self.section_data_processing, self.opt_continuum_fit_method,
-                               str(value_continuum_fit_method))
-        self.config_parser.set(self.section_data_processing, self.opt_cosmology,
-                               str(value_cosmology))
-        self.config_parser.set(self.section_data_processing, self.opt_healpix_nside,
-                               str(value_healpix_nside))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_mean_estimator,
-                               str(value_enable_weighted_mean_estimator))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_weighted_median_estimator,
-                               str(value_enable_weighted_median_estimator))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_mw_line_correction,
-                               str(value_enable_mw_line_correction))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_spectrum_flux_correction,
-                               str(value_enable_spectrum_flux_correction))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_extinction_correction,
-                               str(value_enable_extinction_correction))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_bal_removal,
-                               str(value_bal_removal))
-        self.config_parser.set(self.section_data_processing, self.opt_enable_estimator_subsamples,
-                               str(value_enable_estimator_subsamples))
-
-        self.config_parser.add_section(self.section_mock_parameters)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_radius, value_mock_shell_radius)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_fractional_width,
-                               value_mock_shell_fractional_width)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_shell_separation,
-                               value_mock_shell_separation)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_core_radius, value_mock_core_radius)
-        self.config_parser.set(self.section_mock_parameters, self.opt_mock_resolution, value_mock_resolution)
-
-        with open(self.effective_settings_file_name, 'wb') as configfile:
-            self.config_parser.write(configfile)
 
     def get_env_expanded_path(self, section, key):
         value = self.config_parser.get(section, key)
@@ -308,176 +42,287 @@ class Settings:
     # File Paths
 
     def get_plate_dir_list(self):
-        return self.get_env_expanded_multiple_paths(self.section_file_paths, self.opt_plate_dir_list)
+        """list of paths, separated by comma"""
+        return self.get_env_expanded_multiple_paths(self.section_file_paths, 'plate_dir')
 
     def get_pca_continuum_tables(self):
-        return self.get_env_expanded_multiple_paths(self.section_file_paths, self.opt_pca_continuum_tables)
+        """list of 3 required tables (in order)"""
+        opt_pca_continuum_tables = 'pca_continuum_tables'
+        return self.get_env_expanded_multiple_paths(self.section_file_paths, opt_pca_continuum_tables)
 
     def get_qso_spectra_hdf5(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_spectra_hdf5)
+        """spectra for only QSOs (hdf5 format):"""
+        opt_qso_spectra_hdf5 = 'qso_spectra_hdf5'
+        return self.get_env_expanded_path(self.section_file_paths, opt_qso_spectra_hdf5)
 
     def get_mean_transmittance_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_mean_transmittance_npy)
+        """mean transmittance (npy)"""
+        opt_mean_transmittance_npy = 'mean_transmittance_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_mean_transmittance_npy)
 
     def get_median_transmittance_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_median_transmittance_npy)
+        """median transmittance (npy)"""
+        opt_median_transmittance_npy = 'median_transmittance_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_median_transmittance_npy)
 
     def get_qso_metadata_fits(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_metadata_fits)
+        """table of QSO metadata (fits)"""
+        opt_qso_metadata_fits = 'qso_metadata_fits'
+        return self.get_env_expanded_path(self.section_file_paths, opt_qso_metadata_fits)
 
     def get_qso_metadata_fields(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_metadata_fields)
+        """fields for the table of QSO metadata (fits)"""
+        opt_qso_metadata_fields = 'qso_metadata_fields'
+        return self.get_env_expanded_path(self.section_file_paths, opt_qso_metadata_fields)
 
     def get_qso_metadata_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_metadata_npy)
+        """table of QSO metadata (npy)"""
+        opt_qso_metadata_npy = 'qso_metadata_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_qso_metadata_npy)
 
     def get_qso_bal_fits(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_qso_bal_fits)
+        """table of BAL features (fits)"""
+        opt_qso_bal_fits = 'qso_bal_fits'
+        return self.get_env_expanded_path(self.section_file_paths, opt_qso_bal_fits)
 
     def get_delta_t_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_delta_t_npy)
+        """delta_t array (npy)"""
+        opt_delta_t_npy = 'delta_transmittance_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_delta_t_npy)
 
     def get_forest_ism_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_forest_ism_npy)
+        """estimated ism component of forest"""
+        opt_forest_ism_npy = 'forest_ism_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_forest_ism_npy)
 
     def get_mean_estimator_bins(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_mean_estimator_bins)
+        """correlation estimator bins (weighted mean)"""
+        opt_mean_estimator_bins = 'mean_estimator_bins_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_mean_estimator_bins)
 
     def get_median_estimator_bins(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_median_estimator_bins)
+        """correlation estimator bins (weighted median)"""
+        opt_median_estimator_bins = 'median_estimator_bins_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_median_estimator_bins)
 
     def get_sigma_squared_lss(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_sigma_sq_lss)
+        """sigma squared LSS"""
+        opt_sigma_sq_lss = 'sigma_squared_lss_txt'
+        return self.get_env_expanded_path(self.section_file_paths, opt_sigma_sq_lss)
 
     def get_weight_eta(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_weight_eta)
+        """eta correction function for weights"""
+        opt_weight_eta = 'weight_eta_function_txt'
+        return self.get_env_expanded_path(self.section_file_paths, opt_weight_eta)
 
     def get_continuum_fit_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_continuum_fit_npy)
+        """continuum fit spectra"""
+        opt_continuum_fit_npy = 'continuum_fit_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_continuum_fit_npy)
 
     def get_continuum_fit_metadata_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_continuum_fit_metadata_npy)
+        """continuum fit metadata"""
+        opt_continuum_fit_metadata_npy = 'continuum_fit_metadata_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_continuum_fit_metadata_npy)
 
     def get_fit_snr_stats(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_fit_snr_stats_npy)
+        """goodness-of-fit for QSO continua, as a function of signal-to-noise ratio."""
+        opt_fit_snr_stats_npy = 'fit_snr_stats_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_fit_snr_stats_npy)
 
     def get_mean_delta_t_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_mean_delta_t_npy)
+        """mean delta_t per redshift"""
+        opt_mean_delta_t_npy = 'mean_delta_t_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_mean_delta_t_npy)
 
     def get_median_delta_t_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_median_delta_t_npy)
+        """median delta_t per redshift"""
+        opt_median_delta_t_npy = 'median_delta_t_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_median_delta_t_npy)
 
     def get_significant_qso_pairs_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_significant_qso_pairs_npy)
+        """list of QSO pairs with most significant contribution to the correlation estimator."""
+        opt_significant_qso_pairs_npy = 'significant_qso_pairs_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_significant_qso_pairs_npy)
 
     def get_tp_correction_hdf5(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_tp_correction_hdf5)
+        """photometric correction to SDSS spectra."""
+        opt_tp_correction_hdf5 = 'tp_correction_hdf5'
+        return self.get_env_expanded_path(self.section_file_paths, opt_tp_correction_hdf5)
 
     def get_mw_stacked_spectra_fits(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_mw_stacked_spectra_fits)
+        """stacked spectra for Milky-Way line removal"""
+        opt_mw_stacked_spectra_fits = 'mw_stacked_spectra_fits'
+        return self.get_env_expanded_path(self.section_file_paths, opt_mw_stacked_spectra_fits)
 
     def get_mw_pixel_to_group_mapping_fits(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_mw_pixel_to_group_mapping_fits)
+        """mapping from pixel ID to group ID for Milky-Way line removal"""
+        opt_mw_pixel_to_group_mapping_fits = 'mw_pixel_to_group_mapping_fits'
+        return self.get_env_expanded_path(self.section_file_paths, opt_mw_pixel_to_group_mapping_fits)
 
     def get_ism_extinction_spectra(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_ism_extinction_spectra)
+        """MW lines stacked by extinction"""
+        opt_ism_extinction_spectra = 'ism_extinction_spectra_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_ism_extinction_spectra)
 
     def get_ism_extinction_levels(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_ism_extinction_levels)
+        """extinction levels for the previous array"""
+        opt_ism_extinction_levels = 'ism_extinction_levels_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_ism_extinction_levels)
 
     def get_correlation_estimator_covariance_npy(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_correlation_estimator_covariance_npy)
+        """covariance matrix output"""
+        opt_correlation_estimator_covariance_npy = 'correlation_estimator_covariance_npy'
+        return self.get_env_expanded_path(self.section_file_paths, opt_correlation_estimator_covariance_npy)
 
     def get_correlation_estimator_subsamples_npz(self):
-        return self.get_env_expanded_path(self.section_file_paths, self.opt_correlation_estimator_subsamples_npz)
+        """correlation estimator sub-samples"""
+        opt_correlation_estimator_subsamples_npz = 'correlation_estimator_subsamples_npz'
+        return self.get_env_expanded_path(self.section_file_paths, opt_correlation_estimator_subsamples_npz)
 
     # Performance
 
     def get_file_chunk_size(self):
-        return self.config_parser.getint(self.section_performance, self.opt_file_chunk_size)
+        """default chunk size for multiprocessing"""
+        opt_file_chunk_size = 'file_chunk_size'
+        return self.config_parser.getint(self.section_performance, opt_file_chunk_size)
 
     def get_qso_bundle_size(self):
-        return self.config_parser.getint(self.section_performance, self.opt_qso_bundle_size)
+        """size of QSO bundle to match against all other QSOs."""
+        opt_qso_bundle_size = 'qso_bundle_size'
+        return self.config_parser.getint(self.section_performance, opt_qso_bundle_size)
 
     def get_mpi_num_sub_chunks(self):
-        return self.config_parser.getint(self.section_performance, self.opt_mpi_num_sub_chunks)
+        """divide MPI tasks to sub-chunks"""
+        opt_mpi_num_sub_chunks = 'mpi_num_sub_chunks'
+        return self.config_parser.getint(self.section_performance, opt_mpi_num_sub_chunks)
 
     def get_single_process(self):
-        return self.config_parser.getboolean(self.section_performance, self.opt_single_process)
+        """don't use multiprocessing for easier profiling and debugging"""
+        opt_single_process = 'single_process'
+        return self.config_parser.getboolean(self.section_performance, opt_single_process)
 
     def get_profile(self):
-        return self.config_parser.getboolean(self.section_performance, self.opt_profile)
+        """enable/disable cProfile"""
+        opt_profile = 'profile'
+        return self.config_parser.getboolean(self.section_performance, opt_profile)
 
     # Data Processing
     def get_ism_only_mode(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_ism_only_mode)
+        """replace actual forest with estimated ISM"""
+        opt_ism_only_mode = 'ism_only_mode'
+        return self.config_parser.getboolean(self.section_data_processing, opt_ism_only_mode)
 
     def get_min_continuum_threshold(self):
-        return self.config_parser.getfloat(self.section_data_processing, self.opt_min_continuum_threshold)
+        """low continuum flux cutoff"""
+        opt_min_continuum_threshold = 'min_continuum_threshold'
+        return self.config_parser.getfloat(self.section_data_processing, opt_min_continuum_threshold)
 
     def get_min_forest_redshift(self):
-        return self.config_parser.getfloat(self.section_data_processing, self.opt_min_forest_redshift)
+        """minimum forest redshift to use"""
+        opt_min_forest_redshift = 'min_forest_redshift'
+        return self.config_parser.getfloat(self.section_data_processing, opt_min_forest_redshift)
 
     def get_max_forest_redshift(self):
-        return self.config_parser.getfloat(self.section_data_processing, self.opt_max_forest_redshift)
+        """maximum forest redshift to use"""
+        opt_max_forest_redshift = 'max_forest_redshift'
+        return self.config_parser.getfloat(self.section_data_processing, opt_max_forest_redshift)
 
     def get_num_distance_slices(self):
-        return self.config_parser.getint(self.section_data_processing, self.opt_num_dist_slices)
+        """number of distance slices"""
+        opt_num_dist_slices = 'num_distance_slices'
+        return self.config_parser.getint(self.section_data_processing, opt_num_dist_slices)
 
     def get_continuum_fit_method(self):
-        return self.config_parser.get(self.section_data_processing, self.opt_continuum_fit_method)
+        """continuum fit method"""
+        opt_continuum_fit_method = 'continuum_fit_method'
+        return self.config_parser.get(self.section_data_processing, opt_continuum_fit_method)
 
     def get_cosmology(self):
-        return self.config_parser.get(self.section_data_processing, self.opt_cosmology)
+        """cosmology (Planck or WMAP[579])"""
+        opt_cosmology = 'cosmology'
+        return self.config_parser.get(self.section_data_processing, opt_cosmology)
 
     def get_healpix_nside(self):
-        return self.config_parser.getint(self.section_data_processing, self.opt_healpix_nside)
+        """healpix nside parameter"""
+        opt_healpix_nside = 'healpix_nside'
+        return self.config_parser.getint(self.section_data_processing, opt_healpix_nside)
 
     def get_enable_weighted_mean_estimator(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_weighted_mean_estimator)
+        """enable/disable weighted mean estimator"""
+        opt_enable_weighted_mean_estimator = 'enable_weighted_mean_estimator'
+        return self.config_parser.getboolean(self.section_data_processing, opt_enable_weighted_mean_estimator)
 
     def get_enable_weighted_median_estimator(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_weighted_median_estimator)
+        """enabled/disable weighted median estimator"""
+        opt_enable_weighted_median_estimator = 'enable_weighted_median_estimator'
+        return self.config_parser.getboolean(self.section_data_processing, opt_enable_weighted_median_estimator)
 
     def get_enable_mw_line_correction(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_mw_line_correction)
+        """enable MW line correction"""
+        opt_enable_mw_line_correction = 'enable_mw_line_correction'
+        return self.config_parser.getboolean(self.section_data_processing, opt_enable_mw_line_correction)
 
     def get_enable_spectrum_flux_correction(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_spectrum_flux_correction)
+        """enable spectrum flux correction"""
+        opt_enable_spectrum_flux_correction = 'enable_spectrum_flux_correction'
+        return self.config_parser.getboolean(self.section_data_processing, opt_enable_spectrum_flux_correction)
 
     def get_enable_extinction_correction(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_extinction_correction)
+        """enable extinction correction"""
+        opt_enable_extinction_correction = 'enable_extinction_correction'
+        return self.config_parser.getboolean(self.section_data_processing, opt_enable_extinction_correction)
 
     def get_enable_bal_removal(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_bal_removal)
+        """enable bal removal"""
+        opt_enable_bal_removal = 'enable_bal_removal'
+        return self.config_parser.getboolean(self.section_data_processing, opt_enable_bal_removal)
 
     def get_enable_estimator_subsamples(self):
-        return self.config_parser.getboolean(self.section_data_processing, self.opt_enable_estimator_subsamples)
+        """enable computing the estimator in subsamples, for generating the covariance matrix"""
+        opt_enable_estimator_subsamples = 'enable_estimator_subsamples'
+        return self.config_parser.getboolean(self.section_data_processing, opt_enable_estimator_subsamples)
 
     # Mock Parameters
 
     def get_mock_shell_radius(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_radius)
+        """scale of shell in Mpc"""
+        opt_mock_shell_radius = 'shell_radius'
+        return self.config_parser.getfloat(self.section_mock_parameters, opt_mock_shell_radius)
 
     def get_mock_fractional_width(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_fractional_width)
+        """fractional width of the shell"""
+        opt_mock_shell_fractional_width = 'shell_fractional_width'
+        return self.config_parser.getfloat(self.section_mock_parameters, opt_mock_shell_fractional_width)
 
     def get_mock_shell_separation(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_shell_separation)
+        """separation from the outermost shell element in Mpc"""
+        opt_mock_shell_separation = 'shell_separation'
+        return self.config_parser.getfloat(self.section_mock_parameters, opt_mock_shell_separation)
 
     def get_mock_core_radius(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_core_radius)
+        """core size in Mpc"""
+        opt_mock_core_radius = 'core_radius'
+        return self.config_parser.getfloat(self.section_mock_parameters, opt_mock_core_radius)
 
     def get_mock_resolution(self):
-        return self.config_parser.getfloat(self.section_mock_parameters, self.opt_mock_resolution)
+        """resolution of the 3d grid"""
+        opt_mock_resolution = 'resolution'
+        return self.config_parser.getfloat(self.section_mock_parameters, opt_mock_resolution)
 
     # stacked ISM spectra
 
     def get_galaxy_metadata_fits(self):
-        return self.get_env_expanded_path(self.section_stacked_ism, self.opt_galaxy_metadata_fits)
+        """galaxy/qso metadata"""
+        opt_galaxy_metadata_fits = 'galaxy_metadata_fits'
+        return self.get_env_expanded_path(self.section_stacked_ism, opt_galaxy_metadata_fits)
 
     def get_galaxy_metadata_npy(self):
-        return self.get_env_expanded_path(self.section_stacked_ism, self.opt_galaxy_metadata_npy)
+        """galaxy/qso metadata as an astropy table"""
+        opt_galaxy_metadata_npy = 'galaxy_metadata_npy'
+        return self.get_env_expanded_path(self.section_stacked_ism, opt_galaxy_metadata_npy)
 
     def get_ism_histogram_npz(self):
-        return self.get_env_expanded_path(self.section_stacked_ism, self.opt_ism_histogram_npz)
+        """histogram output file"""
+        opt_ism_histogram_npz = 'ism_histogram_npz'
+        return self.get_env_expanded_path(self.section_stacked_ism, opt_ism_histogram_npz)

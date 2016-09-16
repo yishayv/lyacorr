@@ -86,8 +86,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
         if fits_partial_path != last_fits_partial_path:
             fits_full_path = find_fits_file(plate_dir_list, fits_partial_path)
             if not fits_full_path:
-                print("Missing file:", fits_partial_path)
-                continue
+                raise Exception("Missing file:", fits_partial_path)
 
             # get header
             hdu_list = pyfits.open(fits_full_path)
@@ -114,11 +113,8 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             or_mask_data = hdu_list[3].data
             last_fits_partial_path = fits_partial_path
 
-        assert flux_data is not None
-        assert ivar_data is not None
-        assert and_mask_data is not None
-        assert or_mask_data is not None
-        assert o_grid is not None
+        if None in (flux_data, ivar_data, and_mask_data, or_mask_data, o_grid):
+            raise Exception("Unexpected uninitialized variables.")
         # return requested spectrum
         ar_flux = flux_data[qso_rec.fiberID - 1]
         ar_ivar = ivar_data[qso_rec.fiberID - 1]

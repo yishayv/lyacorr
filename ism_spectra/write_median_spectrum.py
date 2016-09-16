@@ -80,6 +80,7 @@ def profile_main():
         ar_flux_int[ar_flux_int >= num_bins] = num_bins - 1
         ar_flux_int[ar_flux_int < 0] = 0
 
+        # noinspection PyArgumentList
         mask = np.logical_and.reduce((np.isfinite(ar_flux), ar_ivar > 0, ar_trend > 2.))
 
         x = ar_flux_int[mask]
