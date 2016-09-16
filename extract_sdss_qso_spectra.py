@@ -13,7 +13,7 @@ from python_compat import range, map
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 
 def save_spectrum(qso_spec_obj):

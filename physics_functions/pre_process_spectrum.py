@@ -5,7 +5,7 @@ from physics_functions.remove_mw_lines import MWLines
 from physics_functions.remove_bal import RemoveBALSimple
 import common_settings
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 
 class PreProcessSpectrum:

@@ -4,7 +4,7 @@ from astropy.cosmology import Planck13, WMAP5, WMAP7, WMAP9, FlatLambdaCDM
 import common_settings
 import lookup_table
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 # Cosmological constants used in the fiducial model by Delubac 2015.
 h = 0.7

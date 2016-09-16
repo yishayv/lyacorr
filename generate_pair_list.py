@@ -23,7 +23,7 @@ from physics_functions import comoving_distance
 from physics_functions.spherical_math import SkyGroups, find_spherical_mean_deg
 from python_compat import reduce, zip, range
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 z_start = 1.8
 z_end = 3.6

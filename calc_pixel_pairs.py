@@ -19,7 +19,7 @@ import significant_qso_pairs
 from data_access.numpy_spectrum_container import NpSpectrumContainer
 from flux_accumulator import AccumulatorBase
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 NUM_BINS_X = 50
 NUM_BINS_Y = 50

@@ -12,7 +12,7 @@ from pixel_flags import PixelFlags, FlagStats
 
 from python_compat import range
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 QSO_FILE = settings.get_qso_metadata_fits()
 # read header names for the QSO table

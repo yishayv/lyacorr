@@ -5,7 +5,7 @@ import numpy as np
 
 import common_settings
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 
 # based on [Paris 2011] and [Lee, Suzuki, & Spergel 2012]

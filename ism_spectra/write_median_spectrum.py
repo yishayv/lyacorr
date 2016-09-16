@@ -14,7 +14,7 @@ from python_compat import range
 
 comm = MPI.COMM_WORLD
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 num_bins = int(2e3)
 spec_res = 0.5

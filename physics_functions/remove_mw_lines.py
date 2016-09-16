@@ -4,7 +4,7 @@ import healpy as hp
 
 import common_settings
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 
 def load_spectra(path):

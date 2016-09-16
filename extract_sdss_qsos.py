@@ -10,7 +10,7 @@ from data_access import read_spectrum_fits
 from data_access.read_spectrum_fits import QSO_fields_dict
 from python_compat import range
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 
 def create_record(i):

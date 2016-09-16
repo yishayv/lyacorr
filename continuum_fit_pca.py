@@ -10,7 +10,7 @@ import common_settings
 import qso_pca_loader
 from python_compat import range
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 # by default, use both Paris 2011 and Suzuki 2005 templates
 fit_pca_files = settings.get_pca_continuum_tables()

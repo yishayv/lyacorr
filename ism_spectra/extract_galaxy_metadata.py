@@ -15,7 +15,7 @@ from python_compat import range, map, zip
 
 comm = MPI.COMM_WORLD
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 galaxy_file_fits = settings.get_galaxy_metadata_fits()
 galaxy_file_npy = settings.get_galaxy_metadata_npy()

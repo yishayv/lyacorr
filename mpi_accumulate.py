@@ -9,7 +9,7 @@ import common_settings
 import mpi_helper
 from mpi_helper import l_print_no_barrier
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 comm = MPI.COMM_WORLD
 

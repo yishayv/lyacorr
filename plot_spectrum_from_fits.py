@@ -44,7 +44,7 @@ def plot_v_mark(wavelength):
     plt.axvspan(wavelength, wavelength, alpha=0.3, edgecolor='red')
 
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
 deredden_spectrum = DereddenSpectrum()
 spectrum_calibration = SpectrumCalibration(settings.get_tp_correction_hdf5())

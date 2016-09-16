@@ -29,7 +29,7 @@ from python_compat import range, zip
 
 lya_center = 1215.67
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 force_single_process = settings.get_single_process()
 z_range = (1.9, 3.5, 0.0004)
 ar_z_range = np.arange(*z_range)

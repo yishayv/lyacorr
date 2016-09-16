@@ -8,7 +8,7 @@ from data_access.numpy_spectrum_container import NpSpectrumContainer
 from mpi_accumulate import comm
 from python_compat import range
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 
 def rescale(ar_x, from_range, to_range):

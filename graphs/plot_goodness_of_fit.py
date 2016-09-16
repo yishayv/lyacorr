@@ -12,7 +12,7 @@ import common_settings
 import physics_functions.delta_f_snr_bins
 from continuum_goodness_of_fit import calc_fit_power_law, fit_function, power_law_to_string
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 delta_f_snr_bins_helper = physics_functions.delta_f_snr_bins.DeltaFSNRBins()
 

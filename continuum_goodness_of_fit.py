@@ -6,7 +6,7 @@ import common_settings
 import physics_functions.delta_f_snr_bins
 from python_compat import range
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 delta_f_snr_bins_helper = physics_functions.delta_f_snr_bins.DeltaFSNRBins()
 

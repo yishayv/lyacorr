@@ -3,7 +3,7 @@ import numpy as np
 import common_settings
 import lookup_table
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 DEFAULT_WEIGHT_Z_RANGE = (1.9, 3.6, 0.01)
 

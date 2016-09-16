@@ -23,7 +23,7 @@ MAX_WAVELENGTH_COUNT = 4992
 
 comm = MPI.COMM_WORLD
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 fit_pca = ContinuumFitPCA()
 
 z_range = (1.9, 3.5, 0.0001)

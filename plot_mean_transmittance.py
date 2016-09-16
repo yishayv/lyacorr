@@ -7,7 +7,7 @@ import median_transmittance
 
 lya_center = 1215.67
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 enable_median_transmittance = False
 
 

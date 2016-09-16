@@ -6,7 +6,7 @@ import pyfits
 import common_settings
 from python_compat import range
 
-settings = common_settings.Settings()
+settings = common_settings.Settings()  # type: common_settings.Settings
 
 # CIV_LINE = 1545.86
 LIGHT_SPEED_KM_S = 299792.458
