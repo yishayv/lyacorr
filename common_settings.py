@@ -326,3 +326,18 @@ class Settings:
         """histogram output file"""
         opt_ism_histogram_npz = 'ism_histogram_npz'
         return self.get_env_expanded_path(self.section_stacked_ism, opt_ism_histogram_npz)
+
+    def get_histogram_properties(self):
+        """dimensions and range of the histogram"""
+        return {
+            'spec_start': self.config_parser.getfloat(self.section_stacked_ism, 'spec_start'),
+            'spec_end': self.config_parser.getfloat(self.section_stacked_ism, 'spec_end'),
+            'spec_res': self.config_parser.getfloat(self.section_stacked_ism, 'spec_res'),
+            'flux_min': self.config_parser.getfloat(self.section_stacked_ism, 'flux_min'),
+            'flux_max': self.config_parser.getfloat(self.section_stacked_ism, 'flux_max'),
+            'num_flux_bins': self.config_parser.getint(self.section_stacked_ism, 'num_flux_bins')
+        }
+
+    def get_detrend_window(self):
+        """detrend window length in angstrom (rounded to nearest odd number)"""
+        return self.config_parser.getint(self.section_stacked_ism, 'detrend_window')

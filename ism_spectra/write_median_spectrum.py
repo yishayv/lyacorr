@@ -16,17 +16,19 @@ comm = MPI.COMM_WORLD
 
 settings = common_settings.Settings()  # type: common_settings.Settings
 
-num_bins = int(2e3)
-spec_res = 0.5
-spec_start = 3566
-spec_end = 7200
+histogram_properties = settings.get_histogram_properties()
+spec_start = histogram_properties['spec_start']
+spec_end = histogram_properties['spec_end']
+spec_res = histogram_properties['spec_res']
+flux_min = histogram_properties['flux_min']
+flux_max = histogram_properties['flux_max']
+num_bins = histogram_properties['num_flux_bins']
+
 ar_wavelength = np.arange(spec_start, spec_end, spec_res)
 spec_size = int(ar_wavelength.size)
 # window length must be odd
-detrend_window = int(150 / spec_res / 2) * 2 + 1
+detrend_window = int(int(settings.get_detrend_window()) / spec_res / 2) * 2 + 1
 
-flux_min = 0.50
-flux_max = 1.5
 flux_range = flux_max - flux_min
 
 histogram = np.zeros(shape=(num_bins, spec_size))
