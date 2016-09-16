@@ -16,7 +16,7 @@ comm = MPI.COMM_WORLD
 
 settings = common_settings.Settings()
 
-num_bins = int(1e3)
+num_bins = int(2e3)
 spec_res = 0.5
 spec_start = 3566
 spec_end = 7200
@@ -25,14 +25,14 @@ spec_size = int(ar_wavelength.size)
 # window length must be odd
 detrend_window = int(150 / spec_res / 2) * 2 + 1
 
-flux_min = 0
-flux_max = 2
+flux_min = 0.50
+flux_max = 1.5
 flux_range = flux_max - flux_min
 
 histogram = np.zeros(shape=(num_bins, spec_size))
 global_histogram = np.zeros(shape=(num_bins, spec_size))
 
-num_update_gather = 10
+num_update_gather = 20
 
 galaxy_metadata_file_npy = settings.get_galaxy_metadata_npy()
 histogram_output_npz = settings.get_ism_histogram_npz()
@@ -80,12 +80,12 @@ def profile_main():
         ar_flux_int[ar_flux_int >= num_bins] = num_bins - 1
         ar_flux_int[ar_flux_int < 0] = 0
 
-        mask = np.logical_and(np.isfinite(ar_flux), ar_ivar > 0)
+        mask = np.logical_and.reduce((np.isfinite(ar_flux), ar_ivar > 0, ar_trend > 2.))
 
         x = ar_flux_int[mask]
         y = np.arange(spec_size)[mask]
-        c = ar_ivar[mask]
-        
+        c = np.ones_like(y)
+
         histogram[x, y] += c
 
         if update_gather_mask[n]:

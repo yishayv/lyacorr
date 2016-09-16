@@ -83,7 +83,7 @@ ar_weights_total = np.zeros(shape=(10, num_bins))
 ar_counts_total = np.zeros(shape=(10, num_bins))
 
 # sky scan parameters
-num_directions = 4
+num_directions = 18
 stripe_step_deg = 10
 
 for current_direction_index in range(num_directions):

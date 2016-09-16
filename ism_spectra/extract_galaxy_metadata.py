@@ -20,7 +20,7 @@ settings = common_settings.Settings()
 galaxy_file_fits = settings.get_galaxy_metadata_fits()
 galaxy_file_npy = settings.get_galaxy_metadata_npy()
 
-num_update_gather = 10
+num_update_gather = 100
 
 
 def get_update_mask(num_updates, num_items):
