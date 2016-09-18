@@ -11,7 +11,7 @@ import common_settings
 from data_access.qso_data import QSOData
 from data_access.read_spectrum_fits import enum_spectra
 from mpi_helper import get_chunks
-from mpi_helper import l_print_no_barrier, r_print
+from mpi_helper import r_print
 from python_compat import range
 
 comm = MPI.COMM_WORLD
@@ -115,6 +115,10 @@ def profile_main():
 
     # group results into extinction bins with roughly equal number of spectra.
     galaxy_record_table.sort(['extinction_g'])
+
+    # remove objects with unknown extinction
+    galaxy_record_table = galaxy_record_table[np.where(np.isfinite(galaxy_record_table['extinction_g']))]
+
     chunk_sizes, chunk_offsets = get_chunks(len(galaxy_record_table), num_extinction_bins)
     for i in range(num_extinction_bins):
         extinction_bin_start = chunk_offsets[i]
