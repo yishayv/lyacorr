@@ -4,7 +4,7 @@ import itertools
 import astropy.table as table
 import astropy.units as u
 import numpy as np
-import pyfits
+from astropy.io import fits
 from mpi4py import MPI
 
 import common_settings
@@ -56,7 +56,7 @@ def create_galaxy_table(data=None):
 
 
 def fill_galaxy_table():
-    fits_data = pyfits.getdata(galaxy_file_fits)
+    fits_data = fits.getdata(galaxy_file_fits)
 
     chunk_sizes, chunk_offsets = get_chunks(len(fits_data), comm.size)
 

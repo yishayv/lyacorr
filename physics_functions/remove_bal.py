@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 import numpy as np
-import pyfits
+from astropy.io import fits
 
 import common_settings
 from python_compat import range
@@ -25,7 +25,7 @@ def civ_rel_velocity_to_wavelength(line_center, z, velocity):
 
 class RemoveBALSimple(object):
     def __init__(self):
-        self.bal_fits = pyfits.open(settings.get_qso_bal_fits())
+        self.bal_fits = fits.open(settings.get_qso_bal_fits())
         self.data = self.bal_fits[1].data
         self.bal_dict = {}
         self.create_dict()

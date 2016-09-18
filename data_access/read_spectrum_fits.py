@@ -4,7 +4,7 @@ import os.path
 
 import astropy.table as table
 import numpy as np
-import pyfits
+from astropy.io import fits
 
 import common_settings
 from data_access.qso_data import QSORecord, QSOData
@@ -36,7 +36,7 @@ def generate_qso_details(qso_file=QSO_FILE):
     """
     iterate over the QSO table, yielding a dictionary containing the values for each QSO
     """
-    data = pyfits.getdata(qso_file)
+    data = fits.getdata(qso_file)
     for obj in data:
         yield obj
 
@@ -91,7 +91,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
                 raise Exception("Missing file:", fits_partial_path)
 
             # get header
-            hdu_list = pyfits.open(fits_full_path)
+            hdu_list = fits.open(fits_full_path)
             hdu0_header = hdu_list[0].header
             hdu1_header = hdu_list[1].header
 

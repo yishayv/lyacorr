@@ -1,5 +1,5 @@
 import numpy as np
-import pyfits
+from astropy.io import fits
 import healpy as hp
 
 import common_settings
@@ -11,7 +11,7 @@ def load_spectra(path):
     """
     function loads the .fits file of the stacked spectra
     """
-    data = pyfits.getdata(path)
+    data = fits.getdata(path)
     ar_wl = data['wavelength grid']
     # assume that group IDs are integers in the range of [0, num_data_columns-1]
     ar_spectra = np.zeros(shape=(len(data.columns) - 1, ar_wl.size))
@@ -52,7 +52,7 @@ class MWLines:
         """
         function loads the metadata which contains the connection between pixel ID to group ID
         """
-        metadata = pyfits.getdata(path)
+        metadata = fits.getdata(path)
         pixel_id = metadata['pixel_id']
         group_id = metadata['Group ID']
         return pixel_id, group_id
