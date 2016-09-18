@@ -42,9 +42,13 @@ def reduce_and_save(output_file, global_histogram, histogram, group_parameters):
         [global_histogram, MPI.DOUBLE],
         op=MPI.SUM, root=0)
     if comm.rank == 0:
-        ism_spec = np.zeros(shape=histogram.shape[1], dtype=np.double)
+        # compute the median and add it to the npz file
+        ism_spec = np.zeros(shape=global_histogram.shape[1], dtype=np.double)
         for i in range(ism_spec.size):
-            ism_spec[i] = weighted.quantile(np.arange(histogram.shape[0]), histogram[:, i], 0.5)
+            ism_spec[i] = weighted.quantile(np.arange(global_histogram.shape[0]), global_histogram[:, i], 0.5)
+        ism_spec *= float(flux_range) / num_bins
+        ism_spec += flux_min
+
         np.savez(output_file, histogram=global_histogram, ar_wavelength=ar_wavelength,
                  flux_range=[flux_min, flux_max], ism_spec=ism_spec, group_parameters=group_parameters)
 
@@ -112,7 +116,7 @@ def profile_main():
     galaxy_record_table.sort(['extinction_g'])
     chunk_sizes, chunk_offsets = get_chunks(len(galaxy_record_table), num_extinction_bins)
     for i in range(num_extinction_bins):
-        extinction_bin_start = chunk_sizes[i]
+        extinction_bin_start = chunk_offsets[i]
         extinction_bin_end = extinction_bin_start + chunk_sizes[i]
 
         extinction_bin_record_table = galaxy_record_table[extinction_bin_start:extinction_bin_end]
