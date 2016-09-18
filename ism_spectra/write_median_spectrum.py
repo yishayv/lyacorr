@@ -88,14 +88,15 @@ def calc_median_spectrum(galaxy_record_table, histogram_output_npz, group_parame
 
         x = ar_flux_int[mask]
         y = np.arange(spec_size)[mask]
-        c = np.ones_like(y)
+        # c = np.ones_like(y)
+        c = ar_trend[mask]
 
         histogram[x, y] += c
 
         if update_gather_mask[n]:
             reduce_and_save(output_file=histogram_output_npz, global_histogram=global_histogram,
                             histogram=histogram, group_parameters=group_parameters)
-            l_print_no_barrier(n)
+            # l_print_no_barrier(n)
             list_n = comm.gather(n)
             if comm.rank == 0:
                 r_print(sum(list_n))

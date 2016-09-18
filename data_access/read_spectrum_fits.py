@@ -91,7 +91,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
                 raise Exception("Missing file:", fits_partial_path)
 
             # get header
-            hdu_list = fits.open(fits_full_path)
+            hdu_list = fits.open(fits_full_path, memmap=True)
             hdu0_header = hdu_list[0].header
             hdu1_header = hdu_list[1].header
 
