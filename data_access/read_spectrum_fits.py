@@ -9,7 +9,6 @@ import pyfits
 import common_settings
 from data_access.qso_data import QSORecord, QSOData
 from pixel_flags import PixelFlags, FlagStats
-
 from python_compat import range
 
 settings = common_settings.Settings()  # type: common_settings.Settings
@@ -65,13 +64,15 @@ def find_fits_file(plate_dir_list, fits_partial_path):
 
 
 def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True, flag_stats=None,
-                and_mask=AND_MASK, or_mask=OR_MASK):
+                 and_mask=AND_MASK, or_mask=OR_MASK):
     """
     yields a QSO object from the fits files corresponding to the appropriate qso_record
     :type qso_record_table: table.Table
     :type plate_dir_list: list[string]
     :type pre_sort: bool
     :type flag_stats: FlagStats
+    :param and_mask: set ivar=0 according to these and-mask flags
+    :param or_mask: set ivar=0 according to these or-mask flags
     :rtype: list[QSOData]
     """
     last_fits_partial_path = None
@@ -114,7 +115,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
             or_mask_data = hdu_list[3].data
             last_fits_partial_path = fits_partial_path
 
-        if None in (flux_data, ivar_data, and_mask_data, or_mask_data, o_grid):
+        if any(var is None for var in (flux_data, ivar_data, and_mask_data, or_mask_data, o_grid)):
             raise Exception("Unexpected uninitialized variables.")
         # return requested spectrum
         ar_flux = flux_data[qso_rec.fiberID - 1]

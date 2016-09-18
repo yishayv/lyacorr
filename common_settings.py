@@ -341,3 +341,10 @@ class Settings:
     def get_detrend_window(self):
         """detrend window length in angstrom (rounded to nearest odd number)"""
         return self.config_parser.getint(self.section_stacked_ism, 'detrend_window')
+
+    def get_num_extinction_bins(self):
+        """
+        number of extinction bins.
+        a number will be appended to the histogram file.
+        """
+        return self.config_parser.getint(self.section_stacked_ism, 'num_extinction_bins')
