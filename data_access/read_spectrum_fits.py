@@ -64,7 +64,8 @@ def find_fits_file(plate_dir_list, fits_partial_path):
     return None
 
 
-def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True, flag_stats=None):
+def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=True, flag_stats=None,
+                and_mask=AND_MASK, or_mask=OR_MASK):
     """
     yields a QSO object from the fits files corresponding to the appropriate qso_record
     :type qso_record_table: table.Table
@@ -122,8 +123,8 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
 
         current_and_mask_data = np.asarray(and_mask_data[qso_rec.fiberID - 1])
         current_or_mask_data = np.asarray(or_mask_data[qso_rec.fiberID - 1])
-        ar_effective_mask = np.logical_or(current_and_mask_data & AND_MASK,
-                                          current_or_mask_data & OR_MASK)
+        ar_effective_mask = np.logical_or(current_and_mask_data & and_mask,
+                                          current_or_mask_data & or_mask)
 
         if flag_stats is not None:
             for bit in range(0, 32):

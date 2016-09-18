@@ -67,7 +67,7 @@ def profile_main():
     update_gather_mask = get_update_mask(num_update_gather, chunk_sizes[comm.rank])
 
     spectrum_iterator = enum_spectra(qso_record_table=galaxy_record_table[local_start_index:local_end_index],
-                                     pre_sort=False)
+                                     pre_sort=False, and_mask=np.uint32(0), or_mask=np.uint32(0))
     for n, spectrum in enumerate(spectrum_iterator):  # type: int,QSOData
         ar_flux = np.interp(ar_wavelength, spectrum.ar_wavelength, spectrum.ar_flux, left=np.nan, right=np.nan)
         ar_ivar = np.interp(ar_wavelength, spectrum.ar_wavelength, spectrum.ar_ivar, left=np.nan, right=np.nan)
