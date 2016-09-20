@@ -135,7 +135,7 @@ def profile_main():
                             }
 
         # sort by plate to avoid constant switching of fits files (which are per plate).
-        extinction_bin_record_table.sort(['plate'])
+        extinction_bin_record_table.sort(['plate', 'mjd', 'fiberID'])
 
         base_filename, file_extension = splitext(histogram_output_npz)
         histogram_output_filename = '{}_{:02d}{}'.format(base_filename, i, file_extension)

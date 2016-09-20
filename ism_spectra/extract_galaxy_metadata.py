@@ -41,7 +41,7 @@ def profile_main():
     t_ = fill_galaxy_table()
 
     if comm.rank == 0:
-        t_.sort(['plate'])
+        t_.sort(['plate', 'mjd', 'fiberID'])
 
         # add indices after sort
         t_['index'] = range(len(t_))

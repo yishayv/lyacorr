@@ -78,7 +78,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
     last_fits_partial_path = None
     # sort by plate to avoid reopening files too many times
     if pre_sort:
-        qso_record_table.sort(['plate'])
+        qso_record_table.sort(['plate', 'mjd', 'fiberID'])
 
     for i in qso_record_table:
         qso_rec = QSORecord.from_row(i)

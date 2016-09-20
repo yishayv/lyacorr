@@ -56,7 +56,7 @@ def fill_qso_table(t):
 def profile_main():
     t_ = create_qso_table()
     fill_qso_table(t_)
-    t_.sort(['plate'])
+    t_.sort(['plate', 'mjd', 'fiberID'])
 
     # add indices after sort
     t_['index'] = range(len(t_))
