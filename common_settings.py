@@ -327,6 +327,11 @@ class Settings:
         opt_ism_histogram_npz = 'ism_histogram_npz'
         return self.get_env_expanded_path(self.section_stacked_ism, opt_ism_histogram_npz)
 
+    def get_ism_real_median_npz(self):
+        """histogram output file"""
+        opt_ism_real_median_npz = 'ism_real_median_npz'
+        return self.get_env_expanded_path(self.section_stacked_ism, opt_ism_real_median_npz)
+
     def get_histogram_properties(self):
         """dimensions and range of the histogram"""
         return {
