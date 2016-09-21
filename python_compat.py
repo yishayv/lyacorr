@@ -6,9 +6,9 @@ if sys.version_info < (3,):
     # noinspection PyUnresolvedReferences,PyShadowingBuiltins
     from itertools import izip as zip
 
-    # noinspection PyShadowingBuiltins
+    # noinspection PyShadowingBuiltins,PyUnresolvedReferences
     range = xrange
-    # noinspection PyShadowingBuiltins
+    # noinspection PyShadowingBuiltins,PyUnboundLocalVariable,PyUnresolvedReferences
     reduce = reduce
 else:
     # noinspection PyUnresolvedReferences

@@ -18,6 +18,7 @@ def r_print(*args):
         print('ROOT:', end=' ')
         for i in args:
             print(i, end=' ')
+        # noinspection PyArgumentList
         print()
 
 
@@ -43,6 +44,7 @@ def l_print_no_barrier(*args):
     print(comm.rank, ':', end=' ')
     for i in args:
         print(i, end=' ')
+    # noinspection PyArgumentList
     print()
 
 

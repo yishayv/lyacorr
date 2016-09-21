@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-import covariance_helpers
+import physics_functions.covariance_helpers as covariance_helpers
 
 
 class TestJackknife2d(TestCase):

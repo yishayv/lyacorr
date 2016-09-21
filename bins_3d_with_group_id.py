@@ -41,7 +41,7 @@ class Bins3DWithGroupID(AccumulatorBase):
         """
         Add flux (and weights) from an existing numpy array into the specified group_id
         :type group_id: int64
-        :type ar_data: np.multiarray.ndarray
+        :type ar_data: Optional[np.multiarray.ndarray]
         """
         self.add_to_group_id(group_id, self._bins_creator(ar_data))
 

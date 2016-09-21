@@ -70,7 +70,7 @@ def enum_spectra(qso_record_table, plate_dir_list=PLATE_DIR_DEFAULT, pre_sort=Tr
     :type qso_record_table: table.Table
     :type plate_dir_list: list[string]
     :type pre_sort: bool
-    :type flag_stats: FlagStats
+    :type flag_stats: Optional[FlagStats]
     :param and_mask: set ivar=0 according to these and-mask flags
     :param or_mask: set ivar=0 according to these or-mask flags
     :rtype: list[QSOData]
