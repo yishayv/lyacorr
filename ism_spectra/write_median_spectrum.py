@@ -113,6 +113,8 @@ def profile_main():
 
     num_extinction_bins = settings.get_num_extinction_bins()
 
+    galaxy_record_table = galaxy_record_table[galaxy_record_table['class']=='GALAXY']
+
     # group results into extinction bins with roughly equal number of spectra.
     galaxy_record_table.sort(['extinction_g'])
 

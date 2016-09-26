@@ -27,7 +27,9 @@ def convert_fits_columns(fits_data):
                    table.Column(fits_data['plate'], name='plate', dtype='i4', unit=None),
                    table.Column(fits_data['mjd'], name='mjd', dtype='i4', unit=None),
                    table.Column(fits_data['fiberID'], name='fiberID', dtype='i4', unit=None),
-                   table.Column(fits_data['extinction_g'], name='extinction_g', unit=u.dimensionless_unscaled)])
+                   table.Column(fits_data['extinction_g'], name='extinction_g', unit=u.dimensionless_unscaled),
+                   table.Column(fits_data['class'], name='class', unit=u.dimensionless_unscaled)
+                   ])
     return t
 
 
