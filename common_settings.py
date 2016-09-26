@@ -353,3 +353,9 @@ class Settings:
         a number will be appended to the histogram file.
         """
         return self.config_parser.getint(self.section_stacked_ism, 'num_extinction_bins')
+
+    def get_ism_object_classes(self):
+        """
+        which class of object(s) to use for ism median
+        """
+        return self.config_parser.get(self.section_stacked_ism, 'ism_object_classes').split(_SEP)

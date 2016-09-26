@@ -113,7 +113,10 @@ def profile_main():
 
     num_extinction_bins = settings.get_num_extinction_bins()
 
-    galaxy_record_table = galaxy_record_table[galaxy_record_table['class']=='GALAXY']
+    ism_object_classes = settings.get_ism_object_classes()
+
+    galaxy_table_mask = np.array([i in ism_object_classes for i in galaxy_record_table['class']])
+    galaxy_record_table = galaxy_record_table[galaxy_table_mask]
 
     # group results into extinction bins with roughly equal number of spectra.
     galaxy_record_table.sort(['extinction_g'])
