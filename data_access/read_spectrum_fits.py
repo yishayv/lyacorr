@@ -8,6 +8,7 @@ from astropy.io import fits
 
 import common_settings
 from data_access.qso_data import QSORecord, QSOData
+# noinspection PyUnresolvedReferences
 from pixel_flags import PixelFlags, FlagStats
 from python_compat import range
 
