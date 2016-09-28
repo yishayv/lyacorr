@@ -49,8 +49,8 @@ def reduce_and_save(output_file, global_histogram, histogram, group_parameters):
         ism_spec *= float(flux_range) / num_bins
         ism_spec += flux_min
 
-        np.savez(output_file, histogram=global_histogram, ar_wavelength=ar_wavelength,
-                 flux_range=[flux_min, flux_max], ism_spec=ism_spec, group_parameters=group_parameters)
+        np.savez_compressed(output_file, histogram=global_histogram, ar_wavelength=ar_wavelength,
+                            flux_range=[flux_min, flux_max], ism_spec=ism_spec, group_parameters=group_parameters)
 
 
 def get_update_mask(num_updates, num_items):

@@ -36,8 +36,8 @@ num_update_gather = 1
 
 
 def save(output_file, ar_median, group_parameters):
-    np.savez(output_file, ar_wavelength=ar_wavelength,
-             ism_spec=ar_median, group_parameters=group_parameters)
+    np.savez_compressed(output_file, ar_wavelength=ar_wavelength,
+                        ism_spec=ar_median, group_parameters=group_parameters)
 
 
 def get_update_mask(num_updates, num_items):
