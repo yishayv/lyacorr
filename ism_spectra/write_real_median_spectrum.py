@@ -10,7 +10,7 @@ import common_settings
 from data_access.qso_data import QSOData
 from data_access.read_spectrum_fits import enum_spectra
 from mpi_helper import get_chunks
-from mpi_helper import r_print, l_print
+from mpi_helper import l_print_no_barrier
 from python_compat import range
 
 comm = MPI.COMM_WORLD
@@ -70,11 +70,11 @@ def calc_median_spectrum(galaxy_record_table, histogram_output_npz, group_parame
 
         spectra[n] = ar_flux
 
-    l_print('Starting Median Calculation')
+    l_print_no_barrier('Starting Median Calculation')
     # calculate the median of the entire array
     ar_median = np.nanmedian(spectra, axis=0)
 
-    r_print('------------')
+    l_print_no_barrier('Saving: {}'.format(histogram_output_npz))
     save(output_file=histogram_output_npz, ar_median=ar_median, group_parameters=group_parameters)
 
 
@@ -92,8 +92,20 @@ def profile_main():
     # remove objects with unknown extinction
     galaxy_record_table = galaxy_record_table[np.where(np.isfinite(galaxy_record_table['extinction_g']))]
 
+    # if comm.size > num_extinction_bins:
+    #     raise Exception('too many MPI nodes')
+
+    # split the work into 'jobs' for each mpi node.
+    # a job is defined as a single extinction bin.
+    # the index of every extinction bin is its job number.
+
+    job_sizes, job_offsets = get_chunks(num_extinction_bins, comm.size)
+    job_start = job_offsets[comm.rank]
+    job_end = job_start + job_sizes[comm.rank]
+
     chunk_sizes, chunk_offsets = get_chunks(len(galaxy_record_table), num_extinction_bins)
-    for i in range(num_extinction_bins):
+
+    for i in range(job_start, job_end):
         extinction_bin_start = chunk_offsets[i]
         extinction_bin_end = extinction_bin_start + chunk_sizes[i]
 
@@ -113,9 +125,9 @@ def profile_main():
         base_filename, file_extension = splitext(histogram_output_npz)
         histogram_output_filename = '{}_{:02d}{}'.format(base_filename, i, file_extension)
 
-        r_print('Starting extinction bin {}'.format(i))
+        l_print_no_barrier('Starting extinction bin {}'.format(i))
         calc_median_spectrum(extinction_bin_record_table, histogram_output_filename, group_parameters=group_parameters)
-        r_print('Finished extinction bin {}'.format(i))
+        l_print_no_barrier('Finished extinction bin {}'.format(i))
 
 
 if settings.get_profile():
