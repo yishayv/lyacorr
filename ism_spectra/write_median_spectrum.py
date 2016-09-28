@@ -113,16 +113,18 @@ def profile_main():
 
     num_extinction_bins = settings.get_num_extinction_bins()
 
+    extinction_field_name = settings.get_extinction_source()
+
     ism_object_classes = settings.get_ism_object_classes()
 
     galaxy_table_mask = np.array([i in ism_object_classes for i in galaxy_record_table['class']])
     galaxy_record_table = galaxy_record_table[galaxy_table_mask]
 
     # group results into extinction bins with roughly equal number of spectra.
-    galaxy_record_table.sort(['extinction_g'])
+    galaxy_record_table.sort([extinction_field_name])
 
     # remove objects with unknown extinction
-    galaxy_record_table = galaxy_record_table[np.where(np.isfinite(galaxy_record_table['extinction_g']))]
+    galaxy_record_table = galaxy_record_table[np.where(np.isfinite(galaxy_record_table[extinction_field_name]))]
 
     chunk_sizes, chunk_offsets = get_chunks(len(galaxy_record_table), num_extinction_bins)
     for i in range(num_extinction_bins):
@@ -133,10 +135,10 @@ def profile_main():
 
         # this should be done before plate sort
         group_parameters = {'extinction_bin_number': i,
-                            'extinction_minimum': extinction_bin_record_table['extinction_g'][0],
-                            'extinction_maximum': extinction_bin_record_table['extinction_g'][-1],
-                            'extinction_average': np.mean(extinction_bin_record_table['extinction_g']),
-                            'extinction_median': np.median(extinction_bin_record_table['extinction_g']),
+                            'extinction_minimum': extinction_bin_record_table[extinction_field_name][0],
+                            'extinction_maximum': extinction_bin_record_table[extinction_field_name][-1],
+                            'extinction_average': np.mean(extinction_bin_record_table[extinction_field_name]),
+                            'extinction_median': np.median(extinction_bin_record_table[extinction_field_name]),
                             }
 
         # sort by plate to avoid constant switching of fits files (which are per plate).

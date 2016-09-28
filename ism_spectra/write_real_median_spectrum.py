@@ -10,7 +10,7 @@ import common_settings
 from data_access.qso_data import QSOData
 from data_access.read_spectrum_fits import enum_spectra
 from mpi_helper import get_chunks
-from mpi_helper import l_print_no_barrier
+from mpi_helper import l_print_no_barrier, is_all_done
 from python_compat import range
 
 comm = MPI.COMM_WORLD
@@ -86,11 +86,13 @@ def profile_main():
 
     num_extinction_bins = settings.get_num_extinction_bins()
 
+    extinction_field_name = settings.get_extinction_source()
+
     # group results into extinction bins with roughly equal number of spectra.
-    galaxy_record_table.sort(['extinction_g'])
+    galaxy_record_table.sort([extinction_field_name])
 
     # remove objects with unknown extinction
-    galaxy_record_table = galaxy_record_table[np.where(np.isfinite(galaxy_record_table['extinction_g']))]
+    galaxy_record_table = galaxy_record_table[np.where(np.isfinite(galaxy_record_table[extinction_field_name]))]
 
     # if comm.size > num_extinction_bins:
     #     raise Exception('too many MPI nodes')
@@ -113,10 +115,10 @@ def profile_main():
 
         # this should be done before plate sort
         group_parameters = {'extinction_bin_number': i,
-                            'extinction_minimum': extinction_bin_record_table['extinction_g'][0],
-                            'extinction_maximum': extinction_bin_record_table['extinction_g'][-1],
-                            'extinction_average': np.mean(extinction_bin_record_table['extinction_g']),
-                            'extinction_median': np.median(extinction_bin_record_table['extinction_g']),
+                            'extinction_minimum': extinction_bin_record_table[extinction_field_name][0],
+                            'extinction_maximum': extinction_bin_record_table[extinction_field_name][-1],
+                            'extinction_average': np.mean(extinction_bin_record_table[extinction_field_name]),
+                            'extinction_median': np.median(extinction_bin_record_table[extinction_field_name]),
                             }
 
         # sort by plate to avoid constant switching of fits files (which are per plate).
@@ -128,6 +130,9 @@ def profile_main():
         l_print_no_barrier('Starting extinction bin {}'.format(i))
         calc_median_spectrum(extinction_bin_record_table, histogram_output_filename, group_parameters=group_parameters)
         l_print_no_barrier('Finished extinction bin {}'.format(i))
+
+    for _ in is_all_done():
+        pass
 
 
 if settings.get_profile():

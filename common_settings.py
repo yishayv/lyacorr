@@ -364,3 +364,10 @@ class Settings:
         which class of object(s) to use for ism median
         """
         return self.config_parser.get(self.section_stacked_ism, 'ism_object_classes').split(_SEP)
+
+    def get_extinction_source(self):
+        """
+        the name of the field in the galaxy metadata file, holding extinction values.
+        (currently either 'extinction_g' or 'extinction_v_planck')
+        """
+        return self.config_parser.get(self.section_stacked_ism, 'extinction_source')
