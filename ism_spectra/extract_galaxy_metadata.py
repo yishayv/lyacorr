@@ -12,7 +12,6 @@ import common_settings
 from python_compat import range
 
 comm = MPI.COMM_WORLD
-ar_map_nside = 2048
 
 settings = common_settings.Settings()  # type: common_settings.Settings
 
@@ -20,6 +19,9 @@ galaxy_file_fits = settings.get_galaxy_metadata_fits()
 galaxy_file_npy = settings.get_galaxy_metadata_npy()
 
 ar_dust_map = hp.fitsfunc.read_map(settings.get_planck_extinction_fits(), field=0)
+ar_dust_map_nside = hp.npix2nside(ar_dust_map.size)
+ar_lab_column_density_map = hp.fitsfunc.read_map(settings.get_lab_column_density_fits(), field=0)
+ar_lab_column_density_map_nside = hp.npix2nside(ar_lab_column_density_map.size)
 
 
 def ra_dec2ang(ra, dec):
@@ -62,9 +64,11 @@ def profile_main():
         coordinates_galactic = coordinates_icrs.galactic
 
         theta, phi = ra_dec2ang(coordinates_galactic.l.value, coordinates_galactic.b.value)
-        ar_pix = hp.ang2pix(ar_map_nside, theta, phi)
+        ar_dust_map_pix = hp.ang2pix(ar_dust_map_nside, theta, phi)
+        ar_lab_column_density_map_pix = hp.ang2pix(ar_lab_column_density_map_nside, theta, phi)
 
-        t['extinction_v_planck'] = ar_dust_map[ar_pix]
+        t['extinction_v_planck'] = ar_dust_map[ar_dust_map_pix]
+        t['lab_HI_column_density'] = ar_lab_column_density_map[ar_lab_column_density_map_pix]
 
         np.save(galaxy_file_npy, t)
 

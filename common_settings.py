@@ -322,6 +322,10 @@ class Settings:
         opt_planck_extinction_fits = 'planck_extinction_fits'
         return self.get_env_expanded_path(self.section_stacked_ism, opt_planck_extinction_fits)
 
+    def get_lab_column_density_fits(self):
+        """all-sky healpix map of HI column density from LAB"""
+        return self.get_env_expanded_path(self.section_stacked_ism, 'lab_column_density_fits')
+
     def get_galaxy_metadata_npy(self):
         """galaxy/qso metadata as an astropy table"""
         opt_galaxy_metadata_npy = 'galaxy_metadata_npy'
