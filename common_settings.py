@@ -35,9 +35,12 @@ class Settings:
         value = self.config_parser.get(section, key)
         return os.path.expandvars(value)
 
+    def get_string_list(self, section, key):
+        return [i.strip() for i in self.config_parser.get(section, key).split(_SEP)]
+
     def get_env_expanded_multiple_paths(self, section, key):
-        return [os.path.expanduser(i.strip()) for i in
-                self.config_parser.get(section, key).split(_SEP)]
+        return [os.path.expanduser(os.path.expandvars(i)) for i in
+                self.get_string_list(section, key)]
 
     # File Paths
 
@@ -317,14 +320,18 @@ class Settings:
         opt_galaxy_metadata_fits = 'galaxy_metadata_fits'
         return self.get_env_expanded_path(self.section_stacked_ism, opt_galaxy_metadata_fits)
 
-    def get_planck_extinction_fits(self):
-        """all-sky healpix map of galactic extinction based on planck"""
-        opt_planck_extinction_fits = 'planck_extinction_fits'
-        return self.get_env_expanded_path(self.section_stacked_ism, opt_planck_extinction_fits)
+    def get_custom_healpix_maps(self):
+        """all-sky healpix maps in galactic coordinates for adding custom fields (e.g. galactic extinction)"""
+        return self.get_env_expanded_multiple_paths(self.section_stacked_ism, 'healpix_maps')
 
-    def get_lab_column_density_fits(self):
-        """all-sky healpix map of HI column density from LAB"""
-        return self.get_env_expanded_path(self.section_stacked_ism, 'lab_column_density_fits')
+    def get_custom_column_names(self):
+        """Column names for the custom fields"""
+        return self.get_string_list(self.section_stacked_ism, 'column_names')
+
+    def get_custom_healpix_data_fields(self):
+        """Column names for the custom fields"""
+        string_fields = self.get_string_list(self.section_stacked_ism, 'field_numbers')
+        return [int(i) for i in string_fields]
 
     def get_galaxy_metadata_npy(self):
         """galaxy/qso metadata as an astropy table"""
@@ -367,7 +374,7 @@ class Settings:
         """
         which class of object(s) to use for ism median
         """
-        return self.config_parser.get(self.section_stacked_ism, 'ism_object_classes').split(_SEP)
+        return self.get_string_list(self.section_stacked_ism, 'ism_object_classes')
 
     def get_extinction_source(self):
         """

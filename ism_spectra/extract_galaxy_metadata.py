@@ -1,4 +1,5 @@
 import cProfile
+from collections import namedtuple
 
 import astropy.table as table
 import astropy.units as u
@@ -9,7 +10,7 @@ from astropy.io import fits
 from mpi4py import MPI
 
 import common_settings
-from python_compat import range
+from python_compat import range, zip
 
 comm = MPI.COMM_WORLD
 
@@ -18,10 +19,21 @@ settings = common_settings.Settings()  # type: common_settings.Settings
 galaxy_file_fits = settings.get_galaxy_metadata_fits()
 galaxy_file_npy = settings.get_galaxy_metadata_npy()
 
-ar_dust_map = hp.fitsfunc.read_map(settings.get_planck_extinction_fits(), field=0)
-ar_dust_map_nside = hp.npix2nside(ar_dust_map.size)
-ar_lab_column_density_map = hp.fitsfunc.read_map(settings.get_lab_column_density_fits(), field=0)
-ar_lab_column_density_map_nside = hp.npix2nside(ar_lab_column_density_map.size)
+HealPixMapEntry = namedtuple('HealPixMapEntry', ['data', 'nside', 'filename', 'column_name'])
+column_names = settings.get_custom_column_names()
+file_names = settings.get_custom_healpix_maps()
+fields = settings.get_custom_healpix_data_fields()
+
+
+def make_heal_pix_map_entry(filename, column_name, field):
+    print("Loading: {0}:{2} as column '{1}'".format(filename, column_name, field))
+    data = hp.fitsfunc.read_map(filename, field=field)
+    nside = hp.npix2nside(data.size)
+    return HealPixMapEntry(data=data, nside=nside, filename=filename, column_name=column_name)
+
+
+healpix_maps = [make_heal_pix_map_entry(filename, column_name, field)
+                for filename, column_name, field in zip(file_names, column_names, fields)]
 
 
 def ra_dec2ang(ra, dec):
@@ -64,11 +76,12 @@ def profile_main():
         coordinates_galactic = coordinates_icrs.galactic
 
         theta, phi = ra_dec2ang(coordinates_galactic.l.value, coordinates_galactic.b.value)
-        ar_dust_map_pix = hp.ang2pix(ar_dust_map_nside, theta, phi)
-        ar_lab_column_density_map_pix = hp.ang2pix(ar_lab_column_density_map_nside, theta, phi)
 
-        t['extinction_v_planck'] = ar_dust_map[ar_dust_map_pix]
-        t['lab_HI_column_density'] = ar_lab_column_density_map[ar_lab_column_density_map_pix]
+        for healpix_map in healpix_maps:
+            # lookup values in current map
+            map_lookup_results = hp.ang2pix(healpix_map.nside, theta, phi)
+            # add a new column to the table
+            t[healpix_map.column_name] = healpix_map.data[map_lookup_results]
 
         np.save(galaxy_file_npy, t)
 
