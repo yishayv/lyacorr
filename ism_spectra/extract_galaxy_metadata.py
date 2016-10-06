@@ -10,6 +10,7 @@ from astropy.io import fits
 from mpi4py import MPI
 
 import common_settings
+from ism_spectra.sfd_lookup import SFDLookUp
 from python_compat import range, zip
 
 comm = MPI.COMM_WORLD
@@ -75,6 +76,12 @@ def profile_main():
         coordinates_icrs = SkyCoord(ra=ar_ra, dec=ar_dec)
         coordinates_galactic = coordinates_icrs.galactic
 
+        # add a column for extinction from the full resolution SFD map:
+        sfd = SFDLookUp(*settings.get_sfd_maps_fits())
+        t['extinction_sfd_hires'] = sfd.lookup(coordinates_galactic.l.to(u.rad).value,
+                                               coordinates_galactic.b.to(u.rad).value)
+
+        # add custom columns from healpix map lookup, based on the common settings.
         theta, phi = ra_dec2ang(coordinates_galactic.l.value, coordinates_galactic.b.value)
 
         for healpix_map in healpix_maps:

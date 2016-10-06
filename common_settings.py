@@ -333,6 +333,10 @@ class Settings:
         string_fields = self.get_string_list(self.section_stacked_ism, 'field_numbers')
         return [int(i) for i in string_fields]
 
+    def get_sfd_maps_fits(self):
+        """path to the SFD NGP/SGP maps"""
+        return self.get_env_expanded_multiple_paths(self.section_stacked_ism, 'sfd_maps_fits')
+
     def get_galaxy_metadata_npy(self):
         """galaxy/qso metadata as an astropy table"""
         opt_galaxy_metadata_npy = 'galaxy_metadata_npy'
