@@ -55,7 +55,7 @@ class SFDLookUp(object):
 
         return x, y, n_mask
 
-    def lookup(self, l, b):
+    def lookup_nearest(self, l, b):
         """
         get extinction values in the specified galactic coordinates
         :param l: l-parameter (1D array)
@@ -69,6 +69,15 @@ class SFDLookUp(object):
         return self.sfd_map[y.astype(np.int), x.astype(np.int), n_mask.astype(np.int)]
 
     def lookup_bilinear(self, l, b):
+        """
+        get extinction values in the specified galactic coordinates, using bilinear interpolation
+        :param l: l-parameter (1D array)
+        :type l: np.ndarray
+        :param b: b-parameter (1D array)
+        :type b: np.ndarray
+        :return: 1D array containing extinction values
+        :rtype: np.ndarray
+        """
         x, y, n_mask = self.get_xy(l, b)
         x_fraction, x_floor = np.modf(x)
         y_fraction, y_floor = np.modf(y)
