@@ -74,10 +74,10 @@ class SFDLookUp(object):
         y_fraction, y_floor = np.modf(y)
 
         weights = np.empty(shape=(2, 2,) + x.shape)
-        weights[0, 0] = x_fraction * y_fraction
-        weights[0, 1] = x_fraction * (1 - y_fraction)
-        weights[1, 0] = (1 - x_fraction) * y_fraction
-        weights[1, 1] = (1 - x_fraction) * (1 - y_fraction)
+        weights[0, 0] = (1 - x_fraction) * (1 - y_fraction)
+        weights[0, 1] = (1 - x_fraction) * y_fraction
+        weights[1, 0] = x_fraction * (1 - y_fraction)
+        weights[1, 1] = x_fraction * y_fraction
 
         values = np.empty(shape=(2, 2,) + x.shape)
         x_floor_int = x_floor.astype(np.int)
