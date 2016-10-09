@@ -117,7 +117,7 @@ def profile_main():
         group_parameters = {'extinction_bin_number': i,
                             'extinction_minimum': extinction_bin_record_table[extinction_field_name][0],
                             'extinction_maximum': extinction_bin_record_table[extinction_field_name][-1],
-                            'extinction_average': np.mean(extinction_bin_record_table[extinction_field_name]),
+                            'extinction_mean': np.mean(extinction_bin_record_table[extinction_field_name]),
                             'extinction_median': np.median(extinction_bin_record_table[extinction_field_name]),
                             }
 
@@ -125,10 +125,10 @@ def profile_main():
         extinction_bin_record_table.sort(['plate', 'mjd', 'fiberID'])
 
         base_filename, file_extension = splitext(histogram_output_npz)
-        histogram_output_filename = '{}_{:02d}{}'.format(base_filename, i, file_extension)
+        output_filename = '{}_{:02d}{}'.format(base_filename, i, file_extension)
 
         l_print_no_barrier('Starting extinction bin {}'.format(i))
-        calc_median_spectrum(extinction_bin_record_table, histogram_output_filename, group_parameters=group_parameters)
+        calc_median_spectrum(extinction_bin_record_table, output_filename, group_parameters=group_parameters)
         l_print_no_barrier('Finished extinction bin {}'.format(i))
 
     for _ in is_all_done():
