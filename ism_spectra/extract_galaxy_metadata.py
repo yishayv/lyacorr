@@ -78,8 +78,8 @@ def profile_main():
 
         # add a column for extinction from the full resolution SFD map:
         sfd = SFDLookUp(*settings.get_sfd_maps_fits())
-        t['extinction_sfd_hires'] = sfd.lookup(coordinates_galactic.l.to(u.rad).value,
-                                               coordinates_galactic.b.to(u.rad).value)
+        t['extinction_sfd_hires'] = sfd.lookup_bilinear(coordinates_galactic.l.to(u.rad).value,
+                                                        coordinates_galactic.b.to(u.rad).value)
 
         # add custom columns from healpix map lookup, based on the common settings.
         theta, phi = ra_dec2ang(coordinates_galactic.l.value, coordinates_galactic.b.value)
