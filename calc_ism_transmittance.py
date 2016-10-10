@@ -10,7 +10,6 @@ from collections import Counter
 import numpy as np
 
 import common_settings
-import data_access.numpy_spectrum_container
 from data_access.numpy_spectrum_container import NpSpectrumContainer, NpSpectrumIterator
 from data_access.read_spectrum_fits import QSORecord
 from mpi_accumulate import accumulate_over_spectra, comm
@@ -27,11 +26,9 @@ ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 local_stats = Counter({'bad_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
 pre_process_spectrum = PreProcessSpectrum()
-ar_extinction_levels = np.load(settings.get_ism_extinction_levels())
-
-ism_spectra = data_access.numpy_spectrum_container.NpSpectrumContainer(
-    readonly=True, create_new=False, filename=settings.get_ism_extinction_spectra(),
-    max_wavelength_count=10880)
+ism_extinction = np.load(settings.get_ism_extinction_spectra())
+ar_extinction_levels = ism_extinction['extinction_list']
+extinction_spectra_list = ism_extinction['spectra_list']
 
 
 class ISMTransmittanceAccumulator:
@@ -109,8 +106,8 @@ def ism_transmittance_chunk(qso_record_table):
 
         l_print_no_barrier("extinction_bin = ", extinction_bin)
         ar_ism_resampled = np.interp(ar_wavelength,
-                                     ism_spectra.get_wavelength(extinction_bin),
-                                     ism_spectra.get_flux(extinction_bin), left=np.nan, right=np.nan)
+                                     extinction_spectra_list[extinction_bin][0],
+                                     extinction_spectra_list[extinction_bin][1], left=np.nan, right=np.nan)
         extinction = ar_extinction_levels[extinction_bin]
         # rescale according to QSO extinction
         l_print_no_barrier(qso_rec.extinction_g, extinction)

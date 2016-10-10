@@ -165,13 +165,8 @@ class Settings:
 
     def get_ism_extinction_spectra(self):
         """MW lines stacked by extinction"""
-        opt_ism_extinction_spectra = 'ism_extinction_spectra_npy'
+        opt_ism_extinction_spectra = 'ism_extinction_spectra_npz'
         return self.get_env_expanded_path(self.section_file_paths, opt_ism_extinction_spectra)
-
-    def get_ism_extinction_levels(self):
-        """extinction levels for the previous array"""
-        opt_ism_extinction_levels = 'ism_extinction_levels_npy'
-        return self.get_env_expanded_path(self.section_file_paths, opt_ism_extinction_levels)
 
     def get_correlation_estimator_covariance_npy(self):
         """covariance matrix output"""
