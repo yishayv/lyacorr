@@ -92,3 +92,28 @@ def is_all_done(poll_time=1):
         yield False
 
     yield True
+
+
+"""
+As suggested by Lisandro Dalcin at:
+https://groups.google.com/forum/?fromgroups=#!topic/mpi4py/nArVuMXyyZI
+"""
+def barrier_sleep(comm, tag=1747362612, sleep=0.1, use_yield = False):
+    size = comm.Get_size()
+    if size == 1:
+        return
+    rank = comm.Get_rank()
+    mask = 1
+    while mask < size:
+        dst = (rank + mask) % size
+        src = (rank - mask + size) % size
+        req = comm.isend(None, dst, tag)
+        while not comm.Iprobe(src, tag):
+            if use_yield:
+                yield False
+            time.sleep(sleep)
+        comm.recv(None, src, tag)
+        req.Wait()
+        mask <<= 1
+    if use_yield:
+        yield True
