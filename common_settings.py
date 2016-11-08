@@ -26,6 +26,7 @@ class Settings:
     section_data_processing = 'DataProcessing'
     section_mock_parameters = 'MockParameters'
     section_stacked_ism = 'StackedISM'
+    section_restartable = 'RestartableMode'
 
     def get_env_expanded_path(self, section, key):
         value = self.config_parser.get(section, key)
@@ -381,3 +382,15 @@ class Settings:
         (currently either 'extinction_g' or 'extinction_v_planck')
         """
         return self.config_parser.get(self.section_stacked_ism, 'extinction_source')
+
+    def get_restartable_data_state_p(self):
+        """
+        a file holding data that is required for restarting the correlation computation.
+        """
+        return self.get_env_expanded_path(self.section_restartable, 'data_state_p')
+
+    def get_restartable_computation_state_p(self):
+        """
+        a file holding data that is required for restarting the correlation computation.
+        """
+        return self.get_env_expanded_path(self.section_restartable, 'computation_state_p')

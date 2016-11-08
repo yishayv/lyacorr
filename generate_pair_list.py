@@ -4,7 +4,8 @@
     Partial data is gathered and the correlation estimator file is saved after processing each sub-chunk.
 """
 import cProfile
-import itertools
+import pickle
+from collections import namedtuple
 
 import numpy as np
 from astropy import coordinates as coord
@@ -47,6 +48,13 @@ def get_bundles(start, end, size):
     sizes = [size] * len(offsets)
     sizes[-1] = end - offsets[-1]
     return zip(offsets, sizes)
+
+
+DataState = namedtuple('DataState',
+                       ['mpi_comm_size', 'coord_permutation',
+                        'max_angular_separation'])
+
+ComputationState = namedtuple('ComputationState', ['bundle_index', 'sub_chunk_index'])
 
 
 class SubChunkHelper:
@@ -146,7 +154,7 @@ def generate_pairs(ar_dec, ar_ra, coord_permutation, coord_set, local_end_index,
     print_func = mpi_helper.l_print if is_num_bundles_equal else mpi_helper.l_print_no_barrier
     mpi_helper.r_print('using print function:', print_func.__name__)
 
-    for bundle_start, bundle_size in bundles:
+    for bundle_index, (bundle_start, bundle_size) in enumerate(bundles):
         print_func('matching ', bundle_size, ' objects, starting at :', bundle_start)
         print_func('node progress:{:.1f}%'.format(
             100. * (bundle_start - local_start_index) / (local_end_index - local_start_index)))
@@ -184,14 +192,10 @@ def generate_pairs(ar_dec, ar_ra, coord_permutation, coord_set, local_end_index,
         print_func('total number of redundant objects removed:',
                    qso_pairs_with_unity.shape[1] - qso_pairs.shape[0])
         print_func('number of QSO pairs:', qso_pairs.shape[0])
-        yield qso_pair_angles, qso_pairs
+        yield bundle_index, qso_pair_angles, qso_pairs
 
 
 def profile_main():
-    # x = coord.SkyCoord(ra=10.68458*u.deg, dec=41.26917*u.deg, frame='icrs')
-    # min_distance = cd.comoving_distance_transverse(2.1, **fidcosmo)
-    # print('minimum distance', min_distance, 'Mpc/rad')
-
     # initialize data sources
     qso_record_table = table.Table(np.load(settings.get_qso_metadata_npy()))
     if settings.get_ism_only_mode():
@@ -246,6 +250,18 @@ def profile_main():
     else:
         assert False, "Either median or mean estimators must be specified."
 
+    # data_state should hold everything required to reproduce the exact same computation,
+    # so that it is possible to restart it from the last completed bundle.
+    # NOTE: currently there is no plan to check for consistency on load.
+    # changing the input data before restarting will produce undefined results.
+    data_state = DataState(mpi_comm_size=comm.size,
+                           coord_permutation=coord_permutation,
+                           max_angular_separation=max_angular_separation)
+
+    # save data state to allow restarting
+    if comm.rank == 0:
+        pickle.dump(data_state, open(settings.get_restartable_data_state_p(), 'wb'))
+
     pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type=accumulator_type)
     # divide the work into sub chunks
     # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
@@ -254,19 +270,24 @@ def profile_main():
     num_sub_chunks_per_node = settings.get_mpi_num_sub_chunks()
 
     sub_chunk_helper = SubChunkHelper()
-    for local_qso_pair_angles, local_qso_pairs in generate_pairs(
-            ar_dec, ar_ra, coord_permutation, coord_set, local_end_index, local_start_index,
-            max_angular_separation):
+    for bundle_index, local_qso_pair_angles, local_qso_pairs in generate_pairs(
+            ar_dec, ar_ra, coord_permutation, coord_set,
+            local_end_index, local_start_index, max_angular_separation):
 
         pixel_pair_sub_chunks = mpi_helper.get_chunks(local_qso_pairs.shape[0], num_sub_chunks_per_node)
-        for i, j, k in zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1], itertools.count()):
+        for sub_chunk_index, (i, j) in enumerate(zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1])):
             sub_chunk_start = j
             sub_chunk_end = j + i
-            mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", k, "out of",
+            mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", sub_chunk_index, "out of",
                                len(pixel_pair_sub_chunks[0]))
             sub_chunk_helper.add_pairs_in_sub_chunk(delta_t_file, local_qso_pair_angles,
                                                     local_qso_pairs[sub_chunk_start:sub_chunk_end],
                                                     pixel_pairs_object)
+
+            # save computation state to allow restarting
+            if comm.rank == 0:
+                pickle.dump(ComputationState(bundle_index=bundle_index, sub_chunk_index=sub_chunk_index),
+                            open(settings.get_restartable_computation_state_p(), 'wb'))
 
 
 if settings.get_profile():
