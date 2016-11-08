@@ -10,7 +10,7 @@ import common_settings
 from data_access.qso_data import QSOData
 from data_access.read_spectrum_fits import enum_spectra
 from mpi_helper import get_chunks
-from mpi_helper import l_print_no_barrier, is_all_done
+from mpi_helper import l_print_no_barrier, barrier_sleep
 from python_compat import range
 
 comm = MPI.COMM_WORLD
@@ -131,9 +131,9 @@ def profile_main():
         calc_median_spectrum(extinction_bin_record_table, output_filename, group_parameters=group_parameters)
         l_print_no_barrier('Finished extinction bin {}'.format(i))
 
-    for _ in is_all_done():
+    for _ in barrier_sleep(comm, use_yield=True):
+        l_print_no_barrier("waiting")
         pass
-
 
 if settings.get_profile():
     cProfile.runctx('profile_main()', globals(), locals(), filename='write_median_spectrum.prof', sort=2)

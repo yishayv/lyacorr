@@ -66,53 +66,25 @@ def get_chunks(num_items, num_steps):
     return chunk_sizes, chunk_offsets
 
 
-def is_all_done(poll_time=1):
-    tag = 28476237
-    # send a message to all nodes
-    for i in range(comm.size):
-        comm.send(True, dest=i, tag=tag)
-
-    all_done = False
-    done_list = [False] * comm.size
-    while not all_done:
-        time.sleep(poll_time)
-        # go over all nodes
-        for i in range(comm.size):
-            # for every node that isn't done yet,
-            if not done_list[i]:
-                # check for a message from this node
-                if comm.Iprobe(source=i, tag=tag):
-                    # consume the message, and update node status
-                    done_list[i] = comm.recv(source=i, tag=tag)
-                    # l_print_no_barrier(done_list)
-
-        # update overall status
-        all_done = False not in done_list
-        # give the current node a chance to do something on every iteration
-        yield False
-
-    yield True
-
-
-"""
-As suggested by Lisandro Dalcin at:
-https://groups.google.com/forum/?fromgroups=#!topic/mpi4py/nArVuMXyyZI
-"""
-def barrier_sleep(comm, tag=1747362612, sleep=0.1, use_yield = False):
-    size = comm.Get_size()
+def barrier_sleep(mpi_comm=comm, tag=1747362612, sleep=0.1, use_yield=False):
+    """
+    As suggested by Lisandro Dalcin at:
+    https://groups.google.com/forum/?fromgroups=#!topic/mpi4py/nArVuMXyyZI
+    """
+    size = mpi_comm.Get_size()
     if size == 1:
         return
-    rank = comm.Get_rank()
+    rank = mpi_comm.Get_rank()
     mask = 1
     while mask < size:
         dst = (rank + mask) % size
         src = (rank - mask + size) % size
-        req = comm.isend(None, dst, tag)
-        while not comm.Iprobe(src, tag):
+        req = mpi_comm.isend(None, dst, tag)
+        while not mpi_comm.Iprobe(src, tag):
             if use_yield:
                 yield False
             time.sleep(sleep)
-        comm.recv(None, src, tag)
+        mpi_comm.recv(None, src, tag)
         req.Wait()
         mask <<= 1
     if use_yield:
