@@ -64,14 +64,15 @@ class PreAllocMatrices:
 
 
 class PixelPairs:
-    def __init__(self, cd, radius, accumulator_type):
+    def __init__(self, cd, max_transverse_separation, max_parallel_separation, accumulator_type):
         """
         initialize persistent objects
         :type cd: comoving_distance.ComovingDistance
-        :type radius: float
+        :type max_transverse_separation: float
         """
         self.cd = cd
-        self.radius = radius
+        self.max_transverse_separation = max_transverse_separation
+        self.max_parallel_separation = max_parallel_separation
         self.pre_alloc_matrices = PreAllocMatrices(MAX_Z_RESOLUTION)
         self.significant_qso_pairs = significant_qso_pairs.SignificantQSOPairs()
         self.accumulator_type = accumulator_type
@@ -94,9 +95,8 @@ class PixelPairs:
         # Note: not using pre_alloc_matrices.zero()
 
         # the maximum distance that can be stored in the accumulator
-        r = float(accumulator.get_max_range())
-        range_parallel = np.float32(accumulator.get_ranges()[1, 0])
-        range_transverse = np.float32(accumulator.get_ranges()[1, 1])
+        max_parallel_separation = np.float32(accumulator.get_ranges()[1, 0])
+        max_transverse_separation = np.float32(accumulator.get_ranges()[1, 1])
 
         spec1_z = delta_t_file.get_wavelength(spec1_index)
         spec2_z = delta_t_file.get_wavelength(spec2_index)
@@ -119,7 +119,8 @@ class PixelPairs:
         qso2_weights = delta_t_file.get_ivar(spec2_index)
 
         # if the parallel distance between forests is too large, they will not form pairs.
-        if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
+        if (spec1_distances[0] > spec2_distances[-1] + max_parallel_separation) or \
+                (spec2_distances[0] > spec1_distances[-1] + max_parallel_separation):
             return
 
         # create matrices with first dimension of spec1 data points,
@@ -154,8 +155,8 @@ class PixelPairs:
         np.multiply(mean_distance, qso_angle, out=r_transverse)
 
         # mask all elements that are too far apart
-        np.less(r_parallel, range_parallel, out=mask_matrix_parallel)
-        np.less(r_transverse, range_transverse, out=mask_matrix_final)
+        np.less(r_parallel, max_parallel_separation, out=mask_matrix_parallel)
+        np.less(r_transverse, max_transverse_separation, out=mask_matrix_final)
         np.logical_and(mask_matrix_parallel, mask_matrix_final, mask_matrix_final)
 
         np.outer(qso1_weights, qso2_weights, out=z_weights)
@@ -190,7 +191,7 @@ class PixelPairs:
         # Note: not using pre_alloc_matrices.zero()
 
         # the maximum distance that can be stored in the accumulator
-        r = float(accumulator.get_max_range())
+        range_parallel = np.float32(accumulator.get_ranges()[1, 0])
 
         spec1_z = delta_t_file.get_wavelength(spec1_index)
         spec2_z = delta_t_file.get_wavelength(spec2_index)
@@ -213,7 +214,8 @@ class PixelPairs:
         qso2_weights = delta_t_file.get_ivar(spec2_index)
 
         # if the parallel distance between forests is too large, they will not form pairs.
-        if spec1_distances[0] > r + spec2_distances[-1] or spec2_distances[0] > r + spec1_distances[-1]:
+        if (spec1_distances[0] > spec2_distances[-1] + range_parallel) or \
+                (spec2_distances[0] > spec1_distances[-1] + range_parallel):
             return
 
         if self.accumulator_type == accumulator_types.mean:
@@ -294,17 +296,22 @@ class PixelPairs:
         if self.accumulator_type == accumulator_types.mean:
             pair_separation_bins = bins_3d.Bins3D(
                 dims=np.array([NUM_BINS_X, NUM_BINS_Y, NUM_BINS_Z]),
-                ranges=np.array([[0, 0, self.min_distance], [self.radius, self.radius, self.max_distance]]))
+                ranges=np.array([[0, 0, self.min_distance],
+                                 [self.max_parallel_separation, self.max_transverse_separation,
+                                  self.max_distance]]))
             pair_separation_bins.set_filename(settings.get_mean_estimator_bins())
         elif self.accumulator_type == accumulator_types.mean_subsample:
             pair_separation_bins = bins_3d_with_group_id.Bins3DWithGroupID(
                 dims=np.array([NUM_BINS_X, NUM_BINS_Y, NUM_BINS_Z]),
-                ranges=np.array([[0, 0, self.min_distance], [self.radius, self.radius, self.max_distance]]))
+                ranges=np.array([[0, 0, self.min_distance],
+                                 [self.max_parallel_separation, self.max_transverse_separation,
+                                  self.max_distance]]))
             pair_separation_bins.set_filename(settings.get_correlation_estimator_subsamples_npz())
         elif self.accumulator_type == accumulator_types.histogram:
             pair_separation_bins = flux_histogram_bins.FluxHistogramBins(
                 dims=np.array([NUM_BINS_X, NUM_BINS_Y, 1000]),
-                ranges=np.array([[0, 0, -2e3], [self.radius, self.radius, 2e3]]))
+                ranges=np.array([[0, 0, -2e3],
+                                 [self.max_parallel_separation, self.max_transverse_separation, 2e3]]))
             pair_separation_bins.set_filename(settings.get_median_estimator_bins())
 
         assert pair_separation_bins

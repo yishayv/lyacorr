@@ -123,9 +123,6 @@ class Bins3DWithGroupID(AccumulatorBase):
     def flush(self):
         np.savez(self.filename, ar_data=self.to_5d_array(), group_ids=np.array(list(self.dict_bins_3d_data.keys())))
 
-    def get_max_range(self):
-        return self.max_range
-
     def get_ranges(self):
         return self.ranges
 
@@ -159,7 +156,7 @@ class Bins3DWithGroupID(AccumulatorBase):
         :type metadata: list
         :rtype : Bins3DWithGroupID
         """
-        new_bins = cls(dims=np.array([1, 1, 1]), ranges=np.array([[1, 1, 1], [1, 1, 1]]))
+        new_bins = cls(dims=np.array([1, 1, 1]), ranges=np.array([[1, 1, 1], [1, 1, 1]]))  # type: Bins3DWithGroupID
         (new_bins.dims, new_bins.filename, new_bins.max_range,
          new_bins.ranges, new_bins.bin_sizes, group_ids) = metadata
         for index, group_id in enumerate(group_ids):

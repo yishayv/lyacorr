@@ -34,7 +34,7 @@ class TestPixelPairs(TestCase):
         delta_t_file.set_flux(1, np.sin(ar_z1 * 50))
         delta_t_file.set_ivar(1, ar_z1)
 
-        pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius, calc_pixel_pairs.accumulator_types.mean)
+        pixel_pairs = calc_pixel_pairs.PixelPairs(cd, radius, radius, calc_pixel_pairs.accumulator_types.mean)
         qso_angle = 0.04
 
         bin_dims = np.array([NUM_BINS_X, NUM_BINS_Y, 1])

@@ -44,10 +44,6 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
-    def get_max_range(self):
-        return
-
-    @abstractmethod
     def get_ranges(self):
         return
 

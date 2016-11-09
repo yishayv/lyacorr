@@ -218,8 +218,9 @@ def profile_main():
     # set maximum QSO angular separation to 200Mpc/h (in co-moving coordinates)
     # the article assumes h is measured in units of 100km/s/mpc
     radius_quantity = (200. * (100. * u.km / (u.Mpc * u.s)) / cd.H0)  # type: u.Quantity
-    radius = radius_quantity.value
-    max_angular_separation = radius / (cd.comoving_distance(1.9) / u.radian)
+    max_transverse_separation = radius_quantity.value
+    max_parallel_separation = radius_quantity.value
+    max_angular_separation = max_transverse_separation / (cd.comoving_distance(1.9) / u.radian)
     mpi_helper.r_print('maximum separation of QSOs:', Angle(max_angular_separation).to_string(unit=u.degree))
 
     # print(ar_list)
@@ -262,7 +263,8 @@ def profile_main():
     if comm.rank == 0:
         pickle.dump(data_state, open(settings.get_restartable_data_state_p(), 'wb'))
 
-    pixel_pairs_object = calc_pixel_pairs.PixelPairs(cd, radius, accumulator_type=accumulator_type)
+    pixel_pairs_object = calc_pixel_pairs.PixelPairs(
+        cd, max_transverse_separation, max_parallel_separation, accumulator_type=accumulator_type)
     # divide the work into sub chunks
     # Warning: the number of sub chunks must be identical for all nodes because gather is called after each sub chunk.
     # NOTE: we no longer divide by comm.size to make sub chunk size independent of number of nodes,
