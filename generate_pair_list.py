@@ -6,6 +6,8 @@
 import cProfile
 import pickle
 from collections import namedtuple
+from itertools import islice
+import sys
 
 import numpy as np
 from astropy import coordinates as coord
@@ -126,7 +128,7 @@ class SubChunkHelper:
 
 
 def generate_pairs(ar_dec, ar_ra, coord_permutation, coord_set, local_end_index, local_start_index,
-                   max_angular_separation):
+                   max_angular_separation, bundle_start_index=0):
     """
     Generate QSO pairs, in bundles.
     Each time, a bundle of QSOs is matched against the full list
@@ -137,6 +139,7 @@ def generate_pairs(ar_dec, ar_ra, coord_permutation, coord_set, local_end_index,
     :param local_end_index: last QSO index for this MPI node
     :param local_start_index: first QSO index for this MPI node
     :param max_angular_separation: maximum angular separation for sky search
+    :param bundle_start_index: skip all bundles prior to bundle index
     :return:
     """
     # each node matches a range of objects against the full list.
@@ -154,7 +157,9 @@ def generate_pairs(ar_dec, ar_ra, coord_permutation, coord_set, local_end_index,
     print_func = mpi_helper.l_print if is_num_bundles_equal else mpi_helper.l_print_no_barrier
     mpi_helper.r_print('using print function:', print_func.__name__)
 
-    for bundle_index, (bundle_start, bundle_size) in enumerate(bundles):
+    bundle_iterator = islice(enumerate(bundles), bundle_start_index, None)
+
+    for bundle_index, (bundle_start, bundle_size) in bundle_iterator:
         print_func('matching ', bundle_size, ' objects, starting at :', bundle_start)
         print_func('node progress:{:.1f}%'.format(
             100. * (bundle_start - local_start_index) / (local_end_index - local_start_index)))
@@ -226,12 +231,48 @@ def profile_main():
     # print(ar_list)
     coord_set = coord.SkyCoord(ra=ar_ra * u.degree, dec=ar_dec * u.degree,
                                distance=ar_distance * u.Mpc)
-    # create a random permutation of the coordinate set
-    # (this is done to balance the load on the nodes)
-    coord_permutation = None
-    if comm.rank == 0:
-        coord_permutation = np.random.permutation(len(coord_set))
-    coord_permutation = comm.bcast(coord_permutation)
+
+    data_state = None
+    computation_state = None
+
+    # either initialize variable or load them to resume
+    if settings.get_resume():
+        if comm.rank == 0:
+            # resume an existing state
+
+            data_state = pickle.load(open(settings.get_restartable_data_state_p(), 'rb'))  # type: DataState
+            computation_state = pickle.load(
+                open(settings.get_restartable_computation_state_p(), 'rb'))  # type: ComputationState
+    else:
+        if comm.rank == 0:
+            # initialize a new state
+
+            # create a random permutation of the coordinate set
+            # (this is done to balance the load on the nodes)
+            new_coord_permutation = np.random.permutation(len(coord_set))
+            # data_state should hold everything required to reproduce the exact same computation,
+            # so that it is possible to restart it from the last completed bundle.
+            # NOTE: currently there is no plan to check for consistency on load.
+            # changing the input data before restarting will produce undefined results.
+            data_state = DataState(mpi_comm_size=comm.size,
+                                   coord_permutation=new_coord_permutation,
+                                   max_angular_separation=max_angular_separation)
+            computation_state = ComputationState(bundle_index=0, sub_chunk_index=0)
+
+            pickle.dump(data_state, open(settings.get_restartable_data_state_p(), 'wb'))
+
+    # send state to all nodes:
+    data_state = comm.bcast(data_state)
+    computation_state = comm.bcast(computation_state)  # type: ComputationState
+
+    if max_angular_separation != data_state.max_angular_separation:
+        raise Exception("Cannot resume, angular separation has changed ({}->{})".format(
+            data_state.max_angular_separation, max_angular_separation))
+    if comm.size != data_state.mpi_comm_size:
+        raise Exception("Cannot resume, MPI COMM size must be {}".format(data_state.mpi_comm_size))
+
+    coord_permutation = data_state.coord_permutation
+    first_sub_chunk_index = computation_state.sub_chunk_index
 
     # find all QSO pairs
     chunk_sizes, chunk_offsets = mpi_helper.get_chunks(len(coord_set), comm.size)
@@ -251,18 +292,6 @@ def profile_main():
     else:
         assert False, "Either median or mean estimators must be specified."
 
-    # data_state should hold everything required to reproduce the exact same computation,
-    # so that it is possible to restart it from the last completed bundle.
-    # NOTE: currently there is no plan to check for consistency on load.
-    # changing the input data before restarting will produce undefined results.
-    data_state = DataState(mpi_comm_size=comm.size,
-                           coord_permutation=coord_permutation,
-                           max_angular_separation=max_angular_separation)
-
-    # save data state to allow restarting
-    if comm.rank == 0:
-        pickle.dump(data_state, open(settings.get_restartable_data_state_p(), 'wb'))
-
     pixel_pairs_object = calc_pixel_pairs.PixelPairs(
         cd, max_transverse_separation, max_parallel_separation, accumulator_type=accumulator_type)
     # divide the work into sub chunks
@@ -274,10 +303,22 @@ def profile_main():
     sub_chunk_helper = SubChunkHelper()
     for bundle_index, local_qso_pair_angles, local_qso_pairs in generate_pairs(
             ar_dec, ar_ra, coord_permutation, coord_set,
-            local_end_index, local_start_index, max_angular_separation):
+            local_end_index, local_start_index, max_angular_separation,
+            bundle_start_index=computation_state.bundle_index):
 
         pixel_pair_sub_chunks = mpi_helper.get_chunks(local_qso_pairs.shape[0], num_sub_chunks_per_node)
-        for sub_chunk_index, (i, j) in enumerate(zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1])):
+        sub_chunk_iterator = islice(enumerate(zip(pixel_pair_sub_chunks[0], pixel_pair_sub_chunks[1])),
+                                    first_sub_chunk_index, None)
+
+        # if resuming from a previous run, use the value in first_sub_chunk_index only once:
+        first_sub_chunk_index = 0
+
+        for sub_chunk_index, (i, j) in sub_chunk_iterator:
+            # save computation state to allow restarting
+            if comm.rank == 0:
+                pickle.dump(ComputationState(bundle_index=bundle_index, sub_chunk_index=sub_chunk_index),
+                            open(settings.get_restartable_computation_state_p(), 'wb'))
+
             sub_chunk_start = j
             sub_chunk_end = j + i
             mpi_helper.l_print("sub_chunk: size", i, ", starting at", j, ",", sub_chunk_index, "out of",
@@ -286,11 +327,10 @@ def profile_main():
                                                     local_qso_pairs[sub_chunk_start:sub_chunk_end],
                                                     pixel_pairs_object)
 
-            # save computation state to allow restarting
-            if comm.rank == 0:
-                pickle.dump(ComputationState(bundle_index=bundle_index, sub_chunk_index=sub_chunk_index),
-                            open(settings.get_restartable_computation_state_p(), 'wb'))
-
+    # done. update computation state one last time with a very large bundle index
+    if comm.rank == 0:
+        pickle.dump(ComputationState(bundle_index=sys.maxsize, sub_chunk_index=sys.maxsize),
+                    open(settings.get_restartable_computation_state_p(), 'wb'))
 
 if settings.get_profile():
     cProfile.run('profile_main()', filename='generate_pair_list.prof', sort=2)

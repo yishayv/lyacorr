@@ -394,3 +394,9 @@ class Settings:
         a file holding data that is required for restarting the correlation computation.
         """
         return self.get_env_expanded_path(self.section_restartable, 'computation_state_p')
+
+    def get_resume(self):
+        """
+        set to True to resume computation from existing state files.
+        """
+        return self.config_parser.getboolean(self.section_restartable, 'resume')
