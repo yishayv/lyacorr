@@ -115,7 +115,7 @@ class Bins3DWithGroupID(AccumulatorBase):
         if self.dict_bins_3d_data:
             return np.concatenate([np.expand_dims(i.ar_data, axis=0) for i in self.dict_bins_3d_data.values()], axis=0)
         else:
-            return np.zeros(shape=(0,) + self.dims + (3,))
+            return np.zeros(shape=(0,) + tuple(self.dims) + (3,))
 
     def to_2d_array(self):
         return self.to_5d_array().reshape((-1, np.prod(self.dims) * 3,))
