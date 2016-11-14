@@ -48,10 +48,6 @@ class AccumulatorBase(object):
         return
 
     @abstractmethod
-    def get_bin_sizes(self):
-        return
-
-    @abstractmethod
     def get_dims(self):
         return
 

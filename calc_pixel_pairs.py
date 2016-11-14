@@ -269,7 +269,7 @@ class PixelPairs:
         :type pairs: np.array
         :type pairs_angles: np.array
         :type delta_t_file: NpSpectrumContainer
-        :type accumulator
+        :type accumulator: AccumulatorBase
         :rtype: AccumulatorBase
         """
 
@@ -283,15 +283,10 @@ class PixelPairs:
             n += 1
         return accumulator
 
-    def add_qso_pairs_to_bins(self, pairs, pairs_angles, delta_t_file):
+    def create_bins(self):
         """
-
-        :type pairs: np.multiarray.ndarray
-        :type pairs_angles: np.multiarray.ndarray
-        :type delta_t_file: NpSpectrumContainer
         :rtype: AccumulatorBase
         """
-
         pair_separation_bins = None
         if self.accumulator_type == accumulator_types.mean:
             pair_separation_bins = bins_3d.Bins3D(
@@ -315,6 +310,17 @@ class PixelPairs:
             pair_separation_bins.set_filename(settings.get_median_estimator_bins())
 
         assert pair_separation_bins
+        return pair_separation_bins
+
+    def add_qso_pairs_to_bins(self, pairs, pairs_angles, delta_t_file):
+        """
+
+        :type pairs: np.multiarray.ndarray
+        :type pairs_angles: np.multiarray.ndarray
+        :type delta_t_file: NpSpectrumContainer
+        :rtype: AccumulatorBase
+        """
+        pair_separation_bins = self.create_bins()
 
         self.apply_to_flux_pairs(pairs, pairs_angles, delta_t_file, pair_separation_bins)
 

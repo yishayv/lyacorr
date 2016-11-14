@@ -17,9 +17,6 @@ class Bins3DWithGroupID(AccumulatorBase):
         self.dims = dims
         self.ranges = ranges
         self.filename = filename
-        max_range_x = ranges[1, 0]
-        max_range_y = ranges[1, 1]
-        self.max_range = np.sqrt(np.square(max_range_x) + np.square(max_range_y))
         self.bin_sizes = np.abs(ranges[1] - ranges[0]) / dims
         self.dict_bins_3d_data = collections.defaultdict(self._bins_creator)
 
@@ -69,7 +66,7 @@ class Bins3DWithGroupID(AccumulatorBase):
         self.filename = filename
         self.flush()
 
-    def from_4d_array(self, stacked_array, group_ids):
+    def from_5d_array(self, stacked_array, group_ids):
         """
 
         :type stacked_array: np.multiarray.ndarray
@@ -78,14 +75,19 @@ class Bins3DWithGroupID(AccumulatorBase):
         self.dict_bins_3d_data.clear()
         for index, group_id in enumerate(group_ids):
             self.dict_bins_3d_data[group_id] = self._bins_creator(stacked_array[index])
-        self.dims = stacked_array.shape
+        self.dims = stacked_array.shape[1:-1]
 
-    def load(self, filename):
+    def load(self, filename=None):
         # TODO: to static
+        if not filename:
+            filename = self.filename
         npz_file = np.load(filename)
         stacked_array = npz_file['ar_data']
         group_ids = npz_file['group_ids']
-        self.from_4d_array(stacked_array, group_ids)
+        metadata = npz_file['metadata']
+        (self.dims, self.filename,
+         self.ranges, self.bin_sizes) = metadata
+        self.from_5d_array(stacked_array, group_ids)
 
     def __radd__(self, other):
         return self.merge(other)
@@ -121,13 +123,14 @@ class Bins3DWithGroupID(AccumulatorBase):
         return self.to_5d_array().reshape((-1, np.prod(self.dims) * 3,))
 
     def flush(self):
-        np.savez(self.filename, ar_data=self.to_5d_array(), group_ids=np.array(list(self.dict_bins_3d_data.keys())))
+        np.savez(self.filename,
+                 ar_data=self.to_5d_array(),
+                 group_ids=np.array(list(self.dict_bins_3d_data.keys())),
+                 # save all metadata except group_ids which is handled separately
+                 metadata=self.get_metadata()[:-1])
 
     def get_ranges(self):
         return self.ranges
-
-    def get_bin_sizes(self):
-        return self.bin_sizes
 
     def get_dims(self):
         return self.dims
@@ -143,7 +146,7 @@ class Bins3DWithGroupID(AccumulatorBase):
 
     def get_metadata(self):
         return [self.dims,
-                self.filename, self.max_range,
+                self.filename,
                 self.ranges,
                 self.bin_sizes,
                 list(self.dict_bins_3d_data.keys())]
@@ -157,7 +160,7 @@ class Bins3DWithGroupID(AccumulatorBase):
         :rtype : Bins3DWithGroupID
         """
         new_bins = cls(dims=np.array([1, 1, 1]), ranges=np.array([[1, 1, 1], [1, 1, 1]]))  # type: Bins3DWithGroupID
-        (new_bins.dims, new_bins.filename, new_bins.max_range,
+        (new_bins.dims, new_bins.filename,
          new_bins.ranges, new_bins.bin_sizes, group_ids) = metadata
         for index, group_id in enumerate(group_ids):
             new_bins.dict_bins_3d_data[group_id] = new_bins._bins_creator(ar[index])

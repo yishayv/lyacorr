@@ -5,9 +5,9 @@
 """
 import cProfile
 import pickle
+import sys
 from collections import namedtuple
 from itertools import islice
-import sys
 
 import numpy as np
 from astropy import coordinates as coord
@@ -60,8 +60,10 @@ ComputationState = namedtuple('ComputationState', ['bundle_index', 'sub_chunk_in
 
 
 class SubChunkHelper:
-    def __init__(self):
-        self.pair_separation_bins = None
+    def __init__(self, pixel_pairs, is_resume):
+        self.pair_separation_bins = pixel_pairs.create_bins()
+        if comm.rank == 0 and is_resume:
+            self.pair_separation_bins.load()
 
     def add_pairs_in_sub_chunk(self, delta_t_file, local_pair_angles, pairs, pixel_pairs):
         local_pair_separation_bins = \
@@ -107,7 +109,6 @@ class SubChunkHelper:
                 for rank, metadata in enumerate(list_pair_separation_bins_metadata)]
 
             # initialize bins only if this is the first time we get here
-            # for now use a function level static variable
             if not self.pair_separation_bins:
                 self.pair_separation_bins = local_pair_separation_bins.init_as(local_pair_separation_bins)
 
@@ -300,7 +301,7 @@ def profile_main():
     #       because pairs are generated in bundles, instead of once at the beginning.
     num_sub_chunks_per_node = settings.get_mpi_num_sub_chunks()
 
-    sub_chunk_helper = SubChunkHelper()
+    sub_chunk_helper = SubChunkHelper(pixel_pairs_object, settings.get_resume())
     for bundle_index, local_qso_pair_angles, local_qso_pairs in generate_pairs(
             ar_dec, ar_ra, coord_permutation, coord_set,
             local_end_index, local_start_index, max_angular_separation,
@@ -316,8 +317,7 @@ def profile_main():
         for sub_chunk_index, (i, j) in sub_chunk_iterator:
             # save computation state to allow restarting
             if comm.rank == 0:
-                pickle.dump(ComputationState(bundle_index=bundle_index, sub_chunk_index=sub_chunk_index),
-                            open(settings.get_restartable_computation_state_p(), 'wb'))
+                save_computation_state(bundle_index=bundle_index, sub_chunk_index=sub_chunk_index)
 
             sub_chunk_start = j
             sub_chunk_end = j + i
@@ -327,10 +327,16 @@ def profile_main():
                                                     local_qso_pairs[sub_chunk_start:sub_chunk_end],
                                                     pixel_pairs_object)
 
-    # done. update computation state one last time with a very large bundle index
-    if comm.rank == 0:
-        pickle.dump(ComputationState(bundle_index=sys.maxsize, sub_chunk_index=sys.maxsize),
-                    open(settings.get_restartable_computation_state_p(), 'wb'))
+        # done. update computation state one last time with a very large bundle index
+        if comm.rank == 0:
+            save_computation_state(bundle_index=sys.maxsize, sub_chunk_index=sys.maxsize)
+
+
+def save_computation_state(bundle_index, sub_chunk_index):
+    with open(settings.get_restartable_computation_state_p(), 'wb') as f:
+        c = ComputationState(bundle_index=bundle_index, sub_chunk_index=sub_chunk_index)
+        pickle.dump(c, f)
+
 
 if settings.get_profile():
     cProfile.run('profile_main()', filename='generate_pair_list.prof', sort=2)

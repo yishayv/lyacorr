@@ -8,7 +8,6 @@ class FluxHistogramBins(AccumulatorBase):
         self.ar_flux = np.zeros(dims)
         self.dims = dims
         self.filename = filename
-        self.max_range = np.sqrt(np.square(ranges.x) + np.square(ranges.y))
         self.ranges = ranges
         self.bin_sizes = np.abs(ranges[1] - ranges[0]) / dims
         self.pair_count = 0
@@ -82,14 +81,8 @@ class FluxHistogramBins(AccumulatorBase):
     def flush(self):
         np.save(self.filename, self.get_data_as_array())
 
-    def get_max_range(self):
-        return self.max_range
-
     def get_ranges(self):
         return self.ranges
-
-    def get_bin_sizes(self):
-        return self.bin_sizes
 
     def get_dims(self):
         return self.dims
@@ -99,7 +92,7 @@ class FluxHistogramBins(AccumulatorBase):
 
     def get_metadata(self):
         return [self.dims,
-                self.filename, self.max_range,
+                self.filename,
                 self.ranges,
                 self.bin_sizes,
                 self.pair_count]
@@ -107,7 +100,7 @@ class FluxHistogramBins(AccumulatorBase):
     @classmethod
     def load_from(cls, ar, metadata):
         new_bins = cls(dims=np.array((1, 1, 1)), ranges=np.array(((0, 0, 0), (1, 1, 1))))
-        (new_bins.dims, new_bins.filename, new_bins.max_range,
+        (new_bins.dims, new_bins.filename,
          new_bins.ranges, new_bins.bin_size, new_bins.pair_count) = metadata
         new_bins.ar_flux = ar
         return new_bins

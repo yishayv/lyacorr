@@ -32,9 +32,6 @@ class Bins3D(AccumulatorBase):
         self.index_type = ''
         self.update_index_type()
         self.filename = filename
-        max_x = ranges[1, 0]
-        max_y = ranges[1, 1]
-        self.max_range = np.sqrt(np.square(max_x) + np.square(max_y))
         self.ranges = ranges
         self.bin_sizes = np.abs(ranges[1] - ranges[0]) / dims
 
@@ -148,17 +145,11 @@ class Bins3D(AccumulatorBase):
     def flush(self):
         np.save(self.filename, self.to_4d_array())
 
-    def get_max_range(self):
-        return self.max_range
-
     def get_ranges(self):
         return self.ranges
 
     def get_dims(self):
         return self.dims
-
-    def get_bin_sizes(self):
-        return self.bin_sizes
 
     def get_pair_count(self):
         return self.ar_count.sum()
@@ -171,13 +162,13 @@ class Bins3D(AccumulatorBase):
 
     def get_metadata(self):
         return [self.dims, self.index_type,
-                self.filename, self.max_range,
+                self.filename,
                 self.ranges, self.bin_sizes]
 
     @classmethod
     def load_from(cls, ar, metadata):
         new_bins = cls(dims=(1, 1, 1), ranges=((1, 1, 1), (1, 1, 1)))
-        (new_bins.dims, new_bins.index_type, new_bins.filename, new_bins.max_range,
+        (new_bins.dims, new_bins.index_type, new_bins.filename,
          new_bins.ranges, new_bins.bin_sizes) = metadata
         new_bins.ar_data = ar
         new_bins.update_array_slices()
