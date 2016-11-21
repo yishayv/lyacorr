@@ -89,6 +89,10 @@ class Settings:
         opt_qso_bal_fits = 'qso_bal_fits'
         return self.get_env_expanded_path(self.section_file_paths, opt_qso_bal_fits)
 
+    def get_qso_dla_catalog(self):
+        """table of DLAs by Garnett et al. 2016"""
+        return self.get_env_expanded_path(self.section_file_paths, 'qso_dla_catalog')
+
     def get_delta_t_npy(self):
         """delta_t array (npy)"""
         opt_delta_t_npy = 'delta_transmittance_npy'
