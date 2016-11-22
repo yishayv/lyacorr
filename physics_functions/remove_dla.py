@@ -1,15 +1,24 @@
+from collections import namedtuple
+
 import numpy as np
 from astropy import units as u
 from astropy.constants import c, m_e, e
+from astropy.units.quantity import Quantity
 from scipy import signal
 
 import common_settings
 
 settings = common_settings.Settings()  # type: common_settings.Settings
 
-transition_rate = 6.265e8 * u.Hz
-ly_alpha_wavelength = 1215.67 * u.Angstrom
-oscillator_strength = 0.4164
+AbsorptionLine = namedtuple('AbsorptionLine', ['transition_rate', 'wavelength', 'oscillator_strength'])
+
+lya = AbsorptionLine(transition_rate=6.265e8 * u.Hz, wavelength=1215.67 * u.Angstrom, oscillator_strength=0.4164)
+# We only use the forest region between Lyman Beta and Alpha.
+# Lyman Beta can be relevant only in high column densities where the DLA redshift is very close to the QSO.
+lyb = AbsorptionLine(transition_rate=1.6725e+08 * u.Hz, wavelength=1025.72 * u.Angstrom, oscillator_strength=7.9142e-02)
+
+absorption_lines = [lya, lyb]
+
 classical_electron_radius = e.gauss ** 2 / (m_e * c ** 2)
 
 
@@ -58,18 +67,21 @@ def lorentzian_profile(center_wavelength, gamma, wavelength):
 
 
 def get_dla_transmittance(nhi, z, ar_wavelength):
-    tau = (nhi * np.pi * classical_electron_radius * oscillator_strength *
-           ly_alpha_wavelength) * lorentzian_profile(ly_alpha_wavelength,
-                                                     transition_rate,
-                                                     ar_wavelength / (1 + z)
-                                                     )
+    tau = np.zeros(shape=ar_wavelength.shape)
+    for line in absorption_lines:
+        current_tau = (nhi * np.pi * classical_electron_radius * line.oscillator_strength *
+                       line.wavelength) * lorentzian_profile(line.wavelength,
+                                                             line.transition_rate,
+                                                             ar_wavelength / (1 + z)
+                                                             )  # type: Quantity
+        tau += current_tau.decompose()
 
     return np.exp(-tau)
 
 
-def get_lorentz_width(nhi):
-    return np.sqrt(np.reciprocal(np.pi * np.log(2)) * classical_electron_radius * nhi * oscillator_strength *
-                   ly_alpha_wavelength ** 2 / c * transition_rate)
+def get_lorentz_width(nhi, line=lya):
+    return np.sqrt(np.reciprocal(np.pi * np.log(2)) * classical_electron_radius * nhi * line.oscillator_strength *
+                   line.wavelength ** 2 / c * line.transition_rate)
 
 
 class RemoveDlaByCatalog(object):
@@ -85,11 +97,16 @@ class RemoveDlaByCatalog(object):
         self.dla_dict = {(i['Plate'], i['MJD'], i['Fiber']): i for i in dla_catalog}
 
     def get_mask(self, plate, mjd, fiber_id, ar_wavelength):
+        trivial_mask = np.ones_like(ar_wavelength)
         # best effort matching - return a trivial mask if not found
         if (plate, mjd, fiber_id) not in self.dla_dict:
-            return np.ones_like(ar_wavelength)
+            return trivial_mask
 
         dla_record = self.dla_dict[plate, mjd, fiber_id]
+
+        # take only DLAs with 50% confidence or higher.
+        if dla_record['pDLAD'] < 0.5:
+            return trivial_mask
 
         return get_dla_transmittance(10 ** dla_record['log.NHI'] * u.cm ** -2,
                                      dla_record['z_DLA'], ar_wavelength * u.Angstrom)

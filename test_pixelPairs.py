@@ -39,7 +39,9 @@ class TestPixelPairs(TestCase):
 
         bin_dims = np.array([NUM_BINS_X, NUM_BINS_Y, 1])
         bin_ranges = np.array([[0, 0, pixel_pairs.min_distance],
-                               [pixel_pairs.radius, pixel_pairs.radius, pixel_pairs.max_distance]])
+                               [pixel_pairs.max_parallel_separation,
+                                pixel_pairs.max_transverse_separation,
+                                pixel_pairs.max_distance]])
         pair_separation_bins_1 = bins_3d.Bins3D(dims=bin_dims, ranges=bin_ranges)
         pair_separation_bins_2 = bins_3d.Bins3D(dims=bin_dims, ranges=bin_ranges)
 
