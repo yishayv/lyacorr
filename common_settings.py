@@ -281,6 +281,10 @@ class Settings:
         opt_enable_bal_removal = 'enable_bal_removal'
         return self.config_parser.getboolean(self.section_data_processing, opt_enable_bal_removal)
 
+    def get_enable_dla_catalog(self):
+        """enable using a DLA catalog by Garnett et al. 2016"""
+        return self.config_parser.getboolean(self.section_data_processing, 'enable_dla_catalog')
+
     def get_enable_estimator_subsamples(self):
         """enable computing the estimator in subsamples, for generating the covariance matrix"""
         opt_enable_estimator_subsamples = 'enable_estimator_subsamples'

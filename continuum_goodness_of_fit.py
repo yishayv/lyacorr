@@ -38,7 +38,8 @@ def calc_fit_power_law(delta_f_snr_bins=snr_stats_total):
     fit_params.add('a', -2., min=-5, max=-1)
     fit_params.add('b', 1., min=0.1, max=20.)
     fit_params.add('c', 0.08, min=0, max=0.2)
-    fit_params.add('d', 3, min=-5, max=5)
+    # make sure the exponent base is non-negative
+    fit_params.add('d', 3, min=- masked_snr_bins.min(), max=5)
     fit_result = lmfit.minimize(fit_function, fit_params, kws={'data': y_quantile[mask], 'x': masked_snr_bins})
     return fit_result, snr_bins, masked_snr_bins, y_quantile
 

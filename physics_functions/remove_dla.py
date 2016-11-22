@@ -57,7 +57,7 @@ def lorentzian_profile(center_wavelength, gamma, wavelength):
     return freq * 4 * gamma / ((4 * np.pi * (freq - freq0)) ** 2 + gamma ** 2)
 
 
-def get_relative_transmittance(nhi, z, ar_wavelength):
+def get_dla_transmittance(nhi, z, ar_wavelength):
     tau = (nhi * np.pi * classical_electron_radius * oscillator_strength *
            ly_alpha_wavelength) * lorentzian_profile(ly_alpha_wavelength,
                                                      transition_rate,
@@ -85,7 +85,11 @@ class RemoveDlaByCatalog(object):
         self.dla_dict = {(i['Plate'], i['MJD'], i['Fiber']): i for i in dla_catalog}
 
     def get_mask(self, plate, mjd, fiber_id, ar_wavelength):
+        # best effort matching - return a trivial mask if not found
+        if (plate, mjd, fiber_id) not in self.dla_dict:
+            return np.ones_like(ar_wavelength)
+
         dla_record = self.dla_dict[plate, mjd, fiber_id]
 
-        return get_relative_transmittance(np.exp(dla_record['log.NHI']),
-                                          dla_record['z_DLA'], ar_wavelength)
+        return get_dla_transmittance(10 ** dla_record['log.NHI'] * u.cm ** -2,
+                                     dla_record['z_DLA'], ar_wavelength * u.Angstrom)
