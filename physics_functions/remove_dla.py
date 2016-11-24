@@ -19,7 +19,7 @@ lyb = AbsorptionLine(transition_rate=1.6725e+08 * u.Hz, wavelength=1025.72 * u.A
 
 absorption_lines = [lya, lyb]
 
-classical_electron_radius = e.gauss ** 2 / (m_e * c ** 2)
+classical_electron_radius = np.square(e.gauss) / (m_e * np.square(c))
 
 
 class RemoveDlaSimple(object):
@@ -48,7 +48,7 @@ class RemoveDlaSimple(object):
 
 def wavelength_to_rel_velocity(line_center, z, wavelength):
     rest_wavelength = wavelength / (1 + z)
-    wavelength_ratio_sq = (rest_wavelength / line_center) ** 2
+    wavelength_ratio_sq = np.square(rest_wavelength / line_center)
     beta = - (1 - wavelength_ratio_sq) / (1 + wavelength_ratio_sq)
     return beta * c
 
@@ -63,7 +63,7 @@ def wavelength_to_small_velocity(line_center, z, wavelength):
 def lorentzian_profile(center_wavelength, gamma, wavelength):
     freq = c / wavelength
     freq0 = c / center_wavelength
-    return freq * 4 * gamma / ((4 * np.pi * (freq - freq0)) ** 2 + gamma ** 2)
+    return freq * 4 * gamma / (np.square(4 * np.pi * (freq - freq0)) + np.square(gamma))
 
 
 def get_dla_transmittance(nhi, z, ar_wavelength):
@@ -81,7 +81,7 @@ def get_dla_transmittance(nhi, z, ar_wavelength):
 
 def get_lorentz_width(nhi, line=lya):
     return np.sqrt(np.reciprocal(np.pi * np.log(2)) * classical_electron_radius * nhi * line.oscillator_strength *
-                   line.wavelength ** 2 / c * line.transition_rate)
+                   np.square(line.wavelength) / c * line.transition_rate)
 
 
 class RemoveDlaByCatalog(object):

@@ -1,10 +1,12 @@
+import numpy as np
+
+import common_settings
 from data_access.qso_data import QSOData
 from physics_functions.deredden_func import DereddenSpectrum
-from physics_functions.spectrum_calibration import SpectrumCalibration
-from physics_functions.remove_mw_lines import MWLines
 from physics_functions.remove_bal import RemoveBALSimple
 from physics_functions.remove_dla import RemoveDlaByCatalog
-import common_settings
+from physics_functions.remove_mw_lines import MWLines
+from physics_functions.spectrum_calibration import SpectrumCalibration
 
 settings = common_settings.Settings()  # type: common_settings.Settings
 
@@ -67,11 +69,11 @@ class PreProcessSpectrum:
         if settings.get_enable_dla_catalog():
             ar_dla_transmittance = self.dla.get_mask(qso_rec.plate, qso_rec.mjd, qso_rec.fiberID, ar_wavelength)
             # clamp low values to 0:
-            ar_dla_transmittance[ar_dla_transmittance < 0.5] = 0
+            ar_dla_transmittance[ar_dla_transmittance < 0.8] = 0
             # avoid dividing by zero:
             ar_transmittance_mask = ar_dla_transmittance != 0
             ar_flux[ar_transmittance_mask] /= ar_dla_transmittance[ar_transmittance_mask]
-            ar_ivar *= ar_dla_transmittance
+            ar_ivar *= np.square(ar_dla_transmittance)
 
         new_qso_data = qso_data
         # if we have a visual inspection value for z, use it instead
