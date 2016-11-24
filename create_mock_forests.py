@@ -23,13 +23,9 @@ settings = common_settings.Settings()  # type: common_settings.Settings
 
 fit_pca = continuum_fit_pca.ContinuumFitPCA()
 
-z_start = 1.8
-z_end = 3.6
-z_step = 0.001
-
 lya_center = 1215.67
 
-cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
+cd = comoving_distance.ComovingDistance()
 mock_forest = mock_core_with_shell.MockForest(settings.get_mock_resolution(), settings.get_mock_fractional_width(),
                                               settings.get_mock_shell_separation(), settings.get_mock_core_radius(),
                                               settings.get_mock_shell_radius())

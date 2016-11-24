@@ -20,7 +20,7 @@ fiducial_delubac = FlatLambdaCDM(
 
 
 class ComovingDistance:
-    def __init__(self, z_start, z_end, z_step, cosmology='from_config_file'):
+    def __init__(self, z_start=0, z_end=3.6, z_step=0.001, cosmology='from_config_file'):
         if cosmology == 'from_config_file':
             cosmology = settings.get_cosmology()
         self.cosmology = \

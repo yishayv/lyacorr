@@ -40,11 +40,7 @@ local_delta_stats = Counter(
     {'bad_fit': 0, 'empty_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
 pre_process_spectrum = PreProcessSpectrum()
 
-z_start = 1.8
-z_end = 3.6
-z_step = 0.001
-
-cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
+cd = comoving_distance.ComovingDistance()
 
 
 def nu_boxcar(x, y, x_left_func, x_right_func, weights=None):

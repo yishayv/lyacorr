@@ -14,7 +14,7 @@ NUM_BINS_Y = 50
 
 __author__ = 'yishay'
 
-cd = physics_functions.comoving_distance.ComovingDistance(1.9, 3.6, 0.001)
+cd = physics_functions.comoving_distance.ComovingDistance()
 
 
 class TestPixelPairs(TestCase):

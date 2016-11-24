@@ -28,11 +28,7 @@ from python_compat import reduce, zip, range
 
 settings = common_settings.Settings()  # type: common_settings.Settings
 
-z_start = 1.8
-z_end = 3.6
-z_step = 0.001
-
-cd = comoving_distance.ComovingDistance(z_start, z_end, z_step)
+cd = comoving_distance.ComovingDistance()
 
 comm = MPI.COMM_WORLD
 
