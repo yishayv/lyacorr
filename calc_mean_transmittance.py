@@ -316,11 +316,13 @@ def delta_transmittance_chunk(qso_record_table):
                                                 ar_mean_flux_for_z_range * lya_forest_transmittance.ar_fit,
                                                 ar_z)
 
-            # remove DLA regions by setting the ivar of nearby pixels to 0
-            ar_dla_mask = remove_dla.get_mask(ar_delta_t)
-            if np.any(ar_dla_mask):
-                l_print_no_barrier("DLA(s) removed from QSO: ", qso_spec_obj.qso_rec)
-            ar_delta_t_ivar[ar_dla_mask] = 0
+            # simple DLA removal (without using a catalog)
+            if settings.get_enable_simple_dla_removal():
+                # remove DLA regions by setting the ivar of nearby pixels to 0
+                ar_dla_mask = remove_dla.get_mask(ar_delta_t)
+                if np.any(ar_dla_mask):
+                    l_print_no_barrier("DLA(s) removed from QSO: ", qso_spec_obj.qso_rec)
+                ar_delta_t_ivar[ar_dla_mask] = 0
 
             # ignore nan or infinite values (in case m_mean has incomplete data because of a low sample size)
             # Note: using wavelength field to store redshift

@@ -285,6 +285,10 @@ class Settings:
         """enable using a DLA catalog by Garnett et al. 2016"""
         return self.config_parser.getboolean(self.section_data_processing, 'enable_dla_catalog')
 
+    def get_enable_simple_dla_removal(self):
+        """enable a simple, less accurate DLA removal that does not rely on a catalog"""
+        return self.config_parser.getboolean(self.section_data_processing, 'enable_simple_dla_removal')
+
     def get_enable_estimator_subsamples(self):
         """enable computing the estimator in subsamples, for generating the covariance matrix"""
         opt_enable_estimator_subsamples = 'enable_estimator_subsamples'
