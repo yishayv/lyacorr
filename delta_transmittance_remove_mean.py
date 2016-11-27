@@ -25,7 +25,7 @@ def rescale(ar_x, from_range, to_range):
 # noinspection PyShadowingNames
 def update_mean(delta_t_file):
     n = 0
-    ar_z = np.arange(1.9, 3.3, 0.001)
+    ar_z = np.arange(1.9, 3.5, 0.0005)
 
     # weighted mean
     ar_delta_t_sum = np.zeros_like(ar_z)

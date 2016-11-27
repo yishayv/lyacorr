@@ -31,7 +31,7 @@ lya_center = 1215.67
 
 settings = common_settings.Settings()  # type: common_settings.Settings
 force_single_process = settings.get_single_process()
-z_range = (1.9, 3.5, 0.0004)
+z_range = (1.9, 3.5, 0.0005)
 ar_z_range = np.arange(*z_range)
 min_continuum_threshold = settings.get_min_continuum_threshold()
 local_mean_stats = Counter(
