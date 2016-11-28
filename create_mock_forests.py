@@ -14,6 +14,7 @@ from python_compat import range
 draw_graph = False
 
 if draw_graph:
+    # noinspection PyPackageRequirements
     from mayavi import mlab
 
 MAX_SPECTRA = 220000

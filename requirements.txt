@@ -1,0 +1,9 @@
+Cython
+matplotlib
+lmfit
+h5py
+healpy
+astropy
+scipy
+numpy
+mpi4py
