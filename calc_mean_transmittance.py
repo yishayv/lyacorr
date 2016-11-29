@@ -122,12 +122,36 @@ class MeanTransmittanceAccumulator:
         pass
 
 
-def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats):
+def downsample_spectrum(ar_wavelength, ar_flux, ar_ivar, scale):
+    """
+    :type ar_wavelength: np.ndarray
+    :type ar_flux: np.ndarray
+    :type ar_ivar: np.ndarray
+    :type scale: int
+    :return: (np.ndarray, np.ndarray, np.ndarray)
+    """
+    new_length = ar_wavelength.size // scale
+    old_length_clipped = new_length * scale
+
+    ar_wavelength_2d = ar_wavelength[:old_length_clipped].reshape((new_length, scale))
+    ar_flux_2d = ar_flux[:old_length_clipped].reshape((new_length, scale))
+    ar_ivar_2d = ar_ivar[:old_length_clipped].reshape((new_length, scale))
+    ar_weighted_flux_2d = ar_flux_2d * ar_ivar_2d
+    ar_wavelength_small = np.nanmean(ar_wavelength_2d, axis=1)
+    ar_ivar_small = np.nansum(ar_ivar_2d, axis=1)
+    with np.errstate(invalid='ignore'):
+        ar_flux_small = np.nansum(ar_weighted_flux_2d, axis=1) / ar_ivar_small
+
+    return ar_wavelength_small, ar_flux_small, ar_ivar_small
+
+
+def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats, downsample_factor=1):
     """
 
     :type qso_spec_obj: QSOData
     :type ar_fit_spectrum: np.ndarray
     :type stats: Counter
+    :type downsample_factor: int
     :return:
     """
 
@@ -162,6 +186,12 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats):
         stats['empty'] += 1
         return empty_result
 
+    if downsample_factor != 1:
+        # downsample the continuum (don't replace ar_wavelength and ar_ivar yet)
+        _, ar_fit_spectrum, _ = downsample_spectrum(ar_wavelength, ar_fit_spectrum, ar_ivar, downsample_factor)
+        # downsample the spectrum
+        ar_wavelength, ar_flux, ar_ivar = downsample_spectrum(ar_wavelength, ar_flux, ar_ivar, downsample_factor)
+
     # transmission is only meaningful in the ly_alpha range, and also requires a valid fit for that wavelength
     # use the same range as in 1404.1801 (2014)
     forest_mask = np.logical_and(ar_wavelength > 1040 * (1 + z),
@@ -183,7 +213,7 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats):
     ar_fit_spectrum_masked = ar_fit_spectrum[effective_mask]
 
     # make sure we have any pixes before calling ar_fit_spectrum_masked.min()
-    if ar_wavelength_masked.size < 150:
+    if ar_wavelength_masked.size < (150 / downsample_factor):
         stats['low_count'] += 1
         l_print_no_barrier("skipped QSO (low pixel count): ", qso_rec)
         return empty_result
@@ -197,7 +227,9 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats):
     stats['accepted'] += 1
     l_print_no_barrier("accepted QSO", qso_rec)
 
-    ar_rel_transmittance = ar_flux / ar_fit_spectrum
+    # suppress divide by zero: NaNs can be introduced by the downscale_spectrum method
+    with np.errstate(divide='ignore'):
+        ar_rel_transmittance = ar_flux / ar_fit_spectrum
     ar_rel_transmittance_masked = ar_rel_transmittance[effective_mask]
     ar_z_masked = ar_wavelength_masked / lya_center - 1
     assert ar_z_masked.size == ar_rel_transmittance_masked.size
@@ -301,7 +333,8 @@ def delta_transmittance_chunk(qso_record_table):
         ar_fit_spectrum = continuum_fit_file.get_flux(index)
         # we assume the fit spectrum uses the same wavelengths.
 
-        lya_forest_transmittance = qso_transmittance(qso_spec_obj, ar_fit_spectrum, local_delta_stats)
+        lya_forest_transmittance = qso_transmittance(qso_spec_obj, ar_fit_spectrum, local_delta_stats,
+                                                     downsample_factor=settings.get_forest_downsample_factor())
         ar_z = lya_forest_transmittance.ar_z
         if ar_z.size:
             # prepare the mean transmittance for the z range of this QSO

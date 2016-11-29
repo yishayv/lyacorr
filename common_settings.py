@@ -251,6 +251,10 @@ class Settings:
         opt_healpix_nside = 'healpix_nside'
         return self.config_parser.getint(self.section_data_processing, opt_healpix_nside)
 
+    def get_forest_downsample_factor(self):
+        """downsample the forest by this (integer) factor"""
+        return self.config_parser.getint(self.section_data_processing, 'forest_downsample_factor')
+
     def get_enable_weighted_mean_estimator(self):
         """enable/disable weighted mean estimator"""
         opt_enable_weighted_mean_estimator = 'enable_weighted_mean_estimator'
