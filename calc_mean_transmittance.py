@@ -26,6 +26,7 @@ from physics_functions import pixel_weight_coefficients
 from physics_functions.pre_process_spectrum import PreProcessSpectrum
 from physics_functions.remove_dla import RemoveDlaSimple
 from python_compat import range, zip
+from physics_functions.line_masks import get_line_masks
 
 lya_center = 1215.67
 
@@ -38,6 +39,7 @@ local_mean_stats = Counter(
     {'bad_fit': 0, 'empty_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
 local_delta_stats = Counter(
     {'bad_fit': 0, 'empty_fit': 0, 'low_continuum': 0, 'low_count': 0, 'empty': 0, 'accepted': 0})
+
 pre_process_spectrum = PreProcessSpectrum()
 
 cd = comoving_distance.ComovingDistance()
@@ -204,6 +206,7 @@ def qso_transmittance(qso_spec_obj, ar_fit_spectrum, stats, downsample_factor=1)
     ar_redshift = ar_wavelength / lya_center - 1
 
     redshift_mask = (min_redshift < ar_redshift) & (ar_redshift < max_redshift)
+    redshift_mask &= get_line_masks(ar_redshift)
 
     ivar_mask = ar_ivar > 0
 
