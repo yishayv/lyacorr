@@ -1,3 +1,7 @@
+"""
+Pixel weights for Lyman Alpha forest correlation estimator, from Busca et al. 2013
+"""
+
 import numpy as np
 
 import common_settings

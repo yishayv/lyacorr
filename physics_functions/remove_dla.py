@@ -1,3 +1,10 @@
+"""
+Provides two ways to attempt to remove DLAs from QSO spectra.
+RemoveDlaSimple uses a combination of linear filters to discard high absorption forest pixels.
+    It is intended to work on the transmittance, and therefore cannot be applied before continuum fits.
+RemoveDlaByCatalog uses a preexisting catalog by Roman Garnett et al. 2016, and can be applied to the original spectra.
+"""
+
 from collections import namedtuple
 
 import numpy as np

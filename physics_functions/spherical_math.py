@@ -1,3 +1,7 @@
+"""
+A helper module to divide the sky into groups, based on the spherical mean of two sightlines.
+"""
+
 from collections import namedtuple
 
 import healpy as hp

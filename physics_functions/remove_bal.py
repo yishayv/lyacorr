@@ -1,3 +1,7 @@
+"""
+Mask out BAL regions in QSO spectra, according to a BAL catalog provided by SDSS/BOSS.
+"""
+
 from collections import namedtuple
 
 import numpy as np

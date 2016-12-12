@@ -1,3 +1,7 @@
+"""
+A helper class for working with 2D bins of goodness-of-fit as a function of log(SNR).
+"""
+
 import numpy as np
 
 

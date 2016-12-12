@@ -1,3 +1,8 @@
+"""
+Deprecated: Attempt to perform spectrophotometric correction to SDSS spectra.
+The data does not contain all QSOs, and there seemed to be little effect on the correlation, or continuum fits.
+"""
+
 import h5py
 from scipy.interpolate import interp1d
 

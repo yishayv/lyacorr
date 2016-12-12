@@ -1,3 +1,8 @@
+"""
+Encapsulate multiple stages of spectrum pre-processing.
+The individual stages can be enabled/disabled using common_settings.
+"""
+
 import numpy as np
 
 import common_settings

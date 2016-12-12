@@ -1,3 +1,8 @@
+"""
+A simple module to simplify masking out certain observer frame wavelength ranges.
+(currently only used for Hg I 4358)
+"""
+
 import numpy as np
 
 lya_center = 1215.67

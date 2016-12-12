@@ -1,3 +1,7 @@
+"""
+Deredden a spectrum based on a given extinction_g value using the Fitzpatric99 model
+"""
+
 from scipy.interpolate import interp1d
 import numpy
 

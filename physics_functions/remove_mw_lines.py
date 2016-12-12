@@ -1,3 +1,9 @@
+"""
+DEPRECATED: attempt to remove Milky-way ISM lines by subtracting stacked ISM median spectra.
+    This has been found to be unnecessary, and just adds noise.
+    In addition, The existing data does not cover the full DR12 survey.
+"""
+
 import numpy as np
 from astropy.io import fits
 import healpy as hp

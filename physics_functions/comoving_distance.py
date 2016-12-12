@@ -1,3 +1,7 @@
+"""
+This module provides a helper class for obtaining fast comoving distance values, using a lookup table.
+"""
+
 from astropy import units as u
 from astropy.cosmology import Planck13, WMAP5, WMAP7, WMAP9, FlatLambdaCDM
 
