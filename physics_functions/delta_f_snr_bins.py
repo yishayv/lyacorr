@@ -23,8 +23,8 @@ class DeltaFSNRBins(object):
 
     def log_snr_to_bin(self, log_snr):
         # type: (np.ndarray) -> np.ndarray
-        return int(np.clip((log_snr + self.LOG_SNR_OFFSET) * self.NUM_SNR_BINS / self.LOG_SNR_RANGE,
-                           0, self.NUM_SNR_BINS - 1))
+        return (np.clip((log_snr + self.LOG_SNR_OFFSET) * self.NUM_SNR_BINS / self.LOG_SNR_RANGE,
+                        0, self.NUM_SNR_BINS - 1)).astype(np.int)
 
     def bin_to_log_snr(self, bin_num):
         # type: (np.ndarray) -> np.ndarray
@@ -32,8 +32,8 @@ class DeltaFSNRBins(object):
 
     def delta_f_to_bin(self, delta_f):
         # type: (np.ndarray) -> np.ndarray
-        return int(np.clip((delta_f + self.DELTA_F_OFFSET) * self.NUM_DELTA_F_BINS / self.DELTA_F_RANGE,
-                           0, self.NUM_DELTA_F_BINS - 1))
+        return (np.clip((delta_f + self.DELTA_F_OFFSET) * self.NUM_DELTA_F_BINS / self.DELTA_F_RANGE,
+                        0, self.NUM_DELTA_F_BINS - 1)).astype(np.int)
 
     def bin_to_delta_f(self, bin_num):
         # type: (np.ndarray) -> np.ndarray
