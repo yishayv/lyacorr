@@ -1,3 +1,9 @@
+"""
+Convert extinction bins spectra from multiple files to a single npz file.
+(Deprecated: the csv spectra were produced from SDSS spectra, with limited range of the blue spectrograph.)
+"""
+
+
 import os.path
 
 import numpy as np

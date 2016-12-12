@@ -1,3 +1,8 @@
+"""
+Get galaxy metadata from a CasJobs fits table.
+Add an SFD extinction field, and optional custom fields from HealPix maps.
+"""
+
 import cProfile
 from collections import namedtuple
 

@@ -1,3 +1,10 @@
+"""
+Create stacked median ISM spectra.
+This version produces histograms from which a good approximation for the median (or quantile) can be computed.
+The histograms are clipped at the first and last pixel to account for outliers.
+This produces the correct result as long as the actual median falls within the histogram span.
+"""
+
 import cProfile
 from os.path import splitext
 

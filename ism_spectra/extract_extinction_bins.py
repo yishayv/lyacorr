@@ -1,3 +1,8 @@
+"""
+Convert extinction bins spectra from .csv to npz format.
+(Deprecated: the csv spectra were produced from SDSS spectra, with limited range of the blue spectrograph.)
+"""
+
 import glob
 import os.path
 

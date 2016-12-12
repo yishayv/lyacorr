@@ -1,3 +1,7 @@
+"""
+Plot the differences in comoving distance at redshift 0-5, using various cosmologies.
+"""
+
 import lmfit
 import matplotlib.pyplot as plt
 import numpy as np

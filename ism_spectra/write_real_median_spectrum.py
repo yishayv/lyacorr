@@ -1,3 +1,10 @@
+"""
+Create stacked median ISM spectra.
+This version uses a comparison based median, and requires that ALL spectra fit in RAM,
+for the requested wavelength range.
+"""
+
+
 import cProfile
 from os.path import splitext
 
