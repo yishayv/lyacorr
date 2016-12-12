@@ -1,3 +1,8 @@
+"""
+A helper module for storing spectra in an HDF5 file.
+Each spectrum contains wavelength, flux and ivar fields.
+"""
+
 import h5py
 import numpy as np
 
@@ -9,6 +14,7 @@ NUM_FIELDS = 3
 
 
 class Hdf5SpectrumContainer(object):
+    """A container providing random read/write to spectra in an HDF5 file."""
     def __init__(self, filename, readonly, create_new, num_spectra=-1):
         self.filename = filename
         self.readonly = readonly

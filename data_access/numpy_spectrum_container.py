@@ -1,3 +1,8 @@
+"""
+A helper module for storing spectra in a memory-mapped numpy file.
+Each spectrum contains wavelength, flux and ivar fields.
+"""
+
 import os.path
 
 import numpy as np
@@ -9,7 +14,7 @@ NUM_FIELDS = 3
 
 class NpSpectrumContainer(object):
     """
-    Holds spectra in a numpy memory mapped file, or a memory based array
+    Holds spectra in a numpy memory-mapped file, or a memory based array
     """
 
     def __init__(self, readonly, create_new=True, num_spectra=-1, filename=None,

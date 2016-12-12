@@ -1,3 +1,8 @@
+"""
+This module simplifies reading spectra from SDSS/BOSS fits files.
+Selected per-pixel AND/OR flags can be used to set IVAR to 0.
+"""
+
 import csv
 import itertools
 import os.path

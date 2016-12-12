@@ -1,3 +1,7 @@
+"""
+Helper classes for encapsulating QSO metadata and spectrum data.
+"""
+
 import astropy.table as table
 
 
