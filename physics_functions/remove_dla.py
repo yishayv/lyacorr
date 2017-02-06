@@ -111,8 +111,8 @@ class RemoveDlaByCatalog(object):
 
         dla_record = self.dla_dict[plate, mjd, fiber_id]
 
-        # take only DLAs with 50% confidence or higher.
-        if dla_record['pDLAD'] < 0.5:
+        # take only DLAs with 10% confidence or higher.
+        if dla_record['pDLAD'] < 0.1:
             return trivial_mask
 
         return get_dla_transmittance(10 ** dla_record['log.NHI'] * u.cm ** -2,

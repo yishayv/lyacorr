@@ -9,6 +9,12 @@ from data_access.hdf5_spectrum_container import Hdf5SpectrumContainer
 from data_access.qso_data import QSOData
 from pixel_flags import FlagStats
 from python_compat import range, map
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+
+if comm.rank != 0:
+    exit()
 
 MAX_SPECTRA = 220000
 MAX_WAVELENGTH_COUNT = 4992

@@ -71,8 +71,10 @@ class ContinuumFitPCA:
         params.add('f_1280', value=1, min=1. / max_f_1280, max=max_f_1280)
         # params.add('c_z', value=1, min=1. / max_c_z, max=max_c_z)
         params.add('alpha_lambda', value=1, min=-max_alpha_lambda, max=+max_alpha_lambda)
-        result = lmfit.minimize(fcn=self.red_spectrum_residual,
-                                params=params, args=(pca, ar_red_flux, ar_red_ivar))
+        minimizer = lmfit.Minimizer(userfcn=self.red_spectrum_residual,
+                                    params=params, fcn_args=(pca, ar_red_flux, ar_red_ivar),
+                                    nan_policy='propagate')
+        result = minimizer.minimize()
         # get the coefficients of the fitted spectrum:
         red_spectrum_coefficients = self.red_spectrum_fit_coefficients(result.params, pca, ar_red_flux, ar_red_ivar)
         # map red PCs to full spectrum PCs
@@ -108,7 +110,7 @@ class ContinuumFitPCA:
         coefficients = self.red_spectrum_fit_coefficients(params, pca, ar_red_flux, ar_red_ivar)
         ar_red_fit = np.dot(pca.red_pc, coefficients) + pca.red_mean
         residual = ar_red_fit - ar_red_flux
-        return residual
+        return np.nan_to_num(residual)
 
     @staticmethod
     def full_spectrum(pca, full_pc_coefficients):
