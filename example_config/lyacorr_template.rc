@@ -1,0 +1,126 @@
+# Define the following environment variables (or use your own data locations)
+# LYA_SDSS - points to a folder containing the SDSS tree with spPlates fits files.
+# LYA_DATA - a directory holding most of the input data
+# LYA_INTERMEDIATE - Intermediate files. 
+#     This folder is expected to allow fast writes of memory mapped files, 
+#     and have capacity of order 100GB. For example, it could be a local disk (preferrably an SSD) or RAM.
+# LYA_OUT - Output files.
+
+[FilePaths]
+# SDSS Plates:
+plate_dir = $SDSS/spectro/redux/v5_7_0:$SDSS/spectro/redux/v5_7_2
+# Continuum fit tables from Suzuki et al. 2005, and Paris et al. 2011.
+pca_continuum_tables = $LYA_DATA/Suzuki/datafile4.txt:$LYA_DATA/Suzuki/datafile3.txt:$LYA_DATA/Suzuki/projection_matrix.csv:
+                        $LYA_DATA/Paris/zeta.dat:$LYA_DATA/Paris/xi.dat:$LYA_DATA/Paris/proj.dat
+# Intermediate QSO spectra (for fast access)
+qso_spectra_hdf5 = $LYA_INTERMEDIATE/spectra.hdf5
+# QSO metadata fits (obtained from CasJobs)
+qso_metadata_fits = $LYA_DATA/QSOs_test.fit
+# QSO metadata file format
+qso_metadata_fields = $LYA_DATA/QSOs_test_header.csv
+# An astropy table that will hold the imported QSO metadata
+qso_metadata_npy = $LYA_DATA/QSO_table.npy
+# BAL data (as relative velocities)
+qso_bal_fits = $LYA_DATA/DR12Q_BAL.fits
+# DLA catalog by Garnett et al. 2016.
+qso_dla_catalog = $LYA_DATA/DLAs/ascii_catalog/table3.dat
+# Intermediate delta transmittance as a function of redshift for every processed QSO.
+delta_transmittance_npy = $LYA_INTERMEDIATE/delta_transmittance.npy
+# Estimated error components:
+sigma_squared_lss_txt = $LYA_DATA/Sigma_sq_LSS.txt
+weight_eta_function_txt = $LYA_DATA/Weight_eta_func.txt
+# Intermediate file for QSO continuum fits.
+continuum_fit_npy = $LYA_INTERMEDIATE/continuum_fit.npy
+# [Experimental] flux recalibration for SDSS spectra, was not used because it seemed to contain only a part of the QSOs.
+tp_correction_hdf5 = $LYA_DATA/tp_correction/tpcorr.hdf5
+# [Experimental]
+mw_stacked_spectra_fits = $LYA_DATA/MW_lines/coor_bins.fits
+# [Experimental]
+mw_pixel_to_group_mapping_fits = $LYA_DATA/MW_lines/maps.fits
+# Mean transmittance curve
+mean_transmittance_npy = $LYA_OUT/mean_transmittance.npy
+# [Experimental]
+median_transmittance_npy = $LYA_OUT/median_transmittance.npy
+# 2D correlation, binned by redshift and HealPix sky regions.
+mean_estimator_bins_npy = $LYA_OUT/mean_estimator_bins.npy
+# [Experimental]
+median_estimator_bins_npy = $LYA_OUT/median_estimator_bins.npy
+# Per-QSO information about the continuum fits.
+continuum_fit_metadata_npy = $LYA_OUT/continuum_fit_metadata.npy
+# Continuum fit goodness-of-fit vs. SNR, for both good and bad fits.
+# (2 stacked 2D arrays: bad + good)
+fit_snr_stats_npy = $LYA_OUT/snr_stats.npy
+# Mean delta_t curve, which is subtracted to remove residual bias.
+mean_delta_t_npy = $LYA_OUT/mean_delta_t.npy
+# [Experimental]
+median_delta_t_npy = $LYA_OUT/median_delta_t.npy
+# [Experimental] QSO pairs which contribute the most to the correlation, 
+#     useful for debugging, and identifying noisy data.
+significant_qso_pairs_npy = $LYA_OUT/significant_qso_pairs.npy
+# [Experimental]
+correlation_estimator_covariance_npy = $LYA_OUT/covariance.npy
+# [Experimental]
+correlation_estimator_subsamples_npz = $LYA_OUT/estimator_subsamples.npz
+# MW ISM spectra (use both as input and output)
+ism_extinction_spectra_npz = $LYA_DATA/ExtinctionBins20.npz
+
+[Performance]
+# Process this many spectra as a single work unit (the 'file' sense of it is obsolete)
+file_chunk_size = 100
+# QSO pair creation: number of QSOs to match against the full list each time.
+# Setting this too high results in increased memory usage.
+qso_bundle_size = 100
+# Set number of chucks so that there are a few minutes between updates.
+mpi_num_sub_chunks = 1
+# Mostly obsolete, set to True
+single_process = True
+# [Debug] Enable python profiling (should probably be used only with a single MPI node)
+profile = False
+
+[DataProcessing]
+# Set to ignore the actual forest, and calculate the correlation of ISM spectra instead.
+ism_only_mode = False
+# Minimum flux (in the usualy SDSS units) to allow when fitting a continuum.
+min_continuum_threshold = 0.5
+min_forest_redshift = 1.9
+max_forest_redshift = 3.5
+# Number of redshift slices for the correlation function output.
+num_distance_slices = 64
+# HealPix parameter for dividing the sky into regions.
+# NOTE: result size is proportional to num_distance_slices * healpix_nside^2
+healpix_nside = 1
+# Increase to downsample the forest before calculating the correlation.
+# A value of 1 ignores downsampling (Default).
+# 3 is consistent with Delubac et al. 2015, and decreases computation time by up to 9.
+forest_downsample_factor = 1
+# [Experimental] fit algorithm (lee_2012, weighted_ls, dot_product).
+# weighted_ls and dot_product are a bit too simplistic. useful mostly for debugging.
+continuum_fit_method = lee_2012
+# Cosmologiy type [Planck13, WMAP5, WMAP7, WMAP9, Fiducial]
+cosmology = Fiducial
+enable_weighted_mean_estimator = True
+enable_weighted_median_estimator = False
+enable_mw_line_correction = False
+enable_spectrum_flux_correction = False
+enable_extinction_correction = True
+enable_bal_removal = True
+enable_dla_catalog = True
+enable_simple_dla_removal = False
+enable_estimator_subsamples = True
+
+# [Obsolete]
+[MockParameters]
+shell_scale = 150
+shell_fractional_width = 0.005
+sphere_relative_length = 0.5
+core_size = 0.15
+resolution = 300
+
+[RestartableMode]
+# pickle files for storing the state of the last stage of the correlation calculation,
+# namely 'generate_pair_list.py', which can take a long time.
+# set resume to True, to continue an interrupted calculation.
+# this only behaves correctly as long as no configuration parameters or files were changed.
+data_state_p = $LYA_OUT/data_state.p
+computation_state_p = $LYA_OUT/computation_state.p
+resume = False
