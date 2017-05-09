@@ -1,0 +1,37 @@
+#!/bin/bash
+# path to source code
+LYACORR_PATH=~/git/lyacorr
+export LYA_OUT=$PWD
+export LYA_LOG=$LYA_OUT
+export LYA_INTERMEDIATE=~/faster
+export LYACORR_CONF_FILE=$PWD/lyacorr.rc
+export NICE_ARGS="-n 5"
+export PYTHON_ARGS="-u"
+export ERR_REDIR="2>&1"
+pushd $LYACORR_PATH
+
+# Some of the stages (e.g. #2) take a long time.
+# Comment out the ones that were completed to avoid waiting every time.
+# Note that not all stages support parallelization using MPI.
+
+# 1. extract QSO metadata from a CasJobs fits file to a more pythonic format
+(time python extract_sdss_qsos.py 2>&1) | tee $LYA_LOG/output_extract_qsos
+# 2. extract actual spectra
+(time python extract_sdss_qso_spectra.py 2>&1) | tee $LYA_LOG/output_extract_qso_spectra
+
+# avoid creating too many threads since we do parallelization at the MPI level:
+export OMP_NUM_THREADS=1
+
+# 3. Perform continuum fits.
+(time mpiexec nice $NICE_ARGS python $PYTHON_ARGS write_continuum_fits.py 2>&1) | tee $LYA_LOG/output_continuum_fit
+
+# 4. Calculate the mean transmittance function.
+(time mpiexec nice $NICE_ARGS python $PYTHON_ARGS write_mean_transmittance.py 2>&1) | tee $LYA_LOG/output_mean_transmittance
+
+# 5. Remove the residual mean from every QSO's delta_t.
+(time python delta_transmittance_remove_mean.py 2>&1) | tee $LYA_LOG/output_delta_transmittance_remove_mean
+
+# 6. Find all QSO pairs and perform the actual correlation calculation.
+(time mpiexec nice $NICE_ARGS python $PYTHON_ARGS generate_pair_list.py 2>&1) | tee $LYA_LOG/output_generate_pair_list
+
+popd
