@@ -1,0 +1,1 @@
+### Forest pixels weights by Busca et al. (2013).
