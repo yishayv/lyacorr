@@ -3,7 +3,8 @@ This is a set of programs for calculating the autocorrelation of Lyman-α forest
 
 ## Installation
 
-Note that deployment is not very user friendly at this point.
+Note that deployment is not very user friendly.
+* Some tinkering with configuration files and scripts may be required.
 
 ### Hardware Requirements
 - 500GB of storage space
@@ -55,4 +56,10 @@ The configuration file path can be overridden using the `LYACORR_CONF_FILE` envi
 export LYACORR_CONF_FILE=/path/to/config_file.rc
 ```
 
+## Running
+
+There is an annotated script file at [example_config/](example_config/).
+
+The output files are in native numpy format (`.npy`,`.npz`). 
+They can be viewed using matplotlib in a Jupyter notebook.
 
