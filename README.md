@@ -5,7 +5,13 @@ This is a set of programs for calculating the autocorrelation of Lyman-α forest
 
 Note that deployment is not very user friendly at this point.
 
-### Requirements
+### Hardware Requirements
+- 500GB of storage space
+- 32GB of RAM (preferrably more)
+- 100GB of fast local storage (RAM or SSD)
+- 16 CPU cores or more (recommended)
+
+### Software Requirements
 - Python 2, or Python 3
 
 #### Required python packages:
