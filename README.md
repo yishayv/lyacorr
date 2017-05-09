@@ -26,7 +26,14 @@ Note that deployment is not very user friendly.
 - numpy
 - mpi4py
 
-#### Required data files:
+#### Cython module
+To build and install the cython module run:
+```bash
+cd cython_helper
+python setup.py install --user
+```
+
+### Required data files:
 - SDSS BOSS DR12 spPlate fits files, with the original directory structure
 - QSO table from a CasJobs query, saved as a FITS file, for example:  
   ```SQL
