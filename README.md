@@ -3,7 +3,7 @@ This is a set of programs for calculating the autocorrelation of Lyman-α forest
 
 ## Installation
 
-Deployment is not very user friendly at this point.
+Note that deployment is not very user friendly at this point.
 
 ### Requirements
 - Python 2, or Python 3
@@ -31,10 +31,22 @@ Deployment is not very user friendly at this point.
          S.class='QSO' AND (S.boss_target1 & 0x1FF) = 0 AND
          (S.z>2.1) AND (S.z<3.5) AND (S.plate>3523)
   ```
-- PCA continuum fit tables from [Suzuki et al. 2005][suzuki] and [Paris et al. 2012][paris].
+- PCA continuum fit tables from [Suzuki et al. 2005][suzuki] and [Paris et al. 2011][paris].
 - Broard Absorption Line catalog `DR12Q_BAL.fits`
 - DLA catalog from [Garnett et al. 2016][garnett]
 
 [paris]:https://arxiv.org/abs/1104.2024
 [suzuki]:http://iopscience.iop.org/article/10.1086/426062/meta
 [garnett]:https://arxiv.org/abs/1605.04460
+
+### Configuration
+
+There is an annotated configuration file at [example_config/](example_config/).
+
+The default configuration file is `lyacorr.rc` at the current directory.  
+The configuration file path can be overridden using the `LYACORR_CONF_FILE` environment variable, e.g.:
+```bash
+export LYACORR_CONF_FILE=/path/to/config_file.rc
+```
+
+
